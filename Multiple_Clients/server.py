@@ -195,7 +195,6 @@ class MultiServer(object):
         :param conn: 
         :param target: 
         """
-        conn.send(str.encode(" "))
         conn.send(str.encode(self.Crypt.encrypt(" ".encode(encoding="utf-8")).decode(encoding="utf-8")))
         cwd_bytes = self.Crypt.decrypt(self.read_command_output(conn))
         cwd = str(cwd_bytes, "utf-8")
