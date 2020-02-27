@@ -105,7 +105,7 @@ class MultiServer(object):
                 self.list_connections()
                 continue
             elif 'select' in cmd:
-                self.list_connections()
+                # self.list_connections()
                 target, conn = self.get_target(cmd)
                 if conn is not None:
                     self.send_target_commands(target, conn)

