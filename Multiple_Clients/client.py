@@ -5,12 +5,7 @@ import time
 import signal
 import sys
 import struct
-
-import base64
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 class Client(object):
 
@@ -116,7 +111,6 @@ class Client(object):
         self.socket.close()
         return
 
-
 def main():
     client = Client()
     client.register_signal_handler()
@@ -135,7 +129,6 @@ def main():
         print('Error in main: ' + str(e))
     client.socket.close()
     return
-
 
 if __name__ == '__main__':
     while True:

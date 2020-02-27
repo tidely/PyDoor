@@ -5,15 +5,8 @@ import sys
 from queue import Queue
 import struct
 import signal
-
 import os
-import base64
 from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
-
 
 NUMBER_OF_THREADS = 2
 JOB_NUMBER = [1, 2]
@@ -39,8 +32,6 @@ class MultiServer(object):
 
         key = b'k_1i71JWlLTHt8N185PUXjFFzu27DnEH2sXNy-aoG30='
         self.Crypt = Fernet(key)
-
-
 
     def print_help(self):
         for cmd, v in COMMANDS.items():
@@ -217,7 +208,6 @@ class MultiServer(object):
         del self.all_addresses[target]
         return
 
-
 def create_workers():
     """ Create worker threads (will die when main exits) """
     server = MultiServer()
@@ -227,7 +217,6 @@ def create_workers():
         t.daemon = True
         t.start()
     return
-
 
 def work(server):
     """ Do the next job in the queue (thread for handling connections, another for sending commands)
@@ -254,7 +243,6 @@ def create_jobs():
 def main():
     create_workers()
     create_jobs()
-
 
 if __name__ == '__main__':
     main()
