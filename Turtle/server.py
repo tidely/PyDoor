@@ -1,11 +1,12 @@
+import os
+import signal
 import socket
+import struct
+import sys
 import threading
 import time
-import sys
 from queue import Queue
-import struct
-import signal
-import os
+
 from cryptography.fernet import Fernet
 
 NUMBER_OF_THREADS = 2

