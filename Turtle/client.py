@@ -204,12 +204,12 @@ def main():
             time.sleep(5)     
         else:
             break    
-    #try:
-    client.receive_commands()
-    #except Exception as e:
-    #    print('Error in main: ' + str(e))
-    #client.socket.close()
-    #return
+    try:
+        client.receive_commands()
+    except Exception as e:
+        print('Error in main: ' + str(e))
+    client.socket.close()
+    return
 
 if __name__ == '__main__':
     while True:
