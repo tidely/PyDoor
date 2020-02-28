@@ -17,6 +17,7 @@ COMMANDS = {'help':['Shows this help'],
             'select':['Selects a client by its index. Takes index as a parameter'],
             'quit':['Stops current connection with a client. To be used when client is selected'],
             'shutdown':['Shuts server down'],
+            'modules': ['Shows avaliable modules (Client has to be selected first)'],
            }
 
 class MultiServer(object):
