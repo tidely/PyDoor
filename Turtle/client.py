@@ -206,9 +206,9 @@ class Client(object):
             logging.debug('Received data: {}'.format(data))
             try:
                 data = self.Crypt.decrypt(data)
-                logging.debug('Decrypted data: {}'format(data))
+                logging.debug('Decrypted data: {}'.format(data))
             except Exception as e:
-                logging.error(f"Decryption Error: {}".format(e))
+                logging.error("Decryption Error: {}".format(e))
                 break
             if data == b' ':
                 self.print_output('')
