@@ -117,7 +117,7 @@ class Client(object):
             output_str = output_str + str(os.getcwd()) + '> '
         sent_message = self.Crypt.encrypt(output_str.encode())
         self.socket.send(struct.pack('>I', len(sent_message)) + sent_message)
-        logging.debug(f'Sending Encypted data: {output_str}')
+        logging.debug(f'Sending Encypted data: {sent_message}')
         return
 
 
