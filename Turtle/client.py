@@ -210,6 +210,9 @@ class Client(object):
             except Exception as e:
                 logging.error(f"Decryption Error: {e}")
                 break
+            if data == b' ':
+                self.print_output('')
+                continue
             if data[:].decode().lower() == 'quit':
                 self.print_output('Quitting...\n', add_cwd=False)
                 self.socket.close()
