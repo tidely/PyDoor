@@ -127,8 +127,8 @@ class MultiServer(object):
                 print('Command not recognized')
         return
 
-    def log(self, data : str, encrypt=True):
-        logging.debug(f'Sending: {data}')
+    def log(self, data, encrypt=True):
+        logging.debug('Sending: {}'.format(data))
         data = data.encode()
         if encrypt:
             data = self.Crypt.encrypt(data)
@@ -203,7 +203,7 @@ class MultiServer(object):
         conn.send(self.log(" "))
         cwd_bytes = self.Crypt.decrypt(self.read_command_output(conn))
         cwd = str(cwd_bytes, "utf-8")
-        logging.debug(f'Received: {cwd}')
+        logging.debug('Received: {}'.format(cwd))
         print(cwd, end="")
         while True:
             try:
@@ -211,7 +211,7 @@ class MultiServer(object):
                 if len(str.encode(cmd)) > 0:
                     conn.send(self.log(cmd))
                     received = self.read_command_output(conn)
-                    logging.debug(f'"{received}"')
+                    logging.debug('"{}"'.format(received))
                     cmd_output = self.Crypt.decrypt(received)
                     client_response = str(cmd_output, "utf-8")
                     print(client_response, end="")
