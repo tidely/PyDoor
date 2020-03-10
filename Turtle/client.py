@@ -152,7 +152,7 @@ class Client(object):
             return_threads = "Threads:\n\n"
             for thr in self.Threads:
                 if thr[0].is_alive():
-                    return_threads += "PID: {} - {thr[1]}".format(thr[0].pid)
+                    return_threads += "PID: {} - {}".format(thr[0].pid, thr[1])
                 else:
                     self.Threads.remove(thr)
             return return_threads
