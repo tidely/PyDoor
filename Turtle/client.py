@@ -92,8 +92,8 @@ def shell(q, data):
 class Client(object):
 
     def __init__(self):
-        self.serverHost = '192.168.68.108'
-        self.serverPort = 9998
+        self.serverHost = '127.0.0.1'
+        self.serverPort = 9999
         self.socket = None
 
         self.Fer_key = Fernet.generate_key()

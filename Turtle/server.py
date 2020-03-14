@@ -101,7 +101,7 @@ class MultiServer(object):
 
     def __init__(self):
         self.host = ''
-        self.port = 9998
+        self.port = 9999
         self.socket = None
         self.all_keys = []
         self.all_connections = []
