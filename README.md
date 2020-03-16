@@ -6,8 +6,9 @@ Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.
 * Cross-platform  
 * Remote Shell that updates in real time  
 * Simple File Transfer  
+RSA and AES Encryption by Default  
 * Manage Clipboard Remotely  
-* RSA and AES Encryption by Default  
+* Take Screenshots Remotely  
 * And more...  
   
 ## Installation  

