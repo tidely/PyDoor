@@ -1,7 +1,7 @@
 import sys
 from cx_Freeze import setup, Executable
 
-include_files = ['autorun.inf']
+include_files = []
 base = None
 
 if sys.platform == "win32":
