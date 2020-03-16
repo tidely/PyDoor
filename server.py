@@ -21,6 +21,7 @@ queue = Queue()
 interface_help = """
 --h | See this Help Message
 --e | Open a shell
+--u | User Info
 --s (file) | Transfers file to Client
 --r (file) | Transfers file to Server
 --c (Text) | Copies to Client Clipboard
@@ -104,11 +105,6 @@ class MultiServer(object):
         self.all_connections = []
         self.all_addresses = []
 
-        self.privateKey = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
-        self.publicKey = self.privateKey.public_key()
-
-        self.Fer = None
-
     def socket_create(self):
         try:
             self.socket = socket.socket()
@@ -170,25 +166,27 @@ class MultiServer(object):
     def accept_connections(self):
         while 1:
             try:
+                privateKey = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
+                publicKey = privateKey.public_key()
                 conn, address = self.socket.accept()
                 conn.setblocking(1)
                 clientPublic = serialization.load_pem_public_key(conn.recv(20480), backend=default_backend())
-                conn.send(public_bytes(self.publicKey))
+                conn.send(public_bytes(publicKey))
+
+                intBuffer = int(conn.recv(20480))
+
+                conn.send(b'<RECEIVED>')
+
+                data = self.recvall(conn, intBuffer)
+                conn.send(b'<RECEIVED>')
                 
-                Hashed_Key = conn.recv(4096)
-                conn.send(str.encode('<RECEIVED>'))
+                unpacked_data = pickle.loads(data)
 
-                Encrypted = conn.recv(4096)
-                conn.send(str.encode('<RECEIVED>'))
-
-                Hash_Encrypted = conn.recv(4096)
-                conn.send(str.encode('<RECEIVED>'))
-
-                Signature = conn.recv(4096)
-                conn.send(str.encode('<RECEIVED>'))
-
-                Encrypted_Signature = conn.recv(4096)
-                conn.send(str.encode('<RECEIVED>'))
+                Hashed_Key = unpacked_data['Hashed_Key']
+                Encrypted = unpacked_data['Encrypted']
+                Hash_Encrypted = unpacked_data['Hash_Encrypted']
+                Signature = unpacked_data['Signature']
+                Encrypted_Signature = unpacked_data['Encrypted_Signature']
 
                 Encrypted_Verify = verifySignature(clientPublic, Encrypted_Signature, Hash_Encrypted)
                 logging.debug('Encrypted Hash Signature Verification: {}'.format(str(Encrypted_Verify)))
@@ -197,7 +195,7 @@ class MultiServer(object):
                     logging.error('Error Verifying Hash')
                     continue
 
-                Decrypted = decrypt(self.privateKey, Encrypted)
+                Decrypted = decrypt(privateKey, Encrypted)
                 Verify_Decryption = verifySignature(clientPublic, Signature, Hashed_Key)
                 logging.debug('Hash Signature Verification: {}'.format(str(Verify_Decryption)))
                 if not Verify_Decryption:
@@ -222,8 +220,12 @@ class MultiServer(object):
                 address = address + (client_hostname,)
                 self.all_addresses.append(address)
                 print('\nConnection has been established: {0} ({1})'.format(address[0], address[-1]))
+                privateKey = None
+                publicKey = None
 
             except Exception as e:
+                privateKey = None
+                publicKey = None
                 logging.debug(e)
 
     def list_connections(self):
@@ -261,24 +263,30 @@ class MultiServer(object):
         print("You are now connected to " + str(self.all_addresses[target][2]))
         return target, conn
 
-    def send_file(self, conn, filename):
+    def send_file(self, conn):
+        file_to_transfer = input('File to Transfer to Client: ')
+        save_as = input('Save as: ')
         self.send(conn, b'<SEND>')
         self.receive(conn, _print=False)
-        with open(filename, 'rb') as f:
+        with open(file_to_transfer, 'rb') as f:
             content = f.read()
-        self.send(conn, pickle.dumps({'filename': os.path.basename(filename), 'data': content}))
+        self.send(conn, pickle.dumps({'filename': os.path.basename(save_as), 'data': content}))
         self.receive(conn)
 
-    def receive_file(self, conn, filename):
+    def receive_file(self, conn):
+        
+        file_to_transfer = input('File to Transfer to Server: ')
+        save_as = input('Save as: ')
+
         self.send(conn, b'<RECEIVE>')
         self.receive(conn, _print=False)
-        self.send(conn, filename.encode())
+        self.send(conn, file_to_transfer.encode())
         content = self.receive(conn, _print=False)
         if content == b'<TRANSFERERROR>':
             logging.error('Error Transfering file')
             print('Error Transfering File')
             return
-        with open(filename, 'wb') as f:
+        with open(save_as, 'wb') as f:
             f.write(content)
         print('File Transfer Successful')
         return
@@ -317,28 +325,29 @@ class MultiServer(object):
             if '--e' in command:
                 self.shell(conn)
                 continue
-            if command[:3] == '--c':
+            if '--c' in command:
+                text_to_copy = input('Text to copy: ')
                 self.send(conn, b'<COPY>')
                 self.receive(conn, _print=False)
-                self.send(conn, command[4:].encode())
+                self.send(conn, text_to_copy.encode())
                 self.receive(conn, _print=False)
                 print('Copied Successfully')
+                continue
+            if '--u' in command:
+                self.send(conn, b'<INFO>')
+                info = self.all_addresses[self.all_connections.index(conn)]
+                print('IP : {}\nPort: {}\nPC Name: {}'.format(info[0], info[1], info[2]))
+                self.receive(conn)
                 continue
             if '--p' in command:
                 self.send(conn, b'<PASTE>')
                 self.receive(conn)
                 continue
-            if command[:3] == '--s':
-                if not len(command) > 4:
-                    print('Missing Argument')
-                    continue
-                self.send_file(conn, command[4:])
+            if '--s' in command:
+                self.send_file(conn)
                 continue
-            if command[:3] == '--r':
-                if not len(command) > 4:
-                    print('Missing Argument')
-                    continue
-                self.receive_file(conn, command[4:])
+            if '--r' in command:
+                self.receive_file(conn)
                 continue
             if '--h' in command:
                 print(interface_help)

