@@ -318,16 +318,21 @@ class MultiServer(object):
                 cwd = self.receive(conn, _print=False).decode()
                 continue
             self.send(conn, command.encode())
-            while 1:
-                output = self.receive(conn, _print=False)
-                if output == b'<DONE>':
-                    print()
-                    break
-                try:
-                    print(output.decode())
-                except UnicodeDecodeError:
-                    print(output)
-                self.send(conn, b'<READY>')
+            try:
+                while 1:
+                    output = self.receive(conn, _print=False)
+                    if output == b'<DONE>':
+                        print()
+                        break
+                    try:
+                        print(output.decode())
+                    except UnicodeDecodeError:
+                        print(output)
+                    self.send(conn, b'<READY>')
+            except (SystemExit, KeyboardInterrupt):
+                print('Keyboard Interrupt')
+                self.send(conn, b'--q')
+                break
 
     def interface(self, conn, target):
         """ CLI Interface to Client """

