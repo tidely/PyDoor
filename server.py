@@ -33,6 +33,7 @@ interface_help = """
 
 turtle_help = """
 --h | See this Help Message
+--a (Command) | Send shell command to all connected clients
 --l | List connected Clients
 --i (ID) | Connect to a Client"""
 
@@ -403,6 +404,22 @@ class MultiServer(object):
                 command = input('> ')
                 if command == '--h':
                     print(turtle_help)
+                if command[:3] == '--a':
+                    if len(command) > 4:
+                        for client in self.all_connections:
+                            try:
+                                self.send(client, command[4:].encode())
+                                print('Response from {}: '.format(self.all_addresses[self.all_connections.index(client)][0]))
+                                while 1:
+                                    response = self.receive(client, _print=False)
+                                    if response == b'<DONE>':
+                                        break
+                                    print(response.decode())
+                                    self.send(client, b'<LISTENING>')
+                            except:
+                                pass
+                    else:
+                        print("Arguments missing, '--h' for help")
                 elif command == '--l':
                     self.list_connections()
                 elif '--i' in command:

@@ -200,6 +200,9 @@ class Client(object):
                 self.socket.send(b' ')
                 continue
 
+            if data == b'<LISTENING>':
+                self.send(b'<DONE>')
+
             if data == b'<SEND>':
                 self.send(b'<READY>')
                 packed_data = self.receive()
