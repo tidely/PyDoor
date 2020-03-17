@@ -4,3 +4,4 @@ pyperclip
 psutil
 pynput
 requests
+pillow
