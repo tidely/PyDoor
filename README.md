@@ -1,18 +1,23 @@
 # PyDoor  
+  
 Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.  
   
 ## Features  
+  
 * Multi-client support  
 * Cross-platform  
 * Remote Shell that updates in real time  
 * Simple File Transfer  
 * RSA and AES Encryption by Default  
+* Keylogger  
 * Manage Clipboard Remotely  
 * Take Screenshots Remotely  
 * And more...  
   
 ## Installation  
+  
 You will need:  
+  
 * [Python 3.6-3.7](https://www.python.org/downloads)  
   
 1. Download the repository via github or git eg. `git clone https://github.com/Y4hL/PyDoor`  
@@ -31,6 +36,7 @@ Contributing is encouraged and will help make a better program. Please refer to 
 This program must be used for legal purposes! I am not responsible for anything you do with it.  
   
 ## License  
+  
 [License](https://github.com/Y4hL/PyDoor/blob/master/LICENSE)  
   
 Project heavily inspired by [buckyroberts/Turtle](https://github.com/buckyroberts/Turtle) and [xp4xbox/Python-Backdoor](https://github.com/xp4xbox/Python-Backdoor)  

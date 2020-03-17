@@ -2,3 +2,4 @@ cryptography
 pyscreenshot
 pyperclip
 psutil
+pynput

