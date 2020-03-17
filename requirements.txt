@@ -3,3 +3,4 @@ pyscreenshot
 pyperclip
 psutil
 pynput
+requests

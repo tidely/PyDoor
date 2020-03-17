@@ -13,6 +13,7 @@ Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.
 * Manage Clipboard Remotely  
 * Take Screenshots Remotely  
 * Sending commands to all clients  
+* Download files from the web  
 * And more...  
   
 ## Installation  
