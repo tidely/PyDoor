@@ -1,5 +1,5 @@
 cryptography
-pyscreenshot
+pyscreeze
 pyperclip
 psutil
 pynput
