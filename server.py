@@ -39,7 +39,7 @@ turtle_help = """
 --i (ID) | Connect to a Client"""
 
 
-def Hasher(MESSAGE : bytes):
+def Hasher(MESSAGE):
 
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
     digest.update(MESSAGE)
