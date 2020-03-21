@@ -328,7 +328,7 @@ class MultiServer(object):
                     except UnicodeDecodeError:
                         print(output)
                     self.send(conn, pickle.dumps(['<LISTENING>']))
-            except (SystemExit, KeyboardInterrupt):
+            except KeyboardInterrupt:
                 print('Keyboard Interrupt')
                 self.send(conn, b'--q')
                 break
