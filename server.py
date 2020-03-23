@@ -239,7 +239,7 @@ class MultiServer(object):
         results = ''
         for i, conn in enumerate(self.all_connections):
             try:
-                self.send(conn, pickle.dumps(['--l']))
+                self.send(conn, json_dumps.dumps(['--l']))
                 conn.recv(20480)
             except:
                 del self.all_connections[i]
