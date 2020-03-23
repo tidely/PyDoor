@@ -323,7 +323,6 @@ class MultiServer(object):
                 while 1:
                     output = self.receive(conn, _print=False)
                     if output == b'<DONE>':
-                        print()
                         break
                     try:
                         print(output.decode())

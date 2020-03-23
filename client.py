@@ -331,6 +331,8 @@ class Client(object):
                     if self.receive() == '--q':
                         kill(process.pid)
                         break
+                self.send(process.stderr.read())
+                self.receive()
                 self.send(b'<DONE>')
                 continue
 
