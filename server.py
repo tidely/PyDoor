@@ -311,7 +311,7 @@ class MultiServer(object):
         command = ''
 
         while 1:
-            command = input('{}> '.format(cwd))
+            command = input('{}>'.format(cwd))
             if command == 'quit':
                 break
             if command[:2].lower() == 'cd':
