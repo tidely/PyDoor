@@ -317,7 +317,7 @@ class Client(object):
                     os.chdir(directory.strip())
                 except Exception as e:
                     logging.debug('Error changing cd: {}'.format(str(e)))
-                self.send(os.getcwd().encode())
+                self.send(os.getcwdb())
                 continue
 
             if len(data[0]) > 0:
