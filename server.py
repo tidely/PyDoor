@@ -444,8 +444,8 @@ class MultiServer(object):
                                         break
                                     print(response.decode())
                                     self.send(client, b'<LISTENING>')
-                            except:
-                                pass
+                            except Exception as e:
+                                print('Error at {0}: {1}'.format(self.all_addresses[self.all_connections.index(client)][0]), e))
                     else:
                         print("Arguments missing, '--h' for help")
                 elif command == '--l':
