@@ -453,9 +453,16 @@ class MultiServer(object):
                 elif '--i' in command:
                     target, conn = self.get_target(command)
                     if conn is not None:
-                        self.interface(conn, target)
-            except:
-                print('Connection lost.')
+                        try:
+                            self.interface(conn, target)
+                        except Exception as e:
+                            print('Connection lost: {0}'.format(str(e)))
+                            index = self.all_connections.index(conn)
+                            del self.all_connections[index]
+                            del self.all_addresses[index]
+                            del self.all_keys[index]
+            except Exception as e:
+                print('Error: {0}'.format(str(e)))
 
 def create_workers():
     """ Create worker threads (will die when main exits) """
