@@ -99,6 +99,7 @@ def kill(proc_pid):
     process.kill()
 
 def json_loads(data):
+    """ Decodes and then loads json data """
     return json.loads(data.decode())
 
 def OnKeyboardEvent(event):

