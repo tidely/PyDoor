@@ -19,8 +19,7 @@ NUMBER_OF_THREADS = 2
 JOB_NUMBER = [1, 2]
 queue = Queue()
 
-interface_help = """
---h | See this Help Message
+interface_help = """--h | See this Help Message
 --e | Open a shell
 --i | Open Remote Python Interpreter
 --g | Grabs a screenshot
@@ -38,8 +37,7 @@ interface_help = """
 --x 2 | Disconnect Client
 --b | Run Connection in Background"""
 
-turtle_help = """
---h | See this Help Message
+turtle_help = """--h | See this Help Message
 --a (Command) | Send shell command to all connected clients
 --l | List connected Clients
 --i (ID) | Connect to a Client"""
