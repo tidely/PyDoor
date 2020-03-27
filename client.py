@@ -252,9 +252,8 @@ class Client(object):
                         line_number = traceback.extract_tb(tb)[-1][1]
                     finally:
                         sys.stdout = old_stdout
-                    description = 'python interpreter string'
                     try:
-                        error = "InterpreterError: %s at line %d of %s: %s" % (error_class, line_number, description, detail)
+                        error = "%s: %s (line %d)" % (error_class, detail, line_number)
                         del line_number
                     except Exception:
                         error = None

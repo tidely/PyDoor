@@ -521,6 +521,7 @@ class MultiServer(object):
                             del self.all_connections[index]
                             del self.all_addresses[index]
                             del self.all_keys[index]
+                print("Invalid command: '--h' for help.")
             except Exception as e:
                 print('Error: {0}'.format(str(e)))
 
