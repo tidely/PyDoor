@@ -497,6 +497,7 @@ class MultiServer(object):
                 command = input('> ')
                 if command == '--h':
                     print(turtle_help)
+                    continue
                 elif command[:3] == '--a':
                     if len(command) > 4:
                         for client in self.all_connections:
@@ -513,8 +514,10 @@ class MultiServer(object):
                                 print('Error at {0}: {1}'.format(self.all_addresses[self.all_connections.index(client)][0], str(e)))
                     else:
                         print("Arguments missing, '--h' for help")
+                    continue
                 elif command == '--l':
                     self.list_connections()
+                    continue
                 elif '--i' in command:
                     target, conn = self.get_target(command)
                     if conn is not None:
@@ -526,6 +529,9 @@ class MultiServer(object):
                             del self.all_connections[index]
                             del self.all_addresses[index]
                             del self.all_keys[index]
+                    else:
+                        print('Invalid Selection.')
+                    continue
                 print("Invalid command: '--h' for help.")
             except Exception as e:
                 print('Error: {0}'.format(str(e)))
