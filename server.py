@@ -49,6 +49,7 @@ def Hasher(MESSAGE):
     digest.update(MESSAGE)
     return digest.finalize()
 
+
 def verifySignature(publicKey, signature, message):
     try:
         publicKey.verify(
@@ -64,6 +65,7 @@ def verifySignature(publicKey, signature, message):
     except:
         return False
 
+
 def sign(privateKey, data):
     signature = privateKey.sign(
         data,
@@ -75,6 +77,7 @@ def sign(privateKey, data):
     )
     return signature
 
+
 def encrypt(publicKey, plaintext):
     ciphertext = publicKey.encrypt(
         plaintext,
@@ -84,6 +87,7 @@ def encrypt(publicKey, plaintext):
             label=None)
     )
     return ciphertext
+
 
 def decrypt(privateKey, ciphertext):
     plaintext = privateKey.decrypt(
@@ -96,12 +100,14 @@ def decrypt(privateKey, ciphertext):
     )
     return plaintext
 
+
 def public_bytes(publicKey):
     serializedPublic = publicKey.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
     )
     return serializedPublic
+
 
 def json_dumps(data):
     return json.dumps(data).encode()
@@ -536,6 +542,7 @@ class MultiServer(object):
             except Exception as e:
                 print('Error: {0}'.format(str(e)))
 
+
 def create_workers():
     """ Create worker threads (will die when main exits) """
     server = MultiServer()
@@ -544,6 +551,7 @@ def create_workers():
         t.daemon = True
         t.start()
     return
+
 
 def work(server):
     """ Do the next job in the queue (thread for handling connections, another for sending commands)
@@ -560,12 +568,14 @@ def work(server):
         queue.task_done()
     return
 
+
 def create_jobs():
     """ Each list item is a new job """
     for x in JOB_NUMBER:
         queue.put(x)
     queue.join()
     return
+
 
 def main():
     create_workers()
