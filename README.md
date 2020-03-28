@@ -27,7 +27,7 @@ You will need:
   
 1. Download the repository via github or git eg. `git clone https://github.com/Y4hL/PyDoor`  
 2. Install the required modules by running `python -m pip install -r requirements.txt`  
-  
+   
 ## Help  
   
 If you need any help at all, feel free to post a "help" issue.  
