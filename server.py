@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import platform
 import socket
 import sys
 import threading
@@ -12,6 +13,13 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+if platform.system() != 'Windows':
+    # readline allows movement with arrowkeys on linux
+    try:
+        import readline
+    except ImportError:
+        pass
 
 logging.basicConfig(level=logging.CRITICAL)
 
