@@ -258,6 +258,7 @@ class Client(object):
                     except Exception:
                         error = None
                     self.send(json.dumps([redirected_output.getvalue(), error]).encode())
+                continue
                     
 
             if data[0] == '--x':
