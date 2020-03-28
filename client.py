@@ -456,7 +456,12 @@ def main():
     try:
         client.receive_commands()
     except Exception as e:
-        logging.critical('Error in main: {}'.format(str(e)))
+        error_class = e.__class__.__name__
+        try:
+            detail = e.args[0]
+            logging.critical('{0} in main: {1}'.format(error_class, detail))
+        except:
+            logging.critical('{0} in main.'.format(error_class))
 
 
 if __name__ == '__main__':

