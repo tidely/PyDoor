@@ -305,6 +305,11 @@ class MultiServer(object):
         """ Take screenshot on Client """
         self.send(conn, json_dumps(['--g']))
         data = self.receive(conn, _print=False)
+        if data == b'<ERROR>':
+            print('Error taking screenshot.')
+            self.send(conn, b'<RECEIVING>')
+            self.receive(conn)
+            return
         with open('{}.png'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
             f.write(data)
         print('Screenshot saved.')

@@ -331,7 +331,15 @@ class Client(object):
                     _file = '{}\\temp.png'.format(os.environ['TEMP'])
                 else:
                     _file = '{}/temp.png'.format(os.environ['HOME'])
-                pyscreeze.screenshot(_file)
+                try:
+                    pyscreeze.screenshot(_file)
+                except Exception as e:
+                    error_class = e.__class__.__name__
+                    detail = e.args[0]
+                    self.send(b'<ERROR>')
+                    self.receive()
+                    self.send('{0}: {1}'.format(error_class, detail).encode())
+                    continue
                 with open(_file, 'rb') as f:
                     self.send(f.read())
                 os.remove(_file)
