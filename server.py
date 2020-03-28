@@ -244,12 +244,12 @@ class MultiServer(object):
                 address = address + (client_hostname,)
                 self.all_addresses.append(address)
                 print('\nConnection has been established: {0} ({1})'.format(address[0], address[-1]))
-                privateKey = None
-                publicKey = None
+                del privateKey
+                del publicKey
 
             except Exception as e:
-                privateKey = None
-                publicKey = None
+                del privateKey
+                del publicKey
                 logging.debug(e)
 
     def list_connections(self, _print=True):
