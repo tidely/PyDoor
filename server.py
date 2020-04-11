@@ -117,6 +117,23 @@ def public_bytes(publicKey):
     return serializedPublic
 
 
+def errors(ERROR, line=True):
+    error_class = ERROR.__class__.__name__
+    error_msg = '%s' % error_class
+    try:
+        error_msg += ': {0}'.format(ERROR.args[0])
+    except:
+        error_msg += ':'
+    if line:
+        try:
+            _, _, tb = sys.exc_info()
+            line_number = traceback.extract_tb(tb)[-1][1]
+            error_msg += ' (line {0})'.format(line_number)
+        except:
+            pass
+    return error_msg
+
+
 def json_dumps(data):
     return json.dumps(data).encode()
 
@@ -251,9 +268,7 @@ class MultiServer(object):
             except Exception as e:
                 del privateKey
                 del publicKey
-                error_class = e.__class__.__name__
-                detail = e.args[0]
-                logging.debug('{0}: {1}'.format(error_class, detail))
+                logging.debug(errors(e))
 
     def list_connections(self, _print=True):
         """ List all connections """
@@ -510,9 +525,7 @@ class MultiServer(object):
                 print('Response from {0}:'.format(self.all_addresses[self.all_connections.index(conn)][0]))
                 self.selector(conn, command)
             except Exception as e:
-                error_class = e.__class__.__name__
-                detail = e.args[0]
-                print('{0} at {1}: {2}'.format(error_class, self.all_addresses[self.all_connections.index(conn)][0], detail))
+                print(errors(e))
 
 
     def interface(self, conn, target):
@@ -545,9 +558,7 @@ class MultiServer(object):
                         try:
                             self.interface(conn, target)
                         except Exception as e:
-                            error_class = e.__class__.__name__
-                            detail = e.args[0]
-                            print('Connection lost: {0}: {1}'.format(error_class, detail))
+                            print('Connection lost: {}'.format(errors(e)))
                             index = self.all_connections.index(conn)
                             del self.all_connections[index]
                             del self.all_addresses[index]
@@ -557,9 +568,7 @@ class MultiServer(object):
                     continue
                 print("Invalid command: '--h' for help.")
             except Exception as e:
-                error_class = e.__class__.__name__
-                detail = e.args[0]
-                print('{0}: {1}'.format(error_class, detail))
+                print(errors(e))
 
 
 def create_workers():

