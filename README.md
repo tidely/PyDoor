@@ -29,10 +29,14 @@ You will need:
 2. Install the required modules by running `python -m pip install -r requirements.txt`  
   
 ## FAQ  
-
-### Configure Remote connections
-
-Read [setup.md](https://github.com/Y4hL/PyDoor/blob/master/setup.md)
+  
+### Setup Remote Server  
+  
+Read [setup.md](https://github.com/Y4hL/PyDoor/blob/master/setup.md#server-setup)  
+  
+### Connect to Remote Server  
+  
+Read [setup.md](https://github.com/Y4hL/PyDoor/blob/master/setup.md#client-setup)  
   
 ### Run commands as root  
   
