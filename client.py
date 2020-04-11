@@ -10,6 +10,7 @@ import threading
 import time
 import traceback
 from io import StringIO
+from pydoc import help
 
 import psutil
 import pyperclip

@@ -132,6 +132,7 @@ class MultiServer(object):
         self.all_addresses = []
 
     def socket_create(self):
+        """ Create Socket """
         try:
             self.socket = socket.socket()
         except socket.error as msg:
@@ -336,6 +337,7 @@ class MultiServer(object):
         self.send(conn, json_dumps(['--i']))
         self.receive(conn, _print=False)
         print('CAUTION! Using this feature wrong can break the client until restarted.')
+        print('Tip: help("modules") lists available modules')
         while 1:
             command = input('>> ')
             if command == 'exit' or command == 'exit()':
