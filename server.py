@@ -390,13 +390,13 @@ class MultiServer(object):
             if command == 'exit':
                 break
             if command.lower() == 'cd':
-                self.send(conn, json_dumps([command]))
+                self.send(conn, json_dumps(['--e', command]))
                 self.receive(conn)
                 if system == 'Windows':
                     print()
                 continue
             if command[:2].lower() == 'cd' or command[:5].lower() == 'chdir':
-                self.send(conn, json_dumps([command]))
+                self.send(conn, json_dumps(['--e', command]))
                 cwd = json.loads(self.receive(conn, _print=False).decode())
                 if cwd[0] == '<ERROR>':
                     print(cwd[1])
@@ -407,7 +407,7 @@ class MultiServer(object):
                     if system == 'Windows':
                         print()
                 continue
-            self.send(conn, json_dumps([command]))
+            self.send(conn, json_dumps(['--e', command]))
             try:
                 while 1:
                     output = self.receive(conn, _print=False)

