@@ -28,6 +28,20 @@ You will need:
 1. Download the repository via github or git eg. `git clone https://github.com/Y4hL/PyDoor`  
 2. Install the required modules by running `python -m pip install -r requirements.txt`  
   
+## FAQ  
+
+### Configure Remote connections
+
+Read [setup.md](https://github.com/Y4hL/PyDoor/blob/master/setup.md)
+  
+### Run commands as root  
+  
+`echo SUDOPASSWORD | sudo -S COMMAND`  
+  
+### See Importable packages in python interpreter  
+  
+`help("modules")`  
+  
 ## Help  
   
 If you need any help at all, feel free to post a "help" issue.  
