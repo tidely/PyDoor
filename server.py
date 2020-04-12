@@ -387,6 +387,8 @@ class MultiServer(object):
                 _input = '{0}>'.format(cwd)
 
             command = input(_input)
+            if command.strip() == '':
+                continue
             if command == 'exit':
                 break
             if command.lower() == 'cd':
