@@ -523,9 +523,11 @@ class MultiServer(object):
 
 
     def broadcast(self, command):
-        for conn in self.all_connections:
+        connections = self.all_connections[:]
+        addresses = self.all_addresses[:]
+        for conn in connections:
             try:
-                print('Response from {0}:'.format(self.all_addresses[self.all_connections.index(conn)][0]))
+                print('Response from {0}:'.format(addresses[connections.index(conn)][0]))
                 self.selector(conn, command)
             except Exception as e:
                 print(errors(e))
