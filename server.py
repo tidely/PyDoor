@@ -474,14 +474,12 @@ class MultiServer(object):
             if command == '1':
                 self.send(conn, json_dumps(['--x', '1']))
                 self.receive(conn)
-                time.sleep(2)
                 conn.close()
                 self.list_connections(_print=False)
                 return True
             elif command == '2':
                 self.send(conn, json_dumps(['--x', '2']))
                 self.receive(conn)
-                time.sleep(2)
                 conn.close()
                 self.list_connections(_print=False)
                 return True
