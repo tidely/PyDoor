@@ -421,7 +421,7 @@ class MultiServer(object):
                     except UnicodeDecodeError:
                         print(output)
                     self.send(conn, json_dumps(['<LISTENING>']))
-            except KeyboardInterrupt:
+            except (EOFError, KeyboardInterrupt):
                 print('Keyboard Interrupt')
                 self.send(conn, b'--q')
                 break
@@ -431,10 +431,16 @@ class MultiServer(object):
         if '--b' in command:
             return True
         if '--e' in command:
-            self.shell(conn)
+            try:
+                self.shell(conn)
+            except (EOFError, KeyboardInterrupt):
+                print()
             return
         if '--i' in command:
-            self.python_interpreter(conn)
+            try:
+                self.python_interpreter(conn)
+            except (EOFError, KeyboardInterrupt):
+                print()
             return
         if '--c' in command:
             text_to_copy = input('Text to copy: ')
@@ -561,6 +567,8 @@ class MultiServer(object):
                     if conn is not None:
                         try:
                             self.interface(conn, target)
+                        except (EOFError, KeyboardInterrupt):
+                            print()
                         except Exception as e:
                             print('Connection lost: {}'.format(errors(e)))
                             index = self.all_connections.index(conn)
@@ -571,6 +579,11 @@ class MultiServer(object):
                         print('Invalid Selection.')
                     continue
                 print("Invalid command: '--h' for help.")
+            except (EOFError, KeyboardInterrupt):
+                print('\nShutting down Server...')
+                time.sleep(2)
+                queue.task_done()
+                break
             except Exception as e:
                 print(errors(e))
 
