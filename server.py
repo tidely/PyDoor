@@ -44,7 +44,7 @@ interface_help = """--h | See this Help Message
 --q 3 | Restart Client Machine
 --x 1 | Restart Client Session
 --x 2 | Disconnect Client
---b | Run Connection in Background"""
+--b | Run Connection in Background (or CTRL-C)"""
 
 turtle_help = """--h | See this Help Message
 --a | Broadcast command to all connected clients
