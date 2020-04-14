@@ -262,7 +262,8 @@ class MultiServer(object):
 
                 address = address + (client_hostname,)
                 self.all_addresses.append(address)
-                print('\nConnection has been established: {0} ({1})'.format(address[0], address[-1]))
+                msg = 'Connection has been established: {0} ({1})'.format(address[0], address[-1])
+                print('\n{0}\n{1}\n{0}'.format('-' * len(msg), msg))
                 del privateKey
                 del publicKey
 
