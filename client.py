@@ -440,8 +440,7 @@ class Client(object):
                 continue
 
             if data[0] == '--l':
-                with open(LOG, 'rb') as f:
-                    self.send(f.read())
+                self.send_file(LOG)
                 with open(LOG, 'w') as f:
                     f.write('')
                 logging.info('Dumped Logs.')
