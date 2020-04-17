@@ -76,7 +76,7 @@ def reverse_readline(filename, buf_size=8192):
             yield segment
 
 
-def Hasher(MESSAGE : bytes):
+def Hasher(MESSAGE):
     """ Hashes data """
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
     digest.update(MESSAGE)

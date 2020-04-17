@@ -317,7 +317,7 @@ class MultiServer(object):
             logging.error('Not a valid selection')
             return None, None
         print("You are now connected to " + str(self.all_addresses[target][2]))
-        return target, conn
+        return conn
 
     def send_file(self, conn, file_to_transfer, save_as):
         """ Send file from Server to Client """
@@ -549,7 +549,7 @@ class MultiServer(object):
                 print(errors(e))
 
 
-    def interface(self, conn, target):
+    def interface(self, conn):
         """ CLI Interface to Client """
         ip = self.all_addresses[self.all_connections.index(conn)][0]
         while True:
@@ -574,10 +574,10 @@ class MultiServer(object):
                     self.list_connections()
                     continue
                 elif '--i' in command:
-                    target, conn = self.get_target(command)
+                    conn = self.get_target(command)
                     if conn is not None:
                         try:
-                            self.interface(conn, target)
+                            self.interface(conn)
                         except (EOFError, KeyboardInterrupt):
                             print()
                         except Exception as e:
