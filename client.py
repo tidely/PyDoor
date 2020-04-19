@@ -28,9 +28,9 @@ else:
     LOG = sys.path[0] + '/log.log'
 
 try:
-    from pynput.keyboard import Key, Listener
+    from pynput.keyboard import Listener
     _pynput = True
-except Exception as e:
+except Exception:
     _pynput = False
 
 logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(message)s')

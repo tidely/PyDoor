@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import platform
 import socket
 import sys
@@ -8,7 +7,6 @@ import threading
 import time
 import traceback
 from datetime import datetime
-from queue import Queue
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
@@ -23,10 +21,6 @@ if platform.system() != 'Windows':
         pass
 
 logging.basicConfig(level=logging.CRITICAL)
-
-NUMBER_OF_THREADS = 2
-JOB_NUMBER = [1, 2]
-queue = Queue()
 
 interface_help = """--h | See this Help Message
 --e | Open a shell
@@ -657,7 +651,7 @@ class MultiServer(object):
         if '--r' in command:
             file_to_transfer = input('File to Transfer to Server: ')
             save_as = input('Save as: ')
-            print('Transferring file')
+            print('Transferring file...')
             self.receive_file(conn, file_to_transfer, save_as)
             print('File transferred.')
             return
@@ -723,7 +717,6 @@ class MultiServer(object):
             except (EOFError, KeyboardInterrupt):
                 print('\nShutting down Server...')
                 time.sleep(2)
-                queue.task_done()
                 break
             except Exception as e:
                 print(errors(e))
