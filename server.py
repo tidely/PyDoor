@@ -42,9 +42,10 @@ interface_help = """--h | See this Help Message
 --b | Run Connection in Background (or CTRL-C)"""
 
 turtle_help = """--h | See this Help Message
---a | Broadcast command to all connected clients
 --l | List connected Clients
---i (ID) | Connect to a Client"""
+--i (ID) | Connect to a Client
+--a | Broadcast command to all connected clients
+--s | Shutdown Server"""
 
 
 def read_file(path, block_size=1024): 
@@ -713,6 +714,8 @@ class MultiServer(object):
                     else:
                         print('Invalid Selection.')
                     continue
+                elif command == '--s':
+                    raise EOFError
                 print("Invalid command: '--h' for help.")
             except (EOFError, KeyboardInterrupt):
                 print('\nShutting down Server...')
