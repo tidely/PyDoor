@@ -48,13 +48,13 @@ turtle_help = """--h | See this Help Message
 --s | Shutdown Server"""
 
 
-def read_file(path, block_size=1024): 
-    with open(path, 'rb') as f: 
-        while True: 
-            piece = f.read(block_size) 
-            if piece: 
-                yield piece 
-            else: 
+def read_file(path, block_size=1024):
+    with open(path, 'rb') as f:
+        while True:
+            piece = f.read(block_size)
+            if piece:
+                yield piece
+            else:
                 return
 
 
@@ -483,7 +483,7 @@ class MultiServer(object):
 
     def _get_info(self, conn):
         """ Get Client Info """
-        
+
         # info = [
         #     platform.system()
         #     os.path.expanduser('~')
@@ -521,7 +521,7 @@ class MultiServer(object):
         """ Lock Client Machine (Windows Only) """
         self.send(conn, json_dumps(['LOCK']))
         return self.receive(conn, _print=False)
-    
+
     def shutdown(self, conn):
         """ Shutdown Client Machine """
         self.send(conn, json_dumps(['SHUTDOWN']))
