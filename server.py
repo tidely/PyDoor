@@ -195,10 +195,14 @@ class MultiServer(object):
             data += packet
         return data
 
+    def get_key(self, conn):
+        """ Get Encryption Key from conn """
+        target = self.all_connections.index(conn)
+        return self.all_keys[target]
+
     def receive(self, conn, _print=True):
         """ Receive Buffer Size and Data from Client Encrypted with Connection Specific AES Key """
-        target = self.all_connections.index(conn)
-        Fer = self.all_keys[target]
+        Fer = self.get_key(conn)
 
         length = int(Fer.decrypt(conn.recv(2048)).decode())
         conn.send(b'<RECEIVED>')
@@ -209,8 +213,7 @@ class MultiServer(object):
 
     def send(self, conn, data):
         """ Send Buffer Size and Data to Client Encrypted with Connection Specific AES Key """
-        target = self.all_connections.index(conn)
-        Fer = self.all_keys[target]
+        Fer = self.get_key(conn)
 
         encrypted = Fer.encrypt(data)
         conn.send(Fer.encrypt(str(len(encrypted)).encode()))
