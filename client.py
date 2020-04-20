@@ -199,9 +199,9 @@ if _pynput:
 
 class Client(object):
 
-    def __init__(self):
-        self.serverHost = '127.0.0.1'
-        self.serverPort = 9999
+    def __init__(self, host='127.0.0.1', port=9999):
+        self.serverHost = host
+        self.serverPort = port
         self.socket = None
 
         self.Fer_key = Fernet.generate_key()

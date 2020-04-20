@@ -151,9 +151,9 @@ def json_loads(data):
 
 class MultiServer(object):
 
-    def __init__(self):
-        self.host = ''
-        self.port = 9999
+    def __init__(self, host='', port=9999):
+        self.host = host
+        self.port = port
         self.socket = None
         self.all_keys = []
         self.all_connections = []
