@@ -217,6 +217,9 @@ class Client(object):
         else:
             _pwd = '; pwd'
 
+    def __repr__(self):
+        return 'Client(host="{}", port={})'.format(self.serverHost, self.serverPort)
+
     def socket_create(self) -> None:
         """ Create a socket """
         try:

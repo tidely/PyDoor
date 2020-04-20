@@ -168,6 +168,9 @@ class MultiServer(object):
         self.all_connections = []
         self.all_addresses = []
 
+    def __repr__(self):
+        return 'MultiServer(host="{}", port={})'.format(self.host, self.port)
+
     def socket_create(self) -> None:
         """ Create Socket """
         try:
