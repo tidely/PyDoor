@@ -405,20 +405,22 @@ class MultiServer(object):
         system = self.get_platform(conn)
         if command.lower().strip() == 'cd':
             self.send(conn, json_dumps(['SHELL', command]))
-            result = self.receive(conn, _print=False)
+            output = self.receive(conn, _print=False).decode()
             if system == 'Windows':
-                result += '\n'
+                result = output + '\n'
+                if _print:
+                    print(result)
+                return result, output
             if _print:
-                print(result)
-            return result, result
+                print(output)
+            return output, output
         if command[:2].lower().strip() == 'cd' or command[:5].lower().strip() == 'chdir':
             self.send(conn, json_dumps(['SHELL', command]))
             cwd = json.loads(self.receive(conn, _print=False).decode())
             if cwd[0] == 'ERROR':
                 if _print:
                     print(cwd[1])
-                cwd = self.get_cwd(conn)
-                return cwd[1], cwd
+                return cwd[1], self.get_cwd(conn)
             else:
                 if _print and system == 'Windows':
                     print()
@@ -440,8 +442,7 @@ class MultiServer(object):
                 except UnicodeDecodeError:
                     print(output)
             self.send(conn, json_dumps(['LISTENING']))
-        cwd = self.get_cwd(conn)
-        return result, cwd
+        return result, self.get_cwd(conn)
 
     def get_platform(self, conn) -> str:
         """ Get Client Platform """
