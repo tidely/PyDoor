@@ -394,7 +394,8 @@ class MultiServer(object):
                 break
             output, error = self.client_exec(conn, command)
             if error == None:
-                print(output.rstrip("\n"))
+                if output != '':
+                    print(output.rstrip("\n"))
             else:
                 print(error)
 
