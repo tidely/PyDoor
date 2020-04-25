@@ -523,8 +523,8 @@ class MultiServer(object):
         """ Get Client Info """
 
         # info = [
-        #     platform.system()
-        #     os.path.expanduser('~')
+        #     platform.system(),
+        #     os.path.expanduser('~'),
         #     getpass.getlogin()
         # ]
 
