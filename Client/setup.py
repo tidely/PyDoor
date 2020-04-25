@@ -13,9 +13,9 @@ build_exe_options = {
     'include_files': []
 }
 
-setup(name="puzzle",
+setup(name="PyDoor",
       version="0.1",
-      description="Fun computer game",
+      description="Remote Administration Tool",
       options={'build_exe': build_exe_options},
       executables=[Executable("client.py", base=base)])
 

@@ -12,17 +12,18 @@ Setup [Port forwarding](https://en.wikipedia.org/wiki/Port_forwarding) in your r
   
 ### Choose server port  
   
-Choose a server port in [server.py](https://github.com/Y4hL/PyDoor/blob/master/server.py) (\_\_init\_\_ function)  
+Choose a server port in [server.py](https://github.com/Y4hL/PyDoor/blob/master/Server/server.py) (\_\_init\_\_ function)  
   
 ## Client Setup  
   
 ### Configure Connection  
   
-Change server host in [client.py](https://github.com/Y4hL/PyDoor/blob/master/server.py) to Server IP or URL  
+Change server host in [client.py](https://github.com/Y4hL/PyDoor/blob/master/Client/client.py) to Server IP or URL  
   
 Change server port to Server Port  
   
 ### build exe (optional)  
   
-Run `python setup.py build`  
+`cd Client`  
+`python setup.py build`  
   
