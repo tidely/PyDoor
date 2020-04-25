@@ -301,20 +301,23 @@ class MultiServer(object):
 
     def list_connections(self, _print=True) -> None:
         """ List all connections """
-        results = ''
-        for i, conn in enumerate(self.all_connections):
+        connections = self.all_connections[:]
+        # Verifies connections
+        for i, conn in enumerate(connections):
             try:
                 self.send(conn, json_dumps(['LIST']))
                 conn.recv(20480)
             except:
-                del self.all_connections[i]
-                del self.all_addresses[i]
-                del self.all_keys[i]
+                target = self.all_connections.index(conn)
+                del self.all_connections[target]
+                del self.all_addresses[target]
+                del self.all_keys[target]
                 continue
-            results += str(i) + '   ' + str(self.all_addresses[i][0]) + '   ' + str(
-                self.all_addresses[i][1]) + '   ' + str(self.all_addresses[i][2]) + '\n'
         if _print:
-            print('----- Clients -----' + '\n' + results)
+            # Print Clients
+            print('----- Clients -----')
+            for i, conn in enumerate(self.all_connections):
+                print(str(i) + '   ' + '   '.join(map(str, self.all_addresses[i])))
         return
 
     def get_target(self, cmd) -> socket.socket:
