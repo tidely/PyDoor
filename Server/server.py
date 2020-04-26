@@ -291,13 +291,19 @@ class MultiServer(object):
                 if _print:
                     msg = 'Connection has been established: {0} ({1})'.format(address[0], address[-1])
                     print('\n{0}\n{1}\n{0}'.format('-' * len(msg), msg))
+            except Exception as e:
+                logging.debug(errors(e))
+            finally:
                 del privateKey
                 del publicKey
 
-            except Exception as e:
-                del privateKey
-                del publicKey
-                logging.debug(errors(e))
+    def del_conn(self, conn) -> None:
+        """ Delete a connection """
+        target = self.all_connections.index(conn)
+        del self.all_connections[target]
+        del self.all_addresses[target]
+        del self.all_keys[target]
+        conn.close()
 
     def refresh_connections(self) -> None:
         """ Refreshes connections """
@@ -307,11 +313,7 @@ class MultiServer(object):
                 self.send(conn, json_dumps(['LIST']))
                 conn.recv(20480)
             except:
-                target = self.all_connections.index(conn)
-                del self.all_connections[target]
-                del self.all_addresses[target]
-                del self.all_keys[target]
-                conn.close()
+                self.del_conn(conn)
 
     def list_connections(self) -> None:
         """ List all connections """
@@ -747,10 +749,7 @@ class MultiServer(object):
                             print()
                         except Exception as e:
                             print('Connection lost: {}'.format(errors(e)))
-                            index = self.all_connections.index(conn)
-                            del self.all_connections[index]
-                            del self.all_addresses[index]
-                            del self.all_keys[index]
+                            self.del_conn(conn)
                     else:
                         print('Invalid Selection.')
                     continue
