@@ -320,7 +320,7 @@ class MultiServer(object):
         self.refresh_connections()
         print('----- Clients -----')
         for i, address in enumerate(self.all_addresses):
-            print(str(i) + '   ' + '   '.join(map(str, address)))
+            print('   '.join(map(str, (i, ) + address)))
         return
 
     def get_target(self, cmd) -> socket.socket:
