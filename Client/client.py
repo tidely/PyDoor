@@ -95,9 +95,9 @@ def verifySignature(publicKey, signature, message) -> bool:
             ),
             hashes.SHA256()
         )
-        return True
     except:
         return False
+    return True
 
 
 def sign(privateKey, data) -> bytes:
