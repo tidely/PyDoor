@@ -215,7 +215,7 @@ class Client(object):
         if platform.system() == 'Windows':
             self._pwd = ' & cd'
         else:
-            _pwd = '; pwd'
+            self._pwd = '; pwd'
 
     def __repr__(self):
         return 'Client(host="{}", port={})'.format(self.serverHost, self.serverPort)
