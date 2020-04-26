@@ -431,6 +431,9 @@ class MultiServer(object):
                 if _print and system == 'Windows':
                     print()
                 return cwd[0], cwd[0]
+        if command.split(' ')[0].lower() == 'color' and platform.system() == 'Windows':
+            os.system(command)
+            return '', self.get_cwd(conn)
         if command.lower().strip() == 'cls' and self.get_platform(conn) == 'Windows':
             return self.clear_screen(conn=conn, _print=_print), self.get_cwd(conn)
         if command[:5].lower().strip() == 'clear' and self.get_platform(conn) != 'Windows':
@@ -456,8 +459,10 @@ class MultiServer(object):
     def clear_screen(self, conn=None, _print=True) -> None:
         """ Clear Screen """
         if conn != None:
-            self.send(conn, json_dumps(['CLEAR']))
-            self.receive(conn)
+            if self.get_platform(conn) == 'Windows':
+                self.client_exec(conn, 'os.system("cls")')
+            else:
+                self.client_exec(conn, 'os.system("clear")')
         if _print:
             if platform.system() == 'Windows':
                 _ = os.system('cls')

