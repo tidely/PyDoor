@@ -376,20 +376,20 @@ class Client(object):
                 continue
 
             if data[0] == 'RESTART_SESSION':
-                self.send(json_dumps([True]))
+                self.send(json_dumps(True))
                 break
 
             if data[0] == 'DISCONNECT':
-                self.send(json_dumps([True]))
+                self.send(json_dumps(True))
                 self.socket.close()
                 sys.exit(0)
 
             if data[0] == 'LOCK':
                 if platform.system() == 'Windows':
-                    self.send(json_dumps([True]))
+                    self.send(json_dumps(True))
                     ctypes.windll.user32.LockWorkStation()
                 else:
-                    self.send(json_dumps([False]))
+                    self.send(json_dumps(False))
                 continue
 
             if data[0] == 'SHUTDOWN':

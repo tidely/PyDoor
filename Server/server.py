@@ -509,6 +509,7 @@ class MultiServer(object):
 
     def get_info(self, conn, _print=True) -> str:
         """ Get Client Info """
+        # Returns str
         self.send(conn, json_dumps(['INFO']))
         return self.receive(conn, _print=_print).decode()
 
@@ -568,23 +569,27 @@ class MultiServer(object):
 
     def lock(self, conn) -> bool:
         """ Lock Client Machine (Windows Only) """
+        # Returns bool
         self.send(conn, json_dumps(['LOCK']))
         return self.receive(conn)
 
     def shutdown(self, conn) -> None:
         """ Shutdown Client Machine """
+        # returns None
         self.send(conn, json_dumps(['SHUTDOWN']))
         self.refresh_connections()
         return
 
     def restart(self, conn) -> None:
         """ Restart Client Machine """
+        # returns None
         self.send(conn, json_dumps(['RESTART']))
         self.refresh_connections()
         return
 
     def shell(self, conn) -> None:
         """ Remote Shell Interface """
+        # returns None
         cwd = self.get_cwd(conn)
         command = ''
         info = self._get_info(conn)
@@ -605,6 +610,7 @@ class MultiServer(object):
             _, cwd = self.client_shell(conn, command)
 
     def selector(self, conn, command) -> bool:
+        # returns True/None
         if '--h' in command:
             print(interface_help)
             return
@@ -716,6 +722,8 @@ class MultiServer(object):
         print("Invalid command: '--h' for help.")
 
     def broadcast(self, command) -> None:
+        """ Broadcast a command to all connected Clients """
+        # returns None
         connections = self.all_connections[:]
         addresses = self.all_addresses[:]
         for conn in connections:
@@ -727,6 +735,7 @@ class MultiServer(object):
 
     def interface(self, conn) -> None:
         """ CLI Interface to Client """
+        # returns None
         ip = self.all_addresses[self.all_connections.index(conn)][0]
         while True:
             command = input('{0}> '.format(ip))
@@ -735,6 +744,7 @@ class MultiServer(object):
 
     def turtle(self) -> None:
         """ Connection Selector """
+        # returns None
         print("Type '--h' for help")
         while True:
             try:
@@ -773,6 +783,8 @@ class MultiServer(object):
 
 
 def accept_conns(server) -> None:
+    """ Function to accept connections """
+    # Returns None
     server.socket_create()
     server.socket_bind()
     server.accept_connections(_print=True)
@@ -780,6 +792,8 @@ def accept_conns(server) -> None:
 
 
 def accept_thread(server) -> None:
+    """ Runs function to accept connections in thread """
+    # Returns None
     t = threading.Thread(target=accept_conns, args=(server,))
     t.daemon = True
     t.start()
