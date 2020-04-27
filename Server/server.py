@@ -14,7 +14,11 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
-if platform.system() != 'Windows':
+def is_windows() -> bool:
+    """ Returns if Server is running on windows """
+    return platform.system() == 'Windows'
+
+if not is_windows():
     # readline allows movement with arrowkeys on linux
     try:
         import readline
@@ -431,10 +435,10 @@ class MultiServer(object):
                 if _print and system == 'Windows':
                     print()
                 return cwd[0], cwd[0]
-        if command.lower().strip() == 'color' and platform.system() == 'Windows':
+        if command.lower().strip() == 'color' and is_windows():
             os.system('color 07')
             return '', self.get_cwd(conn)
-        if command.split(' ')[0].lower() == 'color' and platform.system() == 'Windows':
+        if command.split(' ')[0].lower() == 'color' and is_windows():
             os.system(command)
             return '', self.get_cwd(conn)
         if command.lower().strip() == 'cls' and self.get_platform(conn) == 'Windows':
@@ -467,7 +471,7 @@ class MultiServer(object):
             else:
                 self.client_exec(conn, 'os.system("clear")')
         if _print:
-            if platform.system() == 'Windows':
+            if is_windows():
                 _ = os.system('cls')
             else:
                 _ = os.system('clear')
