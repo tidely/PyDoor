@@ -468,7 +468,7 @@ class MultiServer(object):
         """ Check if the client is frozen (exe) """
         # returns bool
         self.send(conn, json_dumps(['FROZEN']))
-        return json_loads(self.receive(conn).decode())
+        return json_loads(self.receive(conn))
 
     def get_platform(self, conn) -> str:
         """ Get Client Platform """
