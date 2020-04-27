@@ -518,19 +518,18 @@ class Client(object):
                         self.send(json.dumps(['ERROR', error]).encode())
                     continue
 
-                if len(data[1]) > 0:
-                    process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    for line in iter(process.stdout.readline, ""):
-                        if line == b'':
-                            break
-                        self.send(line.replace(b'\n', b''))
-                        if self.receive() == b'QUIT':
-                            kill(process.pid)
-                            break
-                    self.send(process.stderr.read())
-                    self.receive()
-                    self.send(b'DONE')
-                    continue
+                process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                for line in iter(process.stdout.readline, ""):
+                    if line == b'':
+                        break
+                    self.send(line.replace(b'\n', b''))
+                    if self.receive() == b'QUIT':
+                        kill(process.pid)
+                        break
+                self.send(process.stderr.read())
+                self.receive()
+                self.send(b'DONE')
+                continue
 
 
 def main() -> None:
