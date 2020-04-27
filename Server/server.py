@@ -431,6 +431,9 @@ class MultiServer(object):
                 if _print and system == 'Windows':
                     print()
                 return cwd[0], cwd[0]
+        if command.lower().strip() == 'color' and platform.system() == 'Windows':
+            os.system('color 07')
+            return '', self.get_cwd(conn)
         if command.split(' ')[0].lower() == 'color' and platform.system() == 'Windows':
             os.system(command)
             return '', self.get_cwd(conn)
