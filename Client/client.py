@@ -240,9 +240,10 @@ class Client(object):
         """ Connect to a remote socket using RSA and agreeing on a AES key"""
         try:
             self.socket.connect((self.serverHost, self.serverPort))
+        except ConnectionRefusedError:
+            raise
         except Exception as e:
             logging.error(errors(e))
-            time.sleep(5)
             raise
         try:
             self.socket.send(public_bytes(self.publicKey))
@@ -532,15 +533,16 @@ class Client(object):
                 continue
 
 
-def main() -> None:
+def main(RETRY_TIMER : int = 30) -> None:
     """ Run Client """
+    # RETRY_TIMER: Time to wait before trying to reconnect
     client = Client()
     client.socket_create()
     while True:
         try:
             client.socket_connect()
         except:
-            time.sleep(5)
+            time.sleep(RETRY_TIMER)
         else:
             break
     try:
@@ -552,4 +554,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     while 1:
-        main()
+        main(RETRY_TIMER=10)
