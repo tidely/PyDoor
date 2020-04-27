@@ -152,6 +152,18 @@ def errors(ERROR, line=True) -> str:
             pass
     return error_msg
 
+def shell_print(data) -> None:
+    """ Support for printing more characters """
+    # Mostly for tree command in Windows
+    try:
+        print(data.decode())
+    except UnicodeDecodeError:
+        try:
+            print(data.decode('cp437'))
+        except UnicodeDecodeError:
+            print(data)
+    return
+
 
 def json_dumps(data) -> bytes:
     """ Dump json data and encode it """
@@ -455,10 +467,7 @@ class MultiServer(object):
                     break
                 result.append(output)
                 if _print:
-                    try:
-                        print(output.decode())
-                    except UnicodeDecodeError:
-                        print(output)
+                    shell_print(output)
                 self.send(conn, json_dumps(['LISTENING']))
             except (EOFError, KeyboardInterrupt):
                 self.send(conn, b'QUIT')

@@ -517,8 +517,6 @@ class Client(object):
                     continue
 
                 if len(data[1]) > 0:
-                    if data[1] == 'tree':
-                        data[1] = 'tree /A'
                     process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     for line in iter(process.stdout.readline, ""):
                         if line == b'':
