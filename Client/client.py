@@ -500,12 +500,14 @@ class Client(object):
                     self.send(os.getcwdb())
                     continue
 
-                if data[1][:2].lower() == 'cd' or data[1][:5].lower() == 'chdir':
+                split_command = data[1].split(' ')[0].strip().lower()
+                if split_command == 'cd' or split_command == 'chdir':
                     process = subprocess.Popen(data[1] + self._pwd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     error = process.stderr.read().decode()
                     if error == "":
                         output = process.stdout.read().decode()
                         newlines = output.count('\n')
+                        # Command should only return one line (cwd)
                         if newlines > 1:
                             process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             self.send(json.dumps(['ERROR', process.stdout.read().decode()]).encode())

@@ -435,7 +435,8 @@ class MultiServer(object):
             if _print:
                 print(output)
             return output, output
-        if command[:2].lower().strip() == 'cd' or command[:5].lower().strip() == 'chdir':
+        split_command = command.split(' ')[0].strip().lower()
+        if split_command == 'cd' or split_command == 'chdir':
             self.send(conn, json_dumps(['SHELL', command]))
             cwd = json.loads(self.receive(conn).decode())
             if cwd[0] == 'ERROR':
