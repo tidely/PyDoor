@@ -345,12 +345,8 @@ class MultiServer(object):
         target = cmd.split(' ')[-1]
         try:
             target = int(target)
-        except:
-            logging.error('Client index should be an integer')
-            return None
-        try:
             conn = self.all_connections[target]
-        except IndexError:
+        except (ValueError, IndexError):
             logging.error('Not a valid selection')
             return None
         print("You are now connected to " + str(self.all_addresses[target][2]))
