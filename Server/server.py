@@ -746,16 +746,13 @@ class MultiServer(object):
                 command = input('> ')
                 if command == '--h':
                     print(turtle_help)
-                    continue
                 elif command[:3] == '--a':
                     self.broadcast(input('Command to broadcast: '))
-                    continue
                 elif command == '--l':
                     self.list_connections()
-                    continue
                 elif '--i' in command:
                     conn = self.get_target(command)
-                    if conn is not None:
+                    if conn:
                         try:
                             self.interface(conn)
                         except (EOFError, KeyboardInterrupt):
@@ -765,10 +762,10 @@ class MultiServer(object):
                             self.del_conn(conn)
                     else:
                         print('Invalid Selection.')
-                    continue
                 elif command == '--s':
                     raise EOFError
-                print("Invalid command: '--h' for help.")
+                else:
+                    print("Invalid command: '--h' for help.")
             except (EOFError, KeyboardInterrupt):
                 print('\nShutting down Server...')
                 time.sleep(2)
