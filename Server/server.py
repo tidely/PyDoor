@@ -421,16 +421,12 @@ class MultiServer(object):
         # returns command_output, cwd
         system = self.get_platform(conn)
         if command.lower().strip() == 'cd':
-            self.send(conn, json_dumps(['SHELL', command]))
-            output = self.receive(conn).decode()
-            if system == 'Windows':
-                result = output + '\n'
-                if _print:
-                    print(result)
-                return result, output
+            cwd = self.get_cwd(conn)
+            if self.get_platform(conn) == 'Windows':
+                cwd += '\n'
             if _print:
-                print(output)
-            return output, output
+                print(cwd)
+            return cwd, cwd.strip()
         split_command = command.split(' ')[0].strip().lower()
         if split_command == 'cd' or split_command == 'chdir':
             self.send(conn, json_dumps(['SHELL', command]))
@@ -439,16 +435,9 @@ class MultiServer(object):
                 if _print:
                     print(cwd[1])
                 return cwd[1], self.get_cwd(conn)
-            else:
-                if _print and system == 'Windows':
-                    print()
-                return cwd[0], cwd[0]
-        if command.lower().strip() == 'color' and is_windows():
-            os.system('color 07')
-            return '', self.get_cwd(conn)
-        if command.split(' ')[0].lower() == 'color' and is_windows():
-            os.system(command)
-            return '', self.get_cwd(conn)
+            if _print and system == 'Windows':
+                print()
+            return '', cwd[0]
         if command.lower().strip() == 'cls' and self.get_platform(conn) == 'Windows':
             os.system('cls')
             return '', self.get_cwd(conn)

