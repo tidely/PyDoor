@@ -25,7 +25,7 @@ if getattr(sys, 'frozen', False):
     CLIENT_PATH = os.path.dirname(sys.executable)
     os.chdir(CLIENT_PATH)
 elif __file__:
-    CLIENT_PATH = os.path.dirname(__file__)
+    CLIENT_PATH = os.path.dirname(os.path.abspath(__file__))
     os.chdir(CLIENT_PATH)
 
 if platform.system() == 'Windows':
