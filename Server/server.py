@@ -623,8 +623,11 @@ class MultiServer(object):
             return
         if '--g' in command:
             print('Taking Screenshot...')
-            self.screenshot(conn)
-            print('Saved Screenshot.')
+            result, error = self.screenshot(conn)
+            if result:
+                print('Saved Screenshot.')
+            else:
+                print('Error Taking Screenshot: {}'.format(error.decode()))
             return
         if '--u' in command:
             self.get_info(conn)
