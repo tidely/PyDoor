@@ -301,22 +301,31 @@ class Client(object):
     def send_file(self, file_to_transfer) -> None:
         """ Send file to Server """
         try:
-            for line in read_file(file_to_transfer):
-                self.send(line)
-                self.receive()
-            self.send(b'FILE_TRANSFER_DONE')
-            self.receive()
-            self.send(b'File Transferred Successfully')
-            logging.info('Transferred {} to Server'.format(file_to_transfer))
+            with open(file_to_transfer, 'rb') as f:
+                pass
         except Exception as e:
-            logging.info(errors(e))
-            self.send(b'FILE_TRANSFER_DONE')
+            self.send(b'FILE_TRANSFER_ERROR')
             self.receive()
             self.send(errors(e).encode())
+            return
+        for line in read_file(file_to_transfer):
+            self.send(line)
+            self.receive()
+        self.send(b'FILE_TRANSFER_DONE')
+        self.receive()
+        self.send(b'File Transferred Successfully')
+        logging.info('Transferred {} to Server'.format(file_to_transfer))
         return
 
     def receive_file(self, save_as) -> None:
         """ Receive File from Server"""
+        try:
+            with open(save_as, 'wb') as f:
+                pass
+        except Exception as e:
+            self.send(b'FILE_TRANSFER_ERROR')
+            self.receive()
+            self.send(errors(e).encode())
         self.send(b'RECEIVED')
         with open(save_as, 'wb') as f:
             while 1:
