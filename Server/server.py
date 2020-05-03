@@ -433,7 +433,7 @@ class MultiServer(object):
                 cwd += '\n'
             if _print:
                 print(cwd)
-            return cwd, cwd.strip()
+            return cwd
         split_command = command.split(' ')[0].strip().lower()
         if split_command == 'cd' or split_command == 'chdir':
             self.send(conn, json_dumps(['SHELL', command]))
@@ -441,16 +441,16 @@ class MultiServer(object):
             if cwd[0] == 'ERROR':
                 if _print:
                     print(cwd[1])
-                return cwd[1], self.get_cwd(conn)
+                return cwd[1]
             if _print and system == 'Windows':
                 print()
-            return '', cwd[0]
+            return ''
         if command.lower().strip() == 'cls' and self.get_platform(conn) == 'Windows':
             os.system('cls')
-            return '', self.get_cwd(conn)
+            return ''
         if command[:5].lower().strip() == 'clear' and self.get_platform(conn) != 'Windows':
             os.system('clear')
-            return '', self.get_cwd(conn)
+            return ''
         self.send(conn, json_dumps(['SHELL', command]))
         result = []
         while 1:
@@ -464,7 +464,7 @@ class MultiServer(object):
                 self.send(conn, json_dumps(['LISTENING']))
             except (EOFError, KeyboardInterrupt):
                 self.send(conn, b'QUIT')
-        return result, self.get_cwd(conn)
+        return result
 
     def is_frozen(self, conn) -> bool:
         """ Check if the client is frozen (exe) """
@@ -592,12 +592,12 @@ class MultiServer(object):
     def shell(self, conn) -> None:
         """ Remote Shell Interface """
         # returns None
-        cwd = self.get_cwd(conn)
         command = ''
         info = self._get_info(conn)
         hostname = self.all_addresses[self.all_connections.index(conn)][-1]
 
         while 1:
+            cwd = self.get_cwd(conn)
             if not info[0] == 'Windows':
                 cwd = cwd.replace(info[1], '~')
                 _input = '{0}@{1}:{2} $ '.format(info[2], hostname, cwd)
@@ -609,7 +609,7 @@ class MultiServer(object):
                 continue
             if command == 'exit':
                 break
-            _, cwd = self.client_shell(conn, command)
+            self.client_shell(conn, command)
 
     def selector(self, conn, command) -> bool:
         # returns True/None
