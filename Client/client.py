@@ -301,7 +301,7 @@ class Client(object):
     def send_file(self, file_to_transfer) -> None:
         """ Send file to Server """
         try:
-            with open(file_to_transfer, 'rb') as f:
+            with open(file_to_transfer, 'rb'):
                 pass
         except Exception as e:
             self.send(b'FILE_TRANSFER_ERROR')
