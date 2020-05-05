@@ -282,7 +282,7 @@ class Client(object):
         """ Connect to a remote socket using RSA and agreeing on a AES key"""
         try:
             self.socket.connect((self.serverHost, self.serverPort))
-        except ConnectionRefusedError:
+        except (ConnectionRefusedError, TimeoutError):
             raise
         except Exception as e:
             logging.error(errors(e))
