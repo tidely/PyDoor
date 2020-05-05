@@ -735,18 +735,18 @@ class MultiServer(object):
                     print(error)
                 return
         if command[:3] == '--q':
-            command = command[4:].strip()
-            if command == '1':
+            select = command[4:].strip()
+            if select == '1':
                 if self.lock(conn):
                     print('Locked Client Machine')
                 else:
                     print('Locking is only available on Windows.')
                 return
-            elif command == '2':
+            elif select == '2':
                 print('Shutting down Client Machine')
                 self.shutdown(conn)
                 return True
-            elif command == '3':
+            elif select == '3':
                 print('Restarting Client Machine')
                 self.restart(conn)
                 return True
