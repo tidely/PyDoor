@@ -608,5 +608,8 @@ def main(RETRY_TIMER : int = 30) -> None:
 
 
 if __name__ == '__main__':
+
+    # Add Client to Startup when Client is run
+    # add_startup()
     while 1:
         main(RETRY_TIMER=10)
