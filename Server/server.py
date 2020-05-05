@@ -575,13 +575,13 @@ class MultiServer(object):
         """ Add Client to Startup """
         # returns True/False, None/error
         self.send(conn, json_dumps(['ADD_STARTUP']))
-        return json_loads(self.receive(conn))
+        return tuple(json_loads(self.receive(conn)))
 
     def remove_startup(self, conn) -> (bool, str):
         """ Remove Client from Startup """
         # returns True/False, None/error
         self.send(conn, json_dumps(['REMOVE_STARTUP']))
-        return json_loads(self.receive(conn))
+        return tuple(json_loads(self.receive(conn)))
 
     def lock(self, conn) -> bool:
         """ Lock Client Machine (Windows Only) """

