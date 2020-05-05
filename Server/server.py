@@ -587,7 +587,7 @@ class MultiServer(object):
         """ Lock Client Machine (Windows Only) """
         # Returns bool
         self.send(conn, json_dumps(['LOCK']))
-        return self.receive(conn)
+        return json_loads(self.receive(conn))
 
     def shutdown(self, conn) -> None:
         """ Shutdown Client Machine """
