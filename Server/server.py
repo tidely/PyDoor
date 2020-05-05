@@ -203,6 +203,7 @@ class MultiServer(object):
 
     def socket_bind(self) -> None:
         """ Bind socket to port and wait for connection from client """
+        # returns None
         try:
             self.socket.bind((self.host, self.port))
             self.socket.listen(5)
@@ -213,11 +214,8 @@ class MultiServer(object):
         return
 
     def recvall(self, conn, n) -> bytes:
-        """ Helper function to recv n bytes or return None if EOF is hit
-        :param n:
-        :param conn:
-        """
-        # TODO: this can be a static method
+        """ Function to receive n amount of bytes"""
+        # returns bytes/None
         data = b''
         while len(data) < n:
             packet = conn.recv(n - len(data))
@@ -226,15 +224,16 @@ class MultiServer(object):
             data += packet
         return data
 
-    def get_key(self, conn):
+    def get_key(self, conn) -> Fernet:
         """ Get Encryption Key from conn """
+        # returns Fernet Key
         target = self.all_connections.index(conn)
         return self.all_keys[target]
 
     def receive(self, conn, _print=False) -> bytes:
         """ Receive Buffer Size and Data from Client Encrypted with Connection Specific AES Key """
+        # returns bytes
         KEY = self.get_key(conn)
-
         length = int(KEY.decrypt(conn.recv(2048)).decode())
         conn.send(b'RECEIVED')
         received = KEY.decrypt(self.recvall(conn, length))
@@ -244,8 +243,8 @@ class MultiServer(object):
 
     def send(self, conn, data) -> None:
         """ Send Buffer Size and Data to Client Encrypted with Connection Specific AES Key """
+        # returns None
         KEY = self.get_key(conn)
-
         encrypted = KEY.encrypt(data)
         conn.send(KEY.encrypt(str(len(encrypted)).encode()))
         conn.recv(1024)
@@ -412,6 +411,7 @@ class MultiServer(object):
 
     def python_interpreter(self, conn) -> None:
         """ Remote Python Interpreter CLI"""
+        # returns None
         print('CAUTION! Using this feature wrong can break the client until restarted.')
         print('Tip: help("modules") lists available modules')
         while 1:
@@ -626,6 +626,7 @@ class MultiServer(object):
             self.client_shell(conn, command)
 
     def selector(self, conn, command) -> bool:
+        """ Command selector interface """
         # returns True/None
         if '--h' in command:
             print(interface_help)
