@@ -315,11 +315,8 @@ class Client(object):
             logging.error(errors(e))
 
     def recvall(self, n) -> bytes:
-        """ Helper function to recv n bytes or return None if EOF is hit
-        :param n:
-        :param conn:
-        """
-        # TODO: this can be a static method
+        """ Function to receive n amount of bytes"""
+        # returns bytes/None
         data = b''
         while len(data) < n:
             packet = self.socket.recv(n - len(data))
@@ -330,12 +327,14 @@ class Client(object):
 
     def receive(self) -> bytes:
         """ Receives Buffer Size and Data from Server Encrypted with AES """
+        # returns bytes
         length = int(self.Fer.decrypt(self.socket.recv(2048)).decode())
         self.socket.send(b'RECEIVED')
         return self.Fer.decrypt(self.recvall(length))
 
     def send(self, data) -> None:
         """ Sends Buffer Size and Data to Server Encrypted with AES """
+        # returns None
         encrypted = self.Fer.encrypt(data)
         self.socket.send(self.Fer.encrypt(str(len(encrypted)).encode()))
         self.socket.recv(1024)
