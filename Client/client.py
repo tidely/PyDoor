@@ -161,18 +161,16 @@ def public_bytes(publicKey) -> bytes:
 def errors(ERROR, line=True) -> str:
     """ Error Handler """
     error_class = ERROR.__class__.__name__
-    error_msg = '%s' % error_class
+    error_msg = '%s:' % error_class
     try:
-        error_msg += ': {0}'.format(ERROR.args[0])
-    except:
-        error_msg += ':'
+        error_msg += ' {0}'.format(ERROR.args[0])
+    except Exception: pass
     if line:
         try:
             _, _, tb = sys.exc_info()
             line_number = traceback.extract_tb(tb)[-1][1]
             error_msg += ' (line {0})'.format(line_number)
-        except:
-            pass
+        except Exception: pass
     return error_msg
 
 
