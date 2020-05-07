@@ -176,6 +176,7 @@ def errors(ERROR, line=True) -> str:
 
 def add_startup() -> list:
     """ Add Client to startup """
+    # returns [True/False, None/error]
     if platform.system() != 'Windows':
         return [False, 'Startup feature is only for Windows']
     if getattr(sys, 'frozen', False):
@@ -196,6 +197,7 @@ def add_startup() -> list:
 
 def remove_startup() -> list:
     """ Remove Client from Startup """
+    # returns [True/False, None/error]
     if platform.system() != 'Windows':
         return [False, 'Startup feature is only for Windows.']
     try:
