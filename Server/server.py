@@ -15,7 +15,8 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 def is_windows() -> bool:
-    """ Returns if Server is running on windows """
+    """ Check if Server is running Windows """
+    # returns True/False
     return platform.system() == 'Windows'
 
 if not is_windows():
@@ -425,7 +426,7 @@ class MultiServer(object):
 
     def client_shell(self, conn, command, _print=True) -> (str, str):
         """ Remote Shell with Client """
-        # returns command_output, cwd
+        # returns command_output
         system = self.get_platform(conn)
         if command.lower().strip() == 'cd':
             cwd = self.get_cwd(conn)
@@ -517,22 +518,20 @@ class MultiServer(object):
 
     def fill_clipboard(self, conn, data) -> (bool, str):
         """ Copy to Client Clipboard"""
-        # data[0]: True/False
-        # data[1]: None/error
+        # returns True/False, None/error
         self.send(conn, json_dumps(['COPY', data]))
         return tuple(json_loads(self.receive(conn)))
 
     def get_clipboard(self, conn) -> (bool, str):
         """ Get Client Clipboard """
-        # data[0]: True/False
-        # data[1]: clipboard/error
+        # returns True/False, clipboard/error
         self.send(conn, json_dumps(['PASTE']))
         return tuple(json_loads(self.receive(conn)))
 
     def _get_info(self, conn) -> list:
         """ Get Client Info """
 
-        # info = [
+        # returns [
         #     platform.system(),
         #     os.path.expanduser('~'),
         #     getpass.getlogin()
