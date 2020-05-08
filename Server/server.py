@@ -413,7 +413,7 @@ class MultiServer(object):
         print('CAUTION! Using this feature wrong can break the client until restarted.')
         print('Tip: help("modules") lists available modules')
         while 1:
-            command = input('>> ')
+            command = input('>>> ')
             if command in ['exit', 'exit()']:
                 break
             output, error = self.client_exec(conn, command)
