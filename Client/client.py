@@ -410,7 +410,7 @@ class Client(object):
                 continue
 
             if data[0] == 'FROZEN':
-                self.send(json_dumps(getattr(sys, 'frozen', False)).encode())
+                self.send(json_dumps(getattr(sys, 'frozen', False)))
                 continue
 
             if data[0] == 'EXEC':
