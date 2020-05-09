@@ -438,7 +438,7 @@ class Client(object):
             if data[0] == 'ADD_STARTUP':
                 self.send(json_dumps(add_startup()))
                 continue
-            
+
             if data[0] == 'REMOVE_STARTUP':
                 self.send(json_dumps(remove_startup()))
                 continue
