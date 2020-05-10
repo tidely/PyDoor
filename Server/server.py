@@ -415,11 +415,11 @@ class MultiServer(object):
             if command in ['exit', 'exit()']:
                 break
             output, error = self.client_exec(conn, command)
-            if error == None:
-                if output != '':
-                    print(output, end='')
-            else:
+            if error != None:
                 print(error)
+                continue
+            if output != '':
+                print(output, end='')
 
     def client_shell(self, conn, command, _print=True) -> (str, str):
         """ Remote Shell with Client """
