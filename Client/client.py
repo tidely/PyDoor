@@ -451,18 +451,20 @@ class Client(object):
                 continue
 
             if data[0] == 'SHUTDOWN':
-                if platform.system() == 'Windows':
-                    subprocess.Popen('shutdown /s /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                else:
-                    subprocess.Popen('shutdown -h now', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if platform.system() != 'Windows':
+                    self.send(json_dumps(False))
+                    continue
+                self.send(json_dumps(True))
+                subprocess.Popen('shutdown /s /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
 
             if data[0] == 'RESTART':
-                if platform.system() == 'Windows':
-                    subprocess.Popen('shutdown /r /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                else:
-                    subprocess.Popen('reboot now', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if platform.system() != 'Windows':
+                    self.send(json_dumps(False))
+                    continue
+                self.send(json_dumps(True))
+                subprocess.Popen('shutdown /r /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
 

@@ -41,11 +41,8 @@ interface_help = """--h | See this Help Message
 --c | Copies to Client Clipboard
 --p | Returns Client Current Clipboard
 --t (add) (remove) | Manage Startup (Windows)
---q 1 | Lock Client Machine (Windows)
---q 2 | Shutdown Client Machine
---q 3 | Restart Client Machine
---x 1 | Restart Client Session
---x 2 | Disconnect Client
+--q (lock) (shutdown) (restart) | Manage Client Machine (Windows)
+--x (restart) (disconnect) | Manage Client Session
 --b | Run Connection in Background (or CTRL-C)"""
 
 turtle_help = """--h | See this Help Message
@@ -585,15 +582,19 @@ class MultiServer(object):
         """ Shutdown Client Machine """
         # returns None
         self.send(conn, json_dumps(['SHUTDOWN']))
-        self.refresh_connections()
-        return
+        result = json_loads(self.receive(conn))
+        if result:
+            self.refresh_connections()
+        return result
 
     def restart(self, conn) -> None:
         """ Restart Client Machine """
         # returns None
         self.send(conn, json_dumps(['RESTART']))
-        self.refresh_connections()
-        return
+        result = json_loads(self.receive(conn))
+        if result:
+            self.refresh_connections()
+        return result
 
     def shell(self, conn) -> None:
         """ Remote Shell Interface """
@@ -734,27 +735,33 @@ class MultiServer(object):
             print("Invalid Argument: '--h' for help")
             return
         if command == '--q':
-            if select == '1':
+            if select == 'lock':
                 if self.lock(conn):
                     print('Locked Client Machine')
                 else:
                     print('Locking is only available on Windows.')
                 return
-            elif select == '2':
-                print('Shutting down Client Machine')
-                self.shutdown(conn)
-                return True
-            elif select == '3':
-                print('Restarting Client Machine')
-                self.restart(conn)
-                return True
+            elif select == 'shutdown':
+                result = self.shutdown(conn)
+                if result:
+                    print('Shutting down Client Machine')
+                else:
+                    print('Shutdown is only available on Windows.')
+                return result
+            elif select == 'restart':
+                result = self.restart(conn)
+                if result:
+                    print('Restarting Client Machine')
+                else:
+                    print('Restart is only available on Windows.')
+                return result
             print("Invalid Argument: '--h' for help")
             return
         if command == '--x':
-            if select == '1':
+            if select == 'restart':
                 print('Restarting Session...')
                 return self.restart_session(conn)
-            elif select == '2':
+            elif select == 'disconnect':
                 print('Disconnecting Client...')
                 return self.disconnect(conn)
             print("Invalid Argument: '--h' for help")
