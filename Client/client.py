@@ -466,10 +466,6 @@ class Client(object):
                 time.sleep(5)
                 break
 
-            if data[0] == 'LISTENING':
-                self.send(b'DONE')
-                continue
-
             if data[0] == 'RECEIVE_FILE':
                 self.send_file(data[1])
                 continue
