@@ -263,6 +263,7 @@ class Client(object):
             self.send(b'FILE_TRANSFER_ERROR')
             self.receive()
             self.send(errors(e).encode())
+            return
         self.send(b'RECEIVED')
         with open(save_as, 'wb') as f:
             while 1:
