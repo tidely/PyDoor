@@ -475,7 +475,7 @@ class MultiServer(object):
             cwd = self.get_cwd(conn)
             if not info[0] == 'Windows':
                 cwd = cwd.replace(info[1], '~')
-                _input = '{0}@{1}:{2} $ '.format(info[2], hostname, cwd)
+                _input = '{0}@{1}:{2}$ '.format(info[2], hostname, cwd)
             else:
                 _input = '{0}>'.format(cwd)
 

@@ -311,9 +311,9 @@ class Client(object):
             if data[0] == 'EXEC':
                 old_stdout = sys.stdout
                 redirected_output = sys.stdout = StringIO()
+                error = None
                 try:
                     exec(data[1])
-                    error = None
                 except Exception as e:
                     error = errors(e, line=False)
                 finally:
