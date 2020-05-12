@@ -235,15 +235,21 @@ class Client(object):
         self.socket.recv(1024)
         self.socket.send(encrypted)
 
-    def send_file(self, file_to_transfer) -> None:
-        """ Send file to Server """
+    def check_perms(self, _file, mode) -> bool:
         try:
-            with open(file_to_transfer, 'rb'):
+            with open(_file, mode):
                 pass
         except Exception as e:
             self.send(b'FILE_TRANSFER_ERROR')
             self.receive()
             self.send(errors(e).encode())
+            return False
+        return True
+
+    def send_file(self, file_to_transfer) -> None:
+        """ Send file to Server """
+        # returns None
+        if not self.check_perms(file_to_transfer, 'rb'):
             return
         for line in read_file(file_to_transfer):
             self.send(line)
@@ -256,13 +262,8 @@ class Client(object):
 
     def receive_file(self, save_as) -> None:
         """ Receive File from Server"""
-        try:
-            with open(save_as, 'wb') as f:
-                pass
-        except Exception as e:
-            self.send(b'FILE_TRANSFER_ERROR')
-            self.receive()
-            self.send(errors(e).encode())
+        # returns None
+        if not self.check_perms(save_as, 'wb'):
             return
         self.send(b'RECEIVED')
         with open(save_as, 'wb') as f:
