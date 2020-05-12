@@ -9,7 +9,7 @@ Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.
 * Remote Shell that updates in real time  
 * Remote Python Interpreter  
 * Simple File Transfer  
-* RSA and AES Encryption by Default  
+* AES Encryption by Default  
 * Keylogger  
 * Manage Clipboard Remotely  
 * Take Screenshots Remotely  
@@ -33,6 +33,7 @@ You will need:
   
 1. Download the repository via github or git eg. `git clone https://github.com/Y4hL/PyDoor`  
 2. Install the required modules by running `python -m pip install -r requirements.txt`  
+3. Change default AES key (Recommended)  
   
 ## FAQ  
   
