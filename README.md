@@ -12,6 +12,7 @@ Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.
 * AES Encryption by Default  
 * Keylogger  
 * Manage Clipboard Remotely  
+* Capture Webcam  
 * Take Screenshots Remotely  
 * Sending commands to all clients  
 * Download files from the web  

