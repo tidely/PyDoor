@@ -4,3 +4,4 @@ requests
 psutil
 pyperclip
 pynput
+opencv-python
