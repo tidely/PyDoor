@@ -9,7 +9,7 @@ import sys
 import threading
 import time
 import traceback
-from io import StringIO, BytesIO
+from io import BytesIO, StringIO
 from pydoc import help
 
 import psutil
@@ -17,9 +17,6 @@ import pyperclip
 import pyscreeze
 import requests
 from cryptography.fernet import Fernet
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
 if getattr(sys, 'frozen', False):
     CLIENT_PATH = os.path.dirname(sys.executable)
