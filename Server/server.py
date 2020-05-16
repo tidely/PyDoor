@@ -151,21 +151,14 @@ class Client(object):
     def is_frozen(self) -> bool:
         """ Check if the client is frozen (exe) """
         # returns bool
-        if self.frozen == None:
-            self.send(json_dumps(['FROZEN']))
-            self.frozen = json_loads(self.receive())
-        return self.frozen
+        self.send(json_dumps(['FROZEN']))
+        return json_loads(self.receive())
 
     def get_platform(self) -> str:
         """ Get Client Platform """
         # platform.system()
-        if self.platform == None:
-            self.send(json_dumps(['PLATFORM']))
-            platform = self.receive().decode()
-            self.platform = platform
-        else:
-            platform = self.platform
-        return platform
+        self.send(json_dumps(['PLATFORM']))
+        return self.receive().decode()
 
     def get_cwd(self) -> str:
         """ Get Client cwd """
