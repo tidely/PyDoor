@@ -207,7 +207,7 @@ class Client(object):
             logging.error(errors(e))
             raise
         try:
-            self.send(socket.gethostname().encode())
+            self.socket.send(socket.gethostname().encode())
         except Exception as e:
             logging.error(errors(e))
 
