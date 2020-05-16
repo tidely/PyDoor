@@ -119,7 +119,7 @@ class Client(object):
         self.platform = None
         self.frozen = None
 
-    def recvall(self, conn, n) -> bytes:
+    def recvall(self, n) -> bytes:
         """ Function to receive n amount of bytes"""
         # returns bytes/None
         data = b''
@@ -135,7 +135,7 @@ class Client(object):
         # returns bytes
         length = int(self.fer.decrypt(self.conn.recv(2048)).decode())
         self.conn.send(b'RECEIVED')
-        received = self.fer.decrypt(self.recvall(self.conn, length))
+        received = self.fer.decrypt(self.recvall(length))
         if _print:
             print(received.decode())
         return received
