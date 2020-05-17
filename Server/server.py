@@ -115,10 +115,6 @@ class Client(object):
         self.key = key
         self.fer = Fernet(key)
 
-        self.hostname = None
-        self.platform = None
-        self.frozen = None
-
     def recvall(self, n) -> bytes:
         """ Function to receive n amount of bytes"""
         # returns bytes/None
