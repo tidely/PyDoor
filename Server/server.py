@@ -432,6 +432,7 @@ class MultiServer(object):
 
     def del_client(self, client) -> None:
         try:
+            self.clients.remove(client)
             client.conn.close()
         except Exception: pass
         return
