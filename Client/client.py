@@ -46,7 +46,7 @@ logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(mes
 logging.info('Client Started.')
 
 
-def read_file(path, block_size=1024) -> bytes:
+def read_file(path, block_size=32768) -> bytes:
     """ Generator for reading files """
     with open(path, 'rb') as f:
         while True:
