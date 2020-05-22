@@ -51,7 +51,7 @@ turtle_help = """--h | See this Help Message
 --s | Shutdown Server"""
 
 
-def read_file(path, block_size=1024) -> bytes:
+def read_file(path, block_size=32768) -> bytes:
     """ Generator for reading files """
     with open(path, 'rb') as f:
         while True:

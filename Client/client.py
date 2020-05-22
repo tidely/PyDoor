@@ -57,7 +57,7 @@ def read_file(path, block_size=32768) -> bytes:
                 return
 
 
-def reverse_readline(filename, buf_size=8192) -> str:
+def reverse_readline(filename, buf_size=16384) -> str:
     """A generator that returns the lines of a file in reverse order"""
 
     # Credit: https://stackoverflow.com/a/23646049/10625567
