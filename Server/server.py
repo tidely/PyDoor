@@ -248,8 +248,8 @@ class Client(object):
         if self.receive() == b'FILE_TRANSFER_ERROR':
             self.send(b'RECEIVED')
             return False, self.receive().decode()
-        for line in read_file(file_to_transfer):
-            self.send(line)
+        for block in read_file(file_to_transfer):
+            self.send(block)
             self.receive()
 
         self.send(b'FILE_TRANSFER_DONE')
@@ -314,13 +314,15 @@ class Client(object):
         split_command = command.split(' ')[0].strip().lower()
         if split_command in ['cd', 'chdir']:
             self.send(json_dumps(['SHELL', command]))
-            cwd = json.loads(self.receive().decode())
-            if cwd[0] == 'ERROR':
+            output = json.loads(self.receive().decode())
+            if output[0] == 'ERROR':
                 if _print:
-                    print(cwd[1])
-                return cwd[1]
-            if _print and system == 'Windows':
-                print()
+                    print(output[1])
+                return output[1]
+            if system == 'Windows':
+                if _print:
+                    print()
+                return '\n'
             return ''
         if split_command == 'cls' and system == 'Windows':
             os.system('cls')

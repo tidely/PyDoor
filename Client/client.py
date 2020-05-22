@@ -253,8 +253,8 @@ class Client(object):
         # returns None
         if not self.check_perms(file_to_transfer, 'rb'):
             return
-        for line in read_file(file_to_transfer):
-            self.send(line)
+        for block in read_file(file_to_transfer):
+            self.send(block)
             self.receive()
         self.send(b'FILE_TRANSFER_DONE')
         self.receive()
