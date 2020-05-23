@@ -82,12 +82,12 @@ def shell_print(data) -> None:
     """ Support for printing more characters """
     # Mostly for tree command in Windows
     try:
-        print(data.decode(), end='')
+        print(data.decode())
     except UnicodeDecodeError:
         try:
-            print(data.decode('cp437'), end='')
+            print(data.decode('cp437'))
         except UnicodeDecodeError:
-            print(data, end='')
+            print(data)
     return
 
 
