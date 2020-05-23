@@ -486,7 +486,7 @@ class Client(object):
                 for line in iter(process.stdout.readline, ""):
                     if line == b'':
                         break
-                    self.send(line.replace(b'\n', b''))
+                    self.send(line)
                     if self.receive() == b'QUIT':
                         kill(process.pid)
                         break
