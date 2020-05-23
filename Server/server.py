@@ -37,6 +37,7 @@ interface_help = """--h | See this Help Message
 --s | Transfers file to Client
 --r | Transfers file to Server
 --d | Download file from the web
+--z (file) (dir) (unzip) | Zip Files or Folders
 --c | Copies to Client Clipboard
 --p | Returns Client Current Clipboard
 --t (add) (remove) | Manage Startup (Windows)
@@ -377,9 +378,27 @@ class Client(object):
 
     def info(self, _print=True) -> str:
         """ Get Client Info """
-        # Returns str
+        # returns str
         self.send(json_dumps(['INFO']))
         return self.receive(_print=_print).decode()
+
+    def zip_file(self, zip_filename, file_to_zip) -> (bool, str):
+        """ Zip a Single File """
+        # returns True/False, None/error
+        self.send(json_dumps(['ZIP_FILE', zip_filename, file_to_zip]))
+        return tuple(json_loads(self.receive()))
+
+    def zip_dir(self, zip_filename, dir_to_zip) -> (bool, str):
+        """ Zip a Directory """
+        # returns True/False, None/error
+        self.send(json_dumps(['ZIP_DIR', os.path.splitext(zip_filename)[0], dir_to_zip]))
+        return tuple(json_loads(self.receive()))
+
+    def unzip(self, zip_filename) -> (bool, str):
+        """ Unzip a File """
+        # returns True/False, None/error
+        self.send(json_dumps(['UNZIP', zip_filename]))
+        return tuple(json_loads(self.receive()))
 
 
 class MultiServer(object):
@@ -603,6 +622,33 @@ class MultiServer(object):
             else:
                 print(error)
             return
+        if command == '--z':
+            if select == 'file':
+                save_as = input('Zip Filename: ')
+                file_to_zip = input('File to Zip: ')
+                result, error = client.zip_file(save_as, file_to_zip)
+                if result:
+                    print('Zipping Successful.')
+                else:
+                    print(error)
+                return
+            if select == 'dir':
+                save_as = input('Zip Filename: ')
+                dir_to_zip = input('Directory to Zip: ')
+                result, error = client.zip_dir(save_as, dir_to_zip)
+                if result:
+                    print('Zipped Directory Successfully.')
+                else:
+                    print(error)
+                return
+            if select == 'unzip':
+                zip_filename = input('Zip File: ')
+                result, error = client.unzip(zip_filename)
+                if result:
+                    print('Unzipped Successfully.')
+                else:
+                    print(error)
+                return
         if '--c' in command:
             text_to_copy = input('Text to copy: ')
             result, error = client.fill_clipboard(text_to_copy)
