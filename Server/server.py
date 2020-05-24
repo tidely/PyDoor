@@ -509,7 +509,6 @@ class MultiServer(object):
     def shell(self, client) -> None:
         """ Remote Shell Interface """
         # returns None
-        command = ''
         system, home, user = client._get_info()
         hostname = client.address[-1]
 
@@ -725,7 +724,7 @@ class MultiServer(object):
         clients = self.clients[:]
         for client in clients:
             try:
-                print(f'Response from {client.address[0]}:'
+                print(f'Response from {client.address[0]}:')
                 self.selector(client, command)
             except Exception as e:
                 print(errors(e))
@@ -760,7 +759,7 @@ class MultiServer(object):
                         except (EOFError, KeyboardInterrupt):
                             print()
                         except Exception as e:
-                            print(f'Connection lost: {errors(e)}'
+                            print(f'Connection lost: {errors(e)}')
                             self.del_client(client)
                             self.refresh_connections()
                     else:

@@ -260,7 +260,7 @@ class Client(object):
         self.send(b'FILE_TRANSFER_DONE')
         self.receive()
         self.send(b'File Transferred Successfully')
-        logging.info(f'Transferred {file_to_transfer} to Server'
+        logging.info(f'Transferred {file_to_transfer} to Server')
         return
 
     def receive_file(self, save_as) -> None:
@@ -378,7 +378,7 @@ class Client(object):
                 continue
 
             if data[0] == 'ZIP_FILE':
-                logging.info(f'Zipping File: {data[2]}'
+                logging.info(f'Zipping File: {data[2]}')
                 try:
                     with ZipFile(data[1], 'w') as ziph:
                         ziph.write(data[2])
@@ -389,7 +389,7 @@ class Client(object):
                 continue
 
             if data[0] == 'ZIP_DIR':
-                logging.info(f'Zipping Folder: {data[2]}'
+                logging.info(f'Zipping Folder: {data[2]}')
                 try:
                     shutil.make_archive(data[1], 'zip', data[2])
                 except Exception as e:
@@ -399,7 +399,7 @@ class Client(object):
                 continue
 
             if data[0] == 'UNZIP':
-                logging.info(f'Unzipping: {data[1]}'
+                logging.info(f'Unzipping: {data[1]}')
                 try:
                     with ZipFile(data[1], 'r') as ziph:
                         ziph.extractall()
@@ -410,7 +410,7 @@ class Client(object):
                 continue
 
             if data[0] == 'DOWNLOAD':
-                logging.info(f'Downloading "{data[2]}" from {data[1]}'
+                logging.info(f'Downloading "{data[2]}" from {data[1]}')
                 try:
                     r = requests.get(data[1])
                     with open(data[2], 'wb') as f:
@@ -423,7 +423,7 @@ class Client(object):
 
             if data[0] == 'INFO':
                 self.send(f'User: {getpass.getuser()}\n' \
-                    f'OS: {platform.system()} {platform.release()} ({platform.platform()}) ({platform.machine()})\n' \ 
+                    f'OS: {platform.system()} {platform.release()} ({platform.platform()}) ({platform.machine()})\n' \
                     f'Frozen (.exe): {getattr(sys, "frozen", false)}\n')
                 continue
 
