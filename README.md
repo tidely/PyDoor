@@ -30,7 +30,7 @@ Windows Specific Features can be done manually on other OS's
   
 You will need:  
   
-* [Python 3.6-3.7](https://www.python.org/downloads)  
+* [Python 3.6+](https://www.python.org/downloads)  
   
 1. Download the repository via github or git eg. `git clone https://github.com/Y4hL/PyDoor`  
 2. Install the required modules by running `python -m pip install -r requirements.txt`  
