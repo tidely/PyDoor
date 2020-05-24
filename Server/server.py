@@ -195,16 +195,16 @@ class Client(object):
         self.receive_file(log, save_as)
         return save_as
 
-    def restart_session(self) -> bool:
+    def restart_session(self) -> None:
         """ Restart Client Session """
-        # returns True
+        # returns None
         self.send(json_dumps(['RESTART_SESSION']))
         self.receive()
         return
 
-    def disconnect(self) -> bool:
+    def disconnect(self) -> None:
         """ Disconnect Client """
-        # returns True
+        # returns None
         self.send(json_dumps(['DISCONNECT']))
         self.receive()
         self.conn.close()
