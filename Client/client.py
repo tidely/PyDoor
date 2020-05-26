@@ -113,9 +113,7 @@ def add_startup() -> list:
     elif __file__:
         PATH = os.path.abspath(__file__)
     try:
-        user = HKEY_CURRENT_USER
-        value = "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
-        key = OpenKey(user, value, 0, KEY_ALL_ACCESS)
+        key = OpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_ALL_ACCESS)
         SetValueEx(key, STARTUP_REG_NAME, 0, REG_SZ, PATH)
         CloseKey(key)
     except Exception as e:
@@ -130,9 +128,7 @@ def remove_startup() -> list:
     if platform.system() != 'Windows':
         return [False, 'Startup feature is only for Windows.']
     try:
-        user = HKEY_CURRENT_USER
-        value = "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
-        key = OpenKey(user, value, 0, KEY_ALL_ACCESS)
+        key = OpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_ALL_ACCESS)
         DeleteValue(key, STARTUP_REG_NAME)
         CloseKey(key)
     except FileNotFoundError:
