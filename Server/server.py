@@ -530,8 +530,9 @@ class MultiServer(object):
     def selector(self, client, command) -> bool:
         """ Command selector interface """
         # returns True/None
-        select = command[4:].strip()
-        command = command[:3].lower()
+        commands = command.lower().split(' ')
+        command = commands[0]
+        select = commands[-1]
         if '--h' in command:
             print(INTERFACE_HELP)
             return
