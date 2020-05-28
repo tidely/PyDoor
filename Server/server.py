@@ -186,7 +186,7 @@ class Client(object):
         self.send(json_dumps(['LOG_FILE']))
         return self.receive().decode()
 
-    def get_log(self, conn, save_as=None) -> str:
+    def get_log(self, save_as=None) -> str:
         """ Transfer log to Server """
         # save_as: file name
         if not save_as:
