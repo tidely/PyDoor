@@ -121,21 +121,18 @@ class Client(object):
             data += packet
         return data
 
-    def receive(self, _print=False) -> bytes:
+    def receive(self) -> bytes:
         """ Receive Buffer Size and Data from Client """
         # returns bytes
-        length = int(self.fer.decrypt(self.conn.recv(2048)).decode())
+        buffer = int(self.conn.recv(2048).decode())
         self.conn.send(b'RECEIVED')
-        received = self.fer.decrypt(self.recvall(length))
-        if _print:
-            print(received.decode())
-        return received
+        return self.fer.decrypt(self.recvall(buffer))
 
     def send(self, data) -> None:
         """ Send Buffer Size and Data to Client """
         # returns None
         encrypted = self.fer.encrypt(data)
-        self.conn.send(self.fer.encrypt(f"{len(encrypted)}".encode()))
+        self.conn.send(f"{len(encrypted)}".encode())
         self.conn.recv(1024)
         self.conn.send(encrypted)
 
@@ -374,7 +371,10 @@ class Client(object):
         """ Get Client Info """
         # returns str
         self.send(json_dumps(['INFO']))
-        return self.receive(_print=_print).decode()
+        info = self.receive().decode()
+        if _print:
+            print(info)
+        return info
 
     def zip_file(self, zip_filename, file_to_zip) -> (bool, str):
         """ Zip a Single File """
