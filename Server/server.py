@@ -11,13 +11,7 @@ from datetime import datetime
 
 from cryptography.fernet import Fernet
 
-
-def is_windows() -> bool:
-    """ Check if Server is running Windows """
-    # returns True/False
-    return platform.system() == 'Windows'
-
-if not is_windows():
+if platform.system() != 'Windows':
     # readline allows movement with arrowkeys on linux
     try:
         import readline
