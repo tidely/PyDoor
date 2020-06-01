@@ -223,15 +223,13 @@ class Client(object):
         """ Shutdown Client Machine """
         # returns None
         self.send(json_dumps(['SHUTDOWN']))
-        result = json_loads(self.receive())
-        return result
+        return json_loads(self.receive())
 
     def restart(self) -> None:
         """ Restart Client Machine """
         # returns None
         self.send(json_dumps(['RESTART']))
-        result = json_loads(self.receive())
-        return result
+        return json_loads(self.receive())
 
     def send_file(self, file_to_transfer, save_as) -> None:
         """ Send file from Server to Client """
