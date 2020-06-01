@@ -471,11 +471,10 @@ class MultiServer(object):
 
     def get_target(self, cmd) -> socket.socket:
         """ Select target client """
-        # returns socket.socket()
+        # returns Client Object
         target = cmd.split(' ')[-1]
         try:
-            target = int(target)
-            client = self.clients[target]
+            client = self.clients[int(target)]
         except (ValueError, IndexError):
             logging.error('Not a valid selection')
             return None
