@@ -139,9 +139,9 @@ def remove_startup() -> list:
     return [True, None]
 
 
-def kill(proc_pid: int) -> None:
+def kill(pid: int) -> None:
     """ Kill Process by ID """
-    process = psutil.Process(proc_pid)
+    process = psutil.Process(pid)
     for proc in process.children(recursive=True):
         proc.kill()
     process.kill()
