@@ -92,11 +92,10 @@ _time = lambda: f"{datetime.now()}".replace(':', '-')
 
 class Client(object):
 
-    def __init__(self, conn: socket.socket, address: list, key: bytes) -> None:
+    def __init__(self, conn: socket.socket, address: list, fernet: Fernet) -> None:
         self.conn = conn
         self.address = address
-        self.key = key
-        self.fer = Fernet(key)
+        self.fernet = fernet
 
     def recvall(self, n: int) -> bytes:
         """ Function to receive n amount of bytes"""
@@ -114,12 +113,12 @@ class Client(object):
         # returns bytes
         buffer = int(self.conn.recv(2048).decode())
         self.conn.send(b'RECEIVED')
-        return self.fer.decrypt(self.recvall(buffer))
+        return self.fernet.decrypt(self.recvall(buffer))
 
     def send(self, data: bytes) -> None:
         """ Send Buffer Size and Data to Client """
         # returns None
-        encrypted = self.fer.encrypt(data)
+        encrypted = self.fernet.encrypt(data)
         self.conn.send(f"{len(encrypted)}".encode())
         self.conn.recv(1024)
         self.conn.send(encrypted)
@@ -395,7 +394,7 @@ class MultiServer(object):
         self.host = ''
         self.port = port
         self.socket = None
-        self.key = key
+        self.fernet = Fernet(key)
         self.clients = []
 
     def socket_create(self) -> None:
@@ -431,7 +430,7 @@ class MultiServer(object):
                 hostname = conn.recv(4096).decode()
                 address = address + (hostname,)
 
-                client = Client(conn, address, self.key)
+                client = Client(conn, address, self.fernet)
                 self.clients.append(client)
                 if _print:
                     msg = f'Connection has been established: {address[0]} ({address[-1]})'
