@@ -87,10 +87,7 @@ def shell_print(data: bytes) -> None:
     return
 
 
-def _time() -> str:
-    """ Get a filename from the current time """
-    # returns str
-    return f"{datetime.now()}".replace(':','-')
+_time = lambda: f"{datetime.now()}".replace(':', '-')
 
 
 class Client(object):

@@ -265,10 +265,6 @@ class Client(object):
         """ Receives Commands from Server """
         while True:
             data = json.loads(self.receive().decode())
-            # data[0]: command
-            # data[1]: data1
-            # data[2]: data2
-            # ...
 
             if data[0] == 'GETCWD':
                 self.send(os.getcwdb())
@@ -432,8 +428,8 @@ class Client(object):
                     is_success, arr = cv2.imencode('.png', img)
                     if is_success:
                         self.send(arr.tobytes())
-                        logging.info('Captured Webcam image')
                         continue
+                logging.info('WebcamCaptureError')
                 self.send(b'ERROR')
                 continue
 
