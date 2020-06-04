@@ -402,7 +402,7 @@ class MultiServer(object):
         try:
             self.socket = socket.socket()
         except socket.error as msg:
-            logging.error(f"Socket creation error: {msg}")
+            logging.error(errors(msg))
             # TODO: Added exit
             sys.exit(1)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
