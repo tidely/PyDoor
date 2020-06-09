@@ -464,7 +464,7 @@ class MultiServer(object):
             print('   '.join(map(str, (i, ) + client.address)))
         return
 
-    def get_target(self, cmd: str) -> socket.socket:
+    def get_target(self, cmd: str) -> Client:
         """ Select target client """
         # returns Client Object
         target = cmd.split(' ')[-1]
