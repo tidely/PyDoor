@@ -194,10 +194,7 @@ class Client(object):
         # returns bytes/None
         data = b''
         while len(data) < n:
-            packet = self.socket.recv(n - len(data))
-            if not packet:
-                return None
-            data += packet
+            data += self.socket.recv(n - len(data))
         return data
 
     def receive(self) -> bytes:

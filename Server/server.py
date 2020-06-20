@@ -102,10 +102,7 @@ class Client(object):
         # returns bytes/None
         data = b''
         while len(data) < n:
-            packet = self.conn.recv(n - len(data))
-            if not packet:
-                return None
-            data += packet
+            data += self.conn.recv(n - len(data))
         return data
 
     def receive(self) -> bytes:
