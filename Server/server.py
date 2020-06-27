@@ -83,7 +83,7 @@ def shell_print(data: bytes) -> None:
         try:
             print(data.decode('cp437'))
         except UnicodeDecodeError:
-            print(data)
+            print(data.decode(errors='replace'))
     return
 
 
