@@ -64,7 +64,7 @@ Contributing is encouraged and will help make a better program. Please refer to 
   
 ## Disclaimer  
   
-This program must be used for legal purposes! I am not responsible for anything you do with it.  
+For educational purposes only! I am not responsible for anything you do with it.  
   
 ## License  
   
