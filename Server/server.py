@@ -226,6 +226,8 @@ class Client(object):
     def send_file(self, file_to_transfer: str, save_as: str) -> None:
         """ Send file from Server to Client """
         # returns True/False, None/error
+        if not os.path.isfile(file_to_transfer):
+            return False, "FileNotFoundError"
         self.send_json(['SEND_FILE', save_as])
         if self.receive() == b'FILE_TRANSFER_ERROR':
             self.send(b'RECEIVED')
