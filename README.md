@@ -46,6 +46,10 @@ Read [setup.md](https://github.com/Y4hL/PyDoor/blob/master/setup.md#server-setup
   
 Read [setup.md](https://github.com/Y4hL/PyDoor/blob/master/setup.md#client-setup)  
   
+### See available commands  
+  
+`--h`  
+  
 ### Run commands as root  
   
 `echo SUDOPASSWORD | sudo -S COMMAND`  
