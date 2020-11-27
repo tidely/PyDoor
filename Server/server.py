@@ -551,7 +551,7 @@ class MultiServer(object):
                 else:
                     print('Keylogger ImportError')
             elif select == 'status':
-                if client.start_keylogger():
+                if client.keylogger_status():
                     print('Keylogger Running')
                 else:
                     print('Keylogger is not running.')
