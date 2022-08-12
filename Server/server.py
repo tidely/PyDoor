@@ -771,7 +771,7 @@ class ServerCLI(Server):
                     print("Invalid command: '--h' for help.")
             except (EOFError, KeyboardInterrupt):
                 print('\nShutting down Server...')
-                self.stop()
+                self.close()
                 time.sleep(2)
                 break
             except Exception as error:
