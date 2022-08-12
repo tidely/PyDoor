@@ -65,15 +65,12 @@ def errors(error: Exception, line: bool = True) -> str:
     error_msg = f'{error_class}:'
     try:
         error_msg += f' {error.args[0]}'
-    except Exception:
+    except IndexError:
         pass
     if line:
-        try:
-            _, _, traceb = sys.exc_info()
-            line_number = traceback.extract_tb(traceb)[-1][1]
-            error_msg += f' (line {line_number})'
-        except Exception:
-            pass
+        _, _, traceb = sys.exc_info()
+        line_number = traceback.extract_tb(traceb)[-1][1]
+        error_msg += f' (line {line_number})'
     return error_msg
 
 
@@ -426,7 +423,6 @@ class Server():
 
     def start(self) -> None:
         """ Start the Server """
-
         self.socket = socket.socket()
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -441,27 +437,24 @@ class Server():
 
     def stop(self) -> None:
         """ Stop the server """
-
         if not self.event.is_set():
             self.event.set()
         self.socket.shutdown(socket.SHUT_RDWR)
 
     def disconnect(self, client: Client) -> None:
         """ Disconnect client and remove from connection list """
-        try:
+        if client in self.clients:
             self.clients.remove(client)
-            client.disconnect()
-        except Exception:
-            pass
+        client.disconnect()
 
     def refresh(self) -> None:
         """ Refreshes connections """
-        clients = self.clients[:]
+        clients = self.clients.copy()
         for client in clients:
             try:
                 client.send_json(['LIST'])
                 client.conn.recv(20480)
-            except Exception:
+            except (BrokenPipeError, ConnectionResetError):
                 self.disconnect(client)
 
 
@@ -479,7 +472,6 @@ class ServerCLI(Server):
 
     def __on_connection(self) -> None:
         """ Print message when a client connects """
-
         while not self._print_event.is_set():
             try:
                 client = self.queue.get(timeout=3)
@@ -724,7 +716,7 @@ class ServerCLI(Server):
     def broadcast(self, command: str) -> None:
         """ Broadcast a command to all connected Clients """
         # returns None
-        clients = self.clients[:]
+        clients = self.clients.copy()
         for client in clients:
             try:
                 print(f'Response from {client.address[0]}:')

