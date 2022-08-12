@@ -14,7 +14,7 @@ import traceback
 from io import BytesIO, StringIO
 from pydoc import help
 from zipfile import ZipFile
-from typing import List, Union
+from typing import Union
 
 import cv2
 import psutil
@@ -105,7 +105,7 @@ def errors(error: Exception, line: bool = True) -> str:
     return error_msg
 
 
-def add_startup() -> List[bool, Union[str, None]]:
+def add_startup() -> list:
     """ Add Client to startup """
     # returns [True/False, None/error]
     if platform.system() != 'Windows':
@@ -125,7 +125,7 @@ def add_startup() -> List[bool, Union[str, None]]:
     return [True, None]
 
 
-def remove_startup() -> List[bool, Union[str, None]]:
+def remove_startup() -> list:
     """ Remove Client from Startup """
     # returns [True/False, None/error]
     if platform.system() != 'Windows':

