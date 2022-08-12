@@ -312,7 +312,7 @@ class Client(object):
                 self.send_json(True)
                 break
 
-            if data[0] == 'DISCONNECT':
+            if data[0] == 'CLOSE':
                 self.send_json(True)
                 self.socket.close()
                 sys.exit(0)

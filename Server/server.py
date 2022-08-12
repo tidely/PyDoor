@@ -39,7 +39,7 @@ INTERFACE_HELP = """--h | See this Help Message
 --p | Returns Client Current Clipboard
 --t (add) (remove) | Manage Startup (Windows)
 --q (lock) (shutdown) (restart) | Manage Client Machine (Windows)
---x (restart) (disconnect) | Manage Client Session
+--x (restart) (disconnect) (close) | Manage Client Session
 --b | Run Connection in Background (or CTRL-C)"""
 
 MENU_HELP = """--h | See this Help Message
@@ -716,6 +716,11 @@ class ServerCLI(Server):
             elif select == 'disconnect':
                 print('Disconnecting Client...')
                 client.disconnect()
+                self.refresh()
+                return True
+            elif select == 'close':
+                print('Closing Client...')
+                client.close()
                 self.refresh()
                 return True
         elif '--b' in command:
