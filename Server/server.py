@@ -761,7 +761,7 @@ class ServerCLI(Server):
                     self.broadcast(input('Command to broadcast: '))
                 elif command == 'list':
                     self.list_connections()
-                elif command == 'open':
+                elif command[:4] == 'open':
                     client = self.get_target(command)
                     if client:
                         try:
