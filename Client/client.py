@@ -14,6 +14,7 @@ import traceback
 from io import BytesIO, StringIO
 from pydoc import help
 from zipfile import ZipFile
+from typing import List, Union
 
 import cv2
 import psutil
@@ -104,7 +105,7 @@ def errors(error: Exception, line: bool = True) -> str:
     return error_msg
 
 
-def add_startup() -> list:
+def add_startup() -> List[bool, Union[str, None]]:
     """ Add Client to startup """
     # returns [True/False, None/error]
     if platform.system() != 'Windows':
@@ -124,7 +125,7 @@ def add_startup() -> list:
     return [True, None]
 
 
-def remove_startup() -> list:
+def remove_startup() -> List[bool, Union[str, None]]:
     """ Remove Client from Startup """
     # returns [True/False, None/error]
     if platform.system() != 'Windows':
@@ -247,7 +248,6 @@ class Client(object):
         self.receive()
         self.send(b'File Transferred Successfully')
         logging.info('Transferred %s to Server', file_to_transfer)
-        return
 
     def receive_file(self, save_as: str) -> None:
         """ Receive File from Server"""
@@ -264,7 +264,6 @@ class Client(object):
                 f.write(data)
                 self.send(b'RECEIVED')
         logging.info('Transferred %s to Client', save_as)
-        return
 
     def receive_commands(self) -> None:
         """ Receives Commands from Server """
