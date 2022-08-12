@@ -6,7 +6,6 @@ import platform
 import socket
 import sys
 import threading
-import time
 import traceback
 from datetime import datetime
 from typing import Tuple, Union
@@ -406,17 +405,6 @@ class Server():
         self.fernet = Fernet(key)
         self.clients = []
 
-    def socket_bind(self) -> None:
-        """ Bind socket to port and wait for connection from client """
-        # returns None
-        try:
-            self.socket.bind((self.host, self.port))
-            self.socket.listen(5)
-        except socket.error as error:
-            logging.error("Socket binding error: %s", error)
-            time.sleep(5)
-            self.socket_bind()
-
     def _accept(self) -> None:
         """ Accepts incoming connections """
         while not self.event.is_set():
@@ -440,7 +428,8 @@ class Server():
         self.socket = socket.socket()
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        self.socket_bind()
+        self.socket.bind((self.host, self.port))
+        self.socket.listen(5)
 
         self.thread = threading.Thread(target=self._accept)
         self.thread.daemon = True
@@ -781,7 +770,6 @@ class ServerCLI(Server):
             except (EOFError, KeyboardInterrupt):
                 print('\nShutting down Server...')
                 self.close()
-                time.sleep(2)
                 break
             except Exception as error:
                 print(errors(error))
