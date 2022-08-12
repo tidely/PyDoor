@@ -48,7 +48,7 @@ Read [setup.md](https://github.com/Y4hL/PyDoor/blob/master/setup.md#client-setup
   
 ### See available commands  
   
-`--h`  
+type `help`  
   
 ### Run commands as root  
   
