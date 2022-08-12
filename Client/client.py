@@ -14,7 +14,6 @@ import traceback
 from io import BytesIO, StringIO
 from pydoc import help
 from zipfile import ZipFile
-from typing import Union
 
 import cv2
 import psutil
