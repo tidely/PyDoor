@@ -101,6 +101,10 @@ class Client():
         self.address = address
         self.fernet = fernet
 
+    def disconnect(self) -> None:
+        """ Close client connection (allows reconnect) """
+        self.conn.close()
+
     def recvall(self, byteamount: int) -> bytes:
         """ Function to receive n amount of bytes"""
         # returns bytes/None
@@ -188,10 +192,10 @@ class Client():
         self.send_json(['RESTART_SESSION'])
         self.receive()
 
-    def disconnect(self) -> None:
-        """ Disconnect Client """
+    def close(self) -> None:
+        """ Stops client on target machine """
         # returns None
-        self.send_json(['DISCONNECT'])
+        self.send_json(['CLOSE'])
         self.receive()
         self.conn.close()
 
@@ -453,7 +457,7 @@ class Server():
         """ Disconnect client and remove from connection list """
         try:
             self.clients.remove(client)
-            client.conn.close()
+            client.disconnect()
         except Exception:
             pass
 
