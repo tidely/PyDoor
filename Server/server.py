@@ -454,7 +454,6 @@ class Server():
         for client in clients:
             try:
                 client.send_json(['LIST'])
-                client.conn.recv(20480)
             except (BrokenPipeError, ConnectionResetError):
                 self.disconnect(client)
 
@@ -756,7 +755,6 @@ class ServerCLI(Server):
                         except Exception as error:
                             print(f'Connection lost: {errors(error)}')
                             self.disconnect(client)
-                            self.refresh()
                     else:
                         print('Invalid Selection.')
                 elif command == 'shutdown':

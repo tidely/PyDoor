@@ -254,13 +254,13 @@ class Client(object):
         if not self.check_perms(save_as, 'wb'):
             return
         self.send(b'RECEIVED')
-        with open(save_as, 'wb') as f:
+        with open(save_as, 'wb') as _file:
             while 1:
                 data = self.receive()
                 if data == b'FILE_TRANSFER_DONE':
                     self.send(b'File Transferred Successfully')
                     break
-                f.write(data)
+                _file.write(data)
                 self.send(b'RECEIVED')
         logging.info('Transferred %s to Client', save_as)
 
@@ -274,7 +274,6 @@ class Client(object):
                 continue
 
             if data[0] == 'LIST':
-                self.socket.send(b' ')
                 continue
 
             if data[0] == 'PLATFORM':
