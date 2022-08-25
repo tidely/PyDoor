@@ -1,4 +1,10 @@
-""" Imports """
+"""
+https://github.com/Y4hL/PyDoor
+
+Author(s): Y4hL
+
+License: [gpl-3.0](https://www.gnu.org/licenses/gpl-3.0.html)
+"""
 import getpass
 import json
 import logging
@@ -48,9 +54,9 @@ logging.info('Client Started.')
 
 def read_file(path: str, block_size: int = 32768) -> bytes:
     """ Generator for reading files """
-    with open(path, 'rb') as f:
+    with open(path, 'rb') as _file:
         while True:
-            piece = f.read(block_size)
+            piece = _file.read(block_size)
             if piece:
                 yield piece
             else:
