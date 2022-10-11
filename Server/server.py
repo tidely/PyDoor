@@ -448,13 +448,10 @@ class Server():
         """ Refreshes connections """
         clients = self.clients.copy()
         for client in clients:
-            client.conn.setblocking(False)
             try:
                 client.send_json(['LIST'])
             except (BrokenPipeError, ConnectionResetError, BlockingIOError):
                 self.disconnect(client)
-            else:
-                client.conn.setblocking(True)
 
 
 class ServerCLI(Server):

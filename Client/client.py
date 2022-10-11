@@ -244,7 +244,7 @@ class Client(object):
 
         try:
             with open(save_as, 'wb') as file:
-                self.send('Successfully opened file')
+                self.send(b'Successfully opened file')
                 while 1:
                     data = self.receive()
                     if data == b'FILE_TRANSFER_DONE':
