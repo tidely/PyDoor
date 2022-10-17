@@ -315,7 +315,7 @@ class Client():
             return ''
         self.send_json(['SHELL', command])
         result = ''
-        while 1:
+        while True:
             try:
                 output = self.receive()
                 if output == b'DONE':
@@ -444,14 +444,20 @@ class Server():
             self.clients.remove(client)
         client.disconnect()
 
-    def refresh(self) -> None:
+    def refresh(self, timeout: int = 1) -> None:
         """ Refreshes connections """
         clients = self.clients.copy()
         for client in clients:
+            client.conn.settimeout(timeout)
             try:
                 client.send_json(['LIST'])
             except (BrokenPipeError, ConnectionResetError, BlockingIOError):
                 self.disconnect(client)
+            except TimeoutError:
+                logging.info(f'{client.address} timed out')
+                print(f'{client.address} timed out')
+            else:
+                client.conn.settimeout(None)
 
 
 class ServerCLI(Server):

