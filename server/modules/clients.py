@@ -1,12 +1,12 @@
-from datetime import datetime
 import json
-import os
 import logging
+import os
+from datetime import datetime
 from typing import Tuple, Union
 
+from utils.echo import echo
 from utils.errors import errors
 from utils.esocket import ESocket
-from utils.echo import echo
 
 _time = lambda: f"{datetime.now()}".replace(':', '-')
 
@@ -63,7 +63,7 @@ class Client():
         self.send_json(['COPY', data])
         return self.recv_json()
 
-    def download(self, url: str, file_name: str) -> Tuple[bool, Union[str, None]]:
+    def download(self, url: str, file_name: str) -> Union[str, None]:
         """ Download File To Client """
         # returns None/error
         self.send_json(['DOWNLOAD', url, file_name])

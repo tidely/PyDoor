@@ -8,7 +8,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.exceptions import AlreadyFinalized
 
 class ESocket:
     """
@@ -100,7 +99,7 @@ class ESocket:
         # Perform key derivation.
 
         derived_key = HKDF(
-            algorithm=hashes.SHA256(),
+            algorithm=hashes.SHA512(),
             length=32,
             salt=None,
             info=None
