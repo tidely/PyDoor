@@ -15,6 +15,6 @@ def screenshot() -> Union[bool, bytes]:
             content = output.getvalue()
     except Exception as error:
         logging.error('Error taking screenshot: %s' % errors(error))
-        return False, errors().encode()
+        return False, errors(error).encode()
     logging.info('Captured screenshot')
     return True, content
