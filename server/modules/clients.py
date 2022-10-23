@@ -275,6 +275,18 @@ class Client():
             print(info)
         return info
 
+    def ps(self) -> list:
+        """ Returns a list of psutil.Process().as_dict() """
+        self.send_json(['PS'])
+        return self.recv_json()
+
+    def kill(self, pid: int) -> Union[str, None]:
+        """ Kill a process by pid on client system """
+        self.send_json(['KILL', pid])
+        error, response = self.esock.recv()
+        if error:
+            return response.decode()
+
     def zip_file(self, zip_filename: str, file_to_zip: str) -> Union[str, None]:
         """ Zip a Single File """
         # returns None/error

