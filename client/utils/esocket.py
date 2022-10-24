@@ -54,7 +54,6 @@ class ESocket:
     
         return data
 
-
     def decrypt(self, data: bytes) -> bytes:
         """ Decrypt data """
 

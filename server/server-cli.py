@@ -160,10 +160,6 @@ class ServerCLI(Server):
             processes = client.ps()
 
             # Put process data in a readable format
-            longest_pid = 0
-            longest_cmdline = 0
-            longest_username = 0
-
             data = []
 
             for process in processes:
@@ -174,13 +170,6 @@ class ServerCLI(Server):
                     cmdline = process['name']
 
                 data.append([pid, username, cmdline])
-
-                if len(pid) > longest_pid:
-                    longest_pid = len(pid)
-                if len(username) > longest_username:
-                    longest_username = len(username)
-                if len(cmdline) > longest_cmdline:
-                    longest_cmdline = len(cmdline)
 
             print(f'{" "*4}PID {6*" "}User Command')
 
