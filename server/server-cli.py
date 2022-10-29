@@ -165,9 +165,11 @@ class ServerCLI(Server):
             for process in processes:
                 pid = f"{process['pid']}"
                 username = process['username']
-                cmdline = ' '.join(process['cmdline'])
-                if cmdline == '':
+                cmdline = process['cmdline']
+                if cmdline is None or cmdline == '':
                     cmdline = process['name']
+                else:
+                    cmdline = ' '.join(list(process['cmdline']))
 
                 data.append([pid, username, cmdline])
 
