@@ -162,7 +162,6 @@ class ESocket:
             return data
 
         header = recvall(self.header_length)
-        logging.debug(f'got header: {header}')
         multipacket, error, size_header = self.parse_header(header)
         logging.debug(f'parsed header: {multipacket}/{error}/{size_header}')
 
@@ -170,7 +169,6 @@ class ESocket:
         logging.debug('got packet')
 
         if multipacket:
-            logging.debug('waiting for multi')
             _, next_data = self._recv()
             return error, data + next_data
 
@@ -178,7 +176,6 @@ class ESocket:
 
     def postrecv(self, data: bytes) -> bytes:
         """ Post-receive decryption """
-        logging.debug('decrypting')
         return self.decrypt(data)
 
     def recv(self) -> Tuple[str, bytes]:
@@ -199,7 +196,6 @@ class ESocket:
     def presend(self, data: bytes) -> bytes:
         """ Pre-send encryption """
         # Pad data
-        logging.debug(f'padding: {data}')
         return self.encrypt(data)
 
     def send(self, data: bytes, error: str = '0') -> None:
