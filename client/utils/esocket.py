@@ -75,7 +75,7 @@ class ESocket:
 
         # Use ECDH to derive a key for fernet encryption
 
-        private_key = ec.generate_private_key(ec.SECP384R1())
+        private_key = ec.generate_private_key(ec.SECP521R1())
 
         serialized_public_key = private_key.public_key().public_bytes(
             encoding=serialization.Encoding.PEM, 
