@@ -4,3 +4,4 @@ __pycache__/
 *.spec
 *.log
 *.png
+.DS_STORE

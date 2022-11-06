@@ -69,7 +69,7 @@ def generate_key(path):
 def generate_certificate(private_key, path):
     """ Generate a certificate from a private key """
 
-    logging.info('Generating new crtificate... ')
+    logging.info('Generating new certificate... ')
 
     subject = issuer = x509.Name([
         x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
