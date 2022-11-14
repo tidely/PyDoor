@@ -32,7 +32,6 @@ class Server():
     sock = socket.socket()
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-
     def __init__(self) -> None:
         self.thread = threading.Thread(target=self._accept)
         self.thread.daemon = True
