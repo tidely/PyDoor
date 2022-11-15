@@ -80,7 +80,7 @@ class ServerCLI(Server):
         try:
             client = self.clients[int(target)]
         except (ValueError, IndexError):
-            logging.error('"%s" Not a valid selection' % target)
+            print('Invalid Selection.')
         else:
             print(f"You are now connected to {client.address[2]}")
             return client
@@ -170,9 +170,16 @@ class ServerCLI(Server):
             # Put process data in a readable format
             data = []
 
+            longest_pid = 0
+            longest_user = 0
+
             for process in processes:
                 pid = f"{process['pid']}"
+                if len(pid) > longest_pid:
+                    longest_pid = len(pid)
                 username = process['username']
+                if len(username) > longest_user:
+                    longest_user = len(username)
                 cmdline = process['cmdline']
                 if cmdline is None or cmdline == '':
                     cmdline = process['name']
@@ -181,28 +188,20 @@ class ServerCLI(Server):
 
                 data.append([pid, username, cmdline])
 
-            print(f'{" "*4}PID {6*" "}User Command')
+            print(f'{" "*(longest_pid - 3)}PID {" "*(longest_user - 4)}User Command')
 
             terminal_width = int(str(os.get_terminal_size()).split('=')[-2].split(',')[0])
 
-            max_command_length = terminal_width - 19
+            max_command_length = terminal_width - (longest_pid + longest_user + 2)
             if max_command_length < 8:
                 max_command_length = 8
 
             for process in data:
-                if len(process[0]) > 7:
-                    pid = f' {process[0][:7]}'
-                else:
-                    pid = f'{(7 - len(process[0])) * " "} {process[0]}'
-                if len(process[1]) > 9:
-                    username = f' {process[1][:9]} '
-                else:
-                    username = f'{(9 - len(process[1]))*" "} {process[1]} '
-                if len(process[2]) > max_command_length:
-                    cmdline = process[2][:max_command_length]
-                else:
-                    cmdline = f'{process[2]}'
-                print(f'{pid}{username}{cmdline}')
+                pid = process[0]
+                username = process[1]
+                cmdline = process[2]
+
+                print(f'{pid:>{longest_pid}} {username:>{longest_user}} {cmdline:.{max_command_length}}')
 
         elif command[:4] == 'kill':
             try:
@@ -392,8 +391,6 @@ class ServerCLI(Server):
                         except Exception as error:
                             print(f'Connection lost: {errors(error)}')
                             self.disconnect(client)
-                    else:
-                        print('Invalid Selection.')
                 elif command == 'shutdown':
                     raise EOFError
                 else:

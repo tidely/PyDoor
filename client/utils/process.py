@@ -8,7 +8,10 @@ def ps() -> list:
     """ List processes running on the system """
     processes = []
     for process in psutil.process_iter():
-        processes.append(process.as_dict())
+        try:
+            processes.append(process.as_dict())
+        except psutil.NoSuchProcess:
+            pass
     return processes
 
 
