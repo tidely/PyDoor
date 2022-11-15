@@ -118,7 +118,7 @@ class ServerCLI(Server):
                     folder = cwd
                 else:
                     folder = cwd.split(os.sep)[-1]
-                _input = f'{user}@{hostname} {folder} %'
+                _input = f'{user}@{hostname} {folder} % '
             else:
                 cwd = cwd.replace(home, '~')
                 _input = f'{user}@{hostname}:{cwd}$ '
