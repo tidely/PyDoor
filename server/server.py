@@ -49,7 +49,11 @@ class Server():
                 esock = ESocket(conn, True)
 
                 _, hostname = esock.recv()
-                address += (hostname.decode(),)
+                # Remove .local on macos
+                hostname = hostname.decode()
+                if hostname.endswith('.local'):
+                    hostname = hostname[:-len('.local')]
+                address += (hostname,)
 
                 client = Client(esock, address)
                 self.clients.append(client)
