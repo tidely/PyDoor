@@ -133,23 +133,19 @@ class Client():
         try:
             self.send_json(['SEND_FILE', save_as])
             error, error_text = self.esock.recv()
-            print(error, error_text)
             if error != '0':
                 return error_text.decode()
             with open(file_to_transfer, 'rb') as file:
                 while True:
                     block = file.read(block_size)
                     if not block:
-                        logging.debug('breaking block')
                         break
-                    logging.debug('sending block')
                     self.esock.send(block)
 
         except (FileNotFoundError, PermissionError) as error:
-            logging.debug('some error')
+            logging.debug(str(error))
             return errors(error)
 
-        logging.debug('sent file transfer done')
         self.esock.send(b'FILE_TRANSFER_DONE')
 
     def receive_file(self, file_to_transfer: str, save_as: str) -> Union[str, None]:
