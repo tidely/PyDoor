@@ -83,6 +83,13 @@ class Client(object):
             self.sock.connect(address)
         except (ConnectionRefusedError, TimeoutError):
             raise
+        except OSError as error:
+            # Usually raised when socket is already connected
+            # Close socket -> Reconnect
+            logging.error('%s: Attempting reconnect' % str(error))
+            self.sock.close()
+            self.sock = socket.socket()
+            raise
         except Exception as error:
             logging.error(errors(error))
             raise
@@ -112,10 +119,9 @@ class Client(object):
         except (FileNotFoundError, PermissionError) as error:
             self.esock.send(errors(error).encode(), '1')
             logging.error('Error transferring %s to Server: %s' % (file_to_transfer, errors(error)))
-            return
-
-        self.esock.send(b'FILE_TRANSFER_DONE', '9')
-        logging.info('Transferred %s to Server', file_to_transfer)
+        else:
+            self.esock.send(b'FILE_TRANSFER_DONE', '9')
+            logging.info('Transferred %s to Server', file_to_transfer)
 
     def receive_file(self, save_as: str) -> None:
         """ Receive File from Server"""
@@ -125,9 +131,7 @@ class Client(object):
             with open(save_as, 'wb') as file:
                 self.esock.send(b'Successfully opened file.')
                 while True:
-                    logging.debug('starting file writing loop')
                     _, data = self.esock.recv()
-                    logging.debug(f'got data: {data}')
                     if data == b'FILE_TRANSFER_DONE':
                         break
                     file.write(data)

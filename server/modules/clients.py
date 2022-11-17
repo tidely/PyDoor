@@ -145,8 +145,8 @@ class Client():
         except (FileNotFoundError, PermissionError) as error:
             logging.debug(str(error))
             return errors(error)
-
-        self.esock.send(b'FILE_TRANSFER_DONE')
+        else:
+            self.esock.send(b'FILE_TRANSFER_DONE')
 
     def receive_file(self, file_to_transfer: str, save_as: str) -> Union[str, None]:
         """ Transfer file from Client """

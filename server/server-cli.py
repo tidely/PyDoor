@@ -110,20 +110,22 @@ class ServerCLI(Server):
         while True:
             cwd = client.get_cwd()
             if system == 'Windows':
-                _input = f'{cwd}>'
+                prompt = f'{cwd}>'
             elif system == 'Darwin':
                 if cwd == home:
                     folder = '~'
-                elif cwd == '/':
+                elif os.path.split(cwd)[0] == '/':
+                    # If cwd is root or one subfolder down
                     folder = cwd
                 else:
-                    folder = cwd.split(os.sep)[-1]
-                _input = f'{user}@{hostname} {folder} % '
+                    # else only display current folder
+                    folder = os.path.basename(cwd)
+                prompt = f'{user}@{hostname} {folder} % '
             else:
                 cwd = cwd.replace(home, '~')
-                _input = f'{user}@{hostname}:{cwd}$ '
+                prompt = f'{user}@{hostname}:{cwd}$ '
 
-            command = input(_input)
+            command = input(prompt)
             if command.strip() == '':
                 continue
             if command == 'exit':

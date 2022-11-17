@@ -42,6 +42,7 @@ class ESocket:
 
     def close(self):
         """ Close socket """
+        self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
 
     def encrypt(self, data: bytes) -> bytes:
