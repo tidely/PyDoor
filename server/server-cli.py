@@ -1,12 +1,19 @@
 import os
 import threading
-import logging
+import platform
 from queue import Empty
 from typing import Union
 
 from modules.clients import Client
 from server import Server
 from utils.errors import errors
+
+if platform.system() != 'Windows':
+    # readline allows movement with arrow keys on linux
+    try:
+        import readline
+    except ImportError:
+        pass
 
 INTERFACE_HELP = """help | See this Help Message
 shell | Open a shell

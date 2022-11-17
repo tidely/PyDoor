@@ -16,12 +16,6 @@ from utils.esocket import ESocket
 
 from modules.clients import Client
 
-if platform.system() != 'Windows':
-    # readline allows movement with arrowkeys on linux
-    try:
-        import readline
-    except ImportError:
-        pass
 
 logging.basicConfig(level=logging.CRITICAL)
 
@@ -95,6 +89,5 @@ class Server():
                 self.disconnect(client)
             except TimeoutError:
                 logging.info(f'{client.address} timed out')
-                print(f'{client.address} timed out')
             else:
                 client.esock.sock.settimeout(None)
