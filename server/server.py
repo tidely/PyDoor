@@ -6,7 +6,6 @@ Author(s): Y4hL
 License: [gpl-3.0](https://www.gnu.org/licenses/gpl-3.0.html)
 """
 import logging
-import platform
 import socket
 import threading
 from queue import Queue

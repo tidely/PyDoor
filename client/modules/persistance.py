@@ -2,6 +2,7 @@ import os
 import sys
 import logging
 import platform
+from typing import Union
 
 if platform.system() == 'Windows':
     import ctypes
@@ -10,9 +11,9 @@ if platform.system() == 'Windows':
     STARTUP_REG_NAME = 'PyDoor'
 
 
-def add_startup() -> list:
+def add_startup() -> Union[str, None]:
     """ Add Client to startup """
-    # returns [True/False, None/error]
+    # returns None/error
     if platform.system() != 'Windows':
         return 'Startup feature is only for Windows'
     if getattr(sys, 'frozen', False):
@@ -27,12 +28,13 @@ def add_startup() -> list:
     except Exception as error:
         logging.error('Error adding client to startup: %s' % error)
         return error
-    logging.info('Adding client to startup successful')
+    else:
+        logging.info('Adding client to startup successful')
 
 
-def remove_startup() -> list:
+def remove_startup() -> Union[str, None]:
     """ Remove Client from Startup """
-    # returns [True/False, None/error]
+    # returns None/error
     if platform.system() != 'Windows':
         return 'Startup feature is only for Windows'
     try:
@@ -43,8 +45,9 @@ def remove_startup() -> list:
     except FileNotFoundError:
         # File was never registered.
         # Still returns True, since it's not in startup
-        pass
+        logging.info('FileNotFoundError: assume registry key does not exist')
     except WindowsError as error:
         logging.error('Error removing client from startup: %s' % error)
         return error
-    logging.info('Removed Client from Startup')
+    else:
+        logging.info('Removed Client from Startup')

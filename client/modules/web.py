@@ -13,4 +13,5 @@ def download(link: str, filename: str) -> Union[str, None]:
     except Exception as error:
         logging.error('Error downloading "%s" from %s: %s' % (filename, link, error))
         return errors(error)
-    logging.info('Downloaded "%s" from %s' % (filename, link))
+    else:
+        logging.info('Downloaded "%s" from %s' % (filename, link))
