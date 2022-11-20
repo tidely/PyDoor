@@ -81,6 +81,7 @@ class Server():
         """ Refreshes connections """
         clients = self.clients.copy()
         for client in clients:
+            old_timeout = client.esock.sock.gettimeout()
             client.esock.sock.settimeout(timeout)
             try:
                 client.send_json(['LIST'])
@@ -89,4 +90,4 @@ class Server():
             except TimeoutError:
                 logging.info(f'{client.address} timed out')
             else:
-                client.esock.sock.settimeout(None)
+                client.esock.sock.settimeout(old_timeout)

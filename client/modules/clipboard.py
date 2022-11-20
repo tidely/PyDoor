@@ -16,7 +16,8 @@ def copy(text: str) -> Union[None, str]:
     except pyperclip.PyperclipException as error:
         logging.error('Error copying "%s" to clipboard: %s' % (text, errors(error)))
         return errors(error)
-    logging.info('Copied "%s" to clipboard' % text)
+    else:
+        logging.info('Copied "%s" to clipboard' % text)
 
 def paste() -> Union[bool, str]:
     """

@@ -159,7 +159,10 @@ class ESocket:
             """ Receive x amount of bytes """
             data = b''
             while len(data) < amount:
-                data += self.sock.recv(amount - len(data))
+                received = self.sock.recv(amount - len(data))
+                if not received:
+                    return
+                data += received
             return data
 
         header = recvall(self.header_length)
@@ -189,7 +192,7 @@ class ESocket:
 
         packet, extra_data = self.make_header(data, error)
 
-        self.sock.send(packet)
+        self.sock.sendall(packet)
         logging.debug('sent packet')
         if extra_data:
             self._send(extra_data)

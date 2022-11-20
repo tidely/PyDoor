@@ -15,5 +15,6 @@ def pyshell(command: str) -> Tuple[str, str]:
         error = errors(err, line=False)
     finally:
         sys.stdout = old_stdout
+
     return redirected_output.getvalue(), error
     
