@@ -3,6 +3,7 @@ import threading
 import platform
 from queue import Empty
 from typing import Union
+from shutil import get_terminal_size
 
 from modules.clients import Client
 from server import Server
@@ -199,18 +200,15 @@ class ServerCLI(Server):
 
             print(f'{" "*(longest_pid - 3)}PID {" "*(longest_user - 4)}User Command')
 
-            terminal_width = int(str(os.get_terminal_size()).split('=')[-2].split(',')[0])
+            terminal_width = get_terminal_size()[0]
 
             max_command_length = terminal_width - (longest_pid + longest_user + 2)
             if max_command_length < 8:
                 max_command_length = 8
 
             for process in data:
-                pid = process[0]
-                username = process[1]
-                cmdline = process[2]
-
-                print(f'{pid:>{longest_pid}} {username:>{longest_user}} {cmdline:.{max_command_length}}')
+                # process = [pid, username, cmdline]
+                print(f'{process[0]:>{longest_pid}} {process[1]:>{longest_user}} {process[2]:.{max_command_length}}')
 
         elif command[:4] == 'kill':
             try:
