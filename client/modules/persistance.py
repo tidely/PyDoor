@@ -5,7 +5,6 @@ import platform
 from typing import Union
 
 if platform.system() == 'Windows':
-    import ctypes
     from winreg import OpenKey, CloseKey, SetValueEx, DeleteValue
     from winreg import HKEY_CURRENT_USER, KEY_ALL_ACCESS, REG_SZ
     STARTUP_REG_NAME = 'PyDoor'

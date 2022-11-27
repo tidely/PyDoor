@@ -159,10 +159,10 @@ class ESocket:
             """ Receive x amount of bytes """
             data = b''
             while len(data) < amount:
-                received = self.sock.recv(amount - len(data))
-                if not received:
-                    return None
-                data += received
+                buffer = self.sock.recv(amount - len(data))
+                if not buffer:
+                    return
+                data += buffer
             return data
 
         header = recvall(self.header_length)
