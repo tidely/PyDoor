@@ -6,3 +6,4 @@ __pycache__/
 *.png
 *.pem
 .DS_STORE
+test*.py

