@@ -4,14 +4,12 @@ import platform
 import logging
 
 from cryptography import x509
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import hashes, padding, serialization
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding, serialization
 
 from modules.clients import Client
 from modules.baseserver import BaseServer
-
+from utils.prompts import increase_timeout_prompt
 
 logging.basicConfig(level=logging.DEBUG)
 socket.setdefaulttimeout(10)
@@ -163,7 +161,11 @@ class ServerCLI(BaseServer):
                 print(client.shell(command).decode(), end='')
             except TimeoutError:
                 logging.info('Shell command timed out: %s' % client.id)
-                continue
+                # Prompt user if they want to increase the timeout limit
+                if increase_timeout_prompt():
+                    # Indefinitely block for output
+                    client.conn.settimeout(None)
+                    print(client.read().decode(), end='')
             finally:
                 # Set timeout back to default
                 client.conn.settimeout(socket.getdefaulttimeout())
@@ -180,10 +182,14 @@ class ServerCLI(BaseServer):
             # Increase timeout to 60 seconds for python interpreter
             client.conn.settimeout(60)
             try:
-                print(client.shell().decode(), end='')
+                print(client.python(command).decode(), end='')
             except TimeoutError:
                 logging.info('Python command timed out: %s' % client.id)
-                continue
+                # Prompt user if they want to increase the timeout limit
+                if increase_timeout_prompt():
+                    # Indefinitely block for output
+                    client.conn.settimeout(None)
+                    print(client.read().decode(), end='')
             finally:
                 client.conn.settimeout(socket.getdefaulttimeout())
 

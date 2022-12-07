@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from modules.clients import Client
 
+
 class BaseServer:
     """
     Base Server

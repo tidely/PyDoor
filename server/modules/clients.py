@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher
 pad = padding.PKCS7(256)
 header_length = 8
 
+
 class Client:
     """ Client class """
 
@@ -84,8 +85,8 @@ class Client:
         self.write(command.encode())
         return self.read()
 
-    def python(self, client, command) -> None:
+    def python(self, command: str) -> None:
         """ Execute a python command on client """
-        client.write('PYTHON')
-        client.write(command.encode())
-        return client.read()
+        self.write(b'PYTHON')
+        self.write(command.encode())
+        return self.read()

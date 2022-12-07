@@ -1,11 +1,6 @@
-import sys
 import time
 import socket
 import logging
-
-# Modules
-import subprocess
-from io import StringIO
 
 from cryptography import x509
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
