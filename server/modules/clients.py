@@ -50,11 +50,14 @@ class Client:
 
     def __read(self, amount: int) -> bytes:
         """ Receive raw data from peer """
-        data = self.conn.recv(amount)
-        if not data:
-            # Assume connection was closed
-            logging.info('Assuming connection was closed: %s' % str(self.address))
-            raise ConnectionResetError
+        data = b''
+        while len(data) < amount:
+            buffer = self.conn.recv(amount)
+            if not buffer:
+                # Assume connection was closed
+                logging.info('Assuming connection was closed: %s' % str(self.address))
+                raise ConnectionResetError
+            data += buffer
 
         return data
 

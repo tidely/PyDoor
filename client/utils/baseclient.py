@@ -132,11 +132,14 @@ class BaseClient:
 
     def __read(self, amount: int) -> bytes:
         """ Receive raw data from peer """
-        data = self.sock.recv(amount)
-        if not data:
-            # Assume connection was closed
-            logging.info('Assuming connection was closed: %s' % str(self.address))
-            raise ConnectionResetError
+        data = b''
+        while len(data) < amount:
+            buffer = self.sock.recv(amount)
+            if not buffer:
+                # Assume connection was closed
+                logging.info('Assuming connection was closed: %s' % str(self.address))
+                raise ConnectionResetError
+            data += buffer
 
         return data
 

