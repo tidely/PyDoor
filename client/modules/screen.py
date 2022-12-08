@@ -2,7 +2,7 @@ from io import BytesIO
 import pyscreeze
 
 
-def screenshot():
+def screenshot() -> bytes:
     """ Capture a screenshot """
     with BytesIO() as output:
         img = pyscreeze.screenshot()
