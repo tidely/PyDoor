@@ -72,30 +72,21 @@ class ServerCLI(BaseServer):
 
     def menu(self) -> None:
         """ Menu for interacting with clients """
-        while True:
-            command, *args = input('> ').split()
+        command, *args = input('> ').split()
 
-            match command:
-                case 'help':
-                    print(menu_help)
-                case 'open':
-                    try:
-                        self.select(args)
-                    except KeyboardInterrupt:
-                        # Quit selector when ctrl-c is detected
-                        print()
-                        continue
-                    except Exception as error:
-                        logging.error('Client experiened an error: %s' % str(error))
-                        continue
-                case 'list':
-                    self.list_cli()
-                case 'shutdown':
-                    raise KeyboardInterrupt
-                case _:
-                    print('Command was not recognized, type "help" for help.')
+        match command:
+            case 'help':
+                print(menu_help)
+            case 'open':
+                self.select(args)
+            case 'list':
+                self.list_cli()
+            case 'shutdown':
+                raise KeyboardInterrupt
+            case _:
+                print('Command was not recognized, type "help" for help.')
 
-    def select(self, *args) -> None:
+    def _select(self, *args) -> None:
         """ Interact with a client """
         selected_client = None
         argument = args[0]
@@ -125,6 +116,16 @@ class ServerCLI(BaseServer):
             except KeyboardInterrupt:
                 print('Ctrl-C detected: Returning to menu')
                 break
+
+    def select(self, args):
+        """ Interact with client while catching errors """
+        try:
+            self._select(args)
+        except KeyboardInterrupt:
+            # Quit selector when ctrl-c is detected
+            print()
+        except Exception as error:
+            logging.error('Client experiened an error: %s' % str(error))
 
     def interact(self, client: Client) -> None:
         """ Interact with a client """
