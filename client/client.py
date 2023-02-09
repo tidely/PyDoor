@@ -101,7 +101,7 @@ class Client(object):
             logging.error(errors(error))
         self.address = address
 
-    def send_json(self, data: not bytes) -> None:
+    def send_json(self, data) -> None:
         """ Send JSON data to Server """
         self.esock.send(json.dumps(data).encode())
 

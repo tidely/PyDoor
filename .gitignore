@@ -5,3 +5,5 @@ __pycache__/
 *.log
 *.png
 .DS_STORE
+*.pem
+test/
