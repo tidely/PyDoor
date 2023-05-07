@@ -289,7 +289,7 @@ class ServerCLI(BaseServer):
             print(f'Error pasting from clipboard: {error}')
         else:
             logging.info('Pasted "%s" from client clipboard (%s)' % (clipboard, client.id))
-            print(f'Clipboard:\n{clipboard}')
+            print(f'Clipboard:\n"{clipboard}"')
 
     def receive_file(self, client: Client) -> None:
         """ Receive a file from the client """

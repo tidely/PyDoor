@@ -115,6 +115,8 @@ class Client(BaseClient):
         logging.debug('Attempting to paste from clipboard')
         try:
             data = clipboard.paste()
+            if data is None:
+                raise clipboard.pyperclip.PyperclipException('Clipboard is empty.')
         except RuntimeError as error:
             logging.error('Error occurred pasting from clipboard %s' % str(error))
             self.write(b'ERROR')
