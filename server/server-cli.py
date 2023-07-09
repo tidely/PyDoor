@@ -177,38 +177,29 @@ class ServerCLI(Server):
         elif command == 'ps':
             processes = client.ps()
 
-            # Put process data in a readable format
-            data = []
+            # Find the longest pid and username
+            longest_pid = max([len(f"{process['pid']}") for process in processes])
+            longest_user = max([len(f"{process['username']}") for process in processes])
 
-            longest_pid = 0
-            longest_user = 0
+            # Create a title bar
+            print(f'{" "*(longest_pid - 3)}PID {" "*(longest_user - 4)}User Command')
 
+            # Define a max command length (min 8)
+            max_command_length = get_terminal_size()[0] - (longest_pid + longest_user + 2)
+            if max_command_length < 8:
+                max_command_length = 8
+
+            # Loop through processes and display them
             for process in processes:
-                pid = f"{process['pid']}"
-                if len(pid) > longest_pid:
-                    longest_pid = len(pid)
-                username = process['username']
-                if len(username) > longest_user:
-                    longest_user = len(username)
+
+                # Fall back to process name when command is not given
                 cmdline = process['cmdline']
                 if cmdline is None or cmdline == '':
                     cmdline = process['name']
                 else:
                     cmdline = ' '.join(list(process['cmdline']))
 
-                data.append([pid, username, cmdline])
-
-            print(f'{" "*(longest_pid - 3)}PID {" "*(longest_user - 4)}User Command')
-
-            terminal_width = get_terminal_size()[0]
-
-            max_command_length = terminal_width - (longest_pid + longest_user + 2)
-            if max_command_length < 8:
-                max_command_length = 8
-
-            for process in data:
-                # process = [pid, username, cmdline]
-                print(f'{process[0]:>{longest_pid}} {process[1]:>{longest_user}} {process[2]:.{max_command_length}}')
+                print(f"{process['pid']:>{longest_pid}} {process['username']:>{longest_user}} {cmdline:.{max_command_length}}")
 
         elif command[:4] == 'kill':
             try:
