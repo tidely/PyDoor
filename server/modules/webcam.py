@@ -18,7 +18,7 @@ def webcam(client: Client) -> str:
         logging.error('Unable to capture webcam (%s)' % client.id)
         raise RuntimeError('Unable to capture webcam')
 
-    filename = 'webcam-' + str(datetime.now()).replace(':', '-') + '.png'
+    filename = f'webcam-{datetime.now()}.png'.replace(':', '-')
     with open(filename, 'wb') as file:
         file.write(img_data)
     logging.info('Saved webcam capture at (%s): %s' % (client.id, filename))

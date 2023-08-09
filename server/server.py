@@ -2,7 +2,6 @@ import os
 import socket
 import platform
 import logging
-from datetime import datetime
 
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import ec

@@ -18,8 +18,8 @@ def screenshot(client: Client) -> str:
         logging.error('Error taking screenshot (%s): %s' % (client.id, img_data.decode()))
         raise RuntimeError('Error taking screenshot (%s): %s' % (client.id, img_data.decode()))
 
-    file_name = 'screenshot-' + str(datetime.now()).replace(':', '-') + '.png'
-    with open(file_name, 'wb') as file:
+    filename = f'screenshot-{datetime.now()}.png'.replace(':', '-')
+    with open(filename, 'wb') as file:
         file.write(img_data)
-    logging.info('Saved screenshot at (%s): %s' % (client.id, file_name))
-    return file_name
+    logging.info('Saved screenshot at (%s): %s' % (client.id, filename))
+    return filename

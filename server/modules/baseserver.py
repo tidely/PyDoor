@@ -68,7 +68,7 @@ class BaseServer:
             # Generate a new unique id for client
             id = str(uuid.uuid4())[:5]
             while id in self.ids:
-                id = uuid.uuid4[:5]
+                id = str(uuid.uuid4())[:5]
 
             client = Client(conn, address, id)
 
