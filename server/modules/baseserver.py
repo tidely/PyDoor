@@ -137,6 +137,9 @@ class BaseServer:
 
     def list(self) -> list:
         """ List connected clients """
+        if len(self.clients) == 0:
+            return self.clients
+
         clients = self.clients.copy()
 
         # Check for disconnected clients
