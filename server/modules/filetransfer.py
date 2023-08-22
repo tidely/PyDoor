@@ -25,8 +25,10 @@ def send(client: Client, filename: str, save_name: str, blocksize: int = 32768) 
 
     client.write(b'RECEIVE_FILE')
     client.write(save_name.encode())
-    if client.read().decode() == 'ERROR':
-        raise RuntimeError('Error occurred sending file to client: ' + client.read().decode())
+
+    response = client.read().decode()
+    if response != 'FILE_OPENED':
+        raise RuntimeError(f'Error occurred sending file to client: {response}')
 
     try:
         with open(filename, 'rb') as file:

@@ -164,7 +164,6 @@ class Client(BaseClient):
 
         except (PermissionError) as error:
             logging.error('Error receiving file from server: %s' % str(error))
-            self.write(b'ERROR')
             self.write(f'{error.__class__.__name__}: {str(error)}')
 
     def download(self) -> None:

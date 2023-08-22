@@ -1,5 +1,3 @@
-import logging
-
 import requests
 
 def download(url: str, filename: str) -> None:
