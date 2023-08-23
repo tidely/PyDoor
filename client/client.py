@@ -3,7 +3,7 @@ import logging
 import json
 import subprocess
 from io import StringIO
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, suppress
 
 from cryptography import x509
 
@@ -108,7 +108,6 @@ class Client(BaseClient):
             clipboard.copy(data)
         except RuntimeError as error:
             logging.error('Error occurred copying to clipboard: %s' % str(error))
-            self.write(b'ERROR')
             self.write(str(error).encode())
         else:
             logging.info('Copied "%s" to clipboard' % data)
@@ -193,7 +192,5 @@ if __name__ == '__main__':
 
     # Listen to commands indefinitely
     while True:
-        try:
+        with suppress(TimeoutError):
             client.listen()
-        except TimeoutError:
-            continue
