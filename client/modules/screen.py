@@ -8,6 +8,4 @@ def screenshot() -> bytes:
     with BytesIO() as output:
         img = pyscreeze.screenshot()
         img.save(output, format='PNG')
-        content = output.getvalue()
-
-    return content
+        return output.getvalue()

@@ -65,7 +65,6 @@ class Client(BaseClient):
             try:
                 exec(command)
             except Exception as error:
-                # Create error message
                 error_message = f'{error.__class__.__name__}: {str(error)}\n'
 
         self.write((output.getvalue() + error_message).encode())
@@ -116,7 +115,7 @@ class Client(BaseClient):
             if data is None:
                 raise clipboard.pyperclip.PyperclipException('Clipboard is empty.')
         except RuntimeError as error:
-            logging.error('Error occurred pasting from clipboard %s' % str(error))
+            logging.error('Error occurred pasting from clipboard: %s' % str(error))
             self.write(b'ERROR')
             self.write(str(error).encode())
         else:
