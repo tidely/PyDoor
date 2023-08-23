@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import socket
+from contextlib import suppress
 
 from cryptography import x509
 from cryptography.hazmat.primitives import padding, serialization
@@ -13,10 +14,8 @@ from utils.prompts import increase_timeout_prompt
 
 if platform.system() != 'Windows':
     # Enables using arrowkeys on unix-like systems
-    try:
+    with suppress(ImportError):
         import readline
-    except ImportError:
-        pass
 
 logging.basicConfig(level=logging.DEBUG)
 socket.setdefaulttimeout(10)
