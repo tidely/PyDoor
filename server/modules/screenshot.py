@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.clients import Client
 
+
 def screenshot(client: Client) -> str:
     """ Take a screenshot and save it in a file, returns filename """
     logging.debug('Taking screenshot (%s)' % client.id)

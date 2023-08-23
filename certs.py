@@ -1,13 +1,11 @@
 """ Generate SECP521R1 private keys and their corresponding certificate """
-import logging
 import datetime
+import logging
 
 from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives import serialization
-
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID
 
 
 def generate() -> bytes:

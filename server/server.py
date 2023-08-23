@@ -1,21 +1,14 @@
-import os
-import socket
-import platform
 import logging
+import os
+import platform
+import socket
 
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import padding, serialization
-
-from modules.clients import Client
+from cryptography.hazmat.primitives.asymmetric import ec
+from modules import clipboard, download, filetransfer, screenshot, webcam
 from modules.baseserver import BaseServer
-
-from modules import screenshot
-from modules import webcam
-from modules import clipboard
-from modules import filetransfer
-from modules import download
-
+from modules.clients import Client
 from utils.prompts import increase_timeout_prompt
 
 if platform.system() != 'Windows':

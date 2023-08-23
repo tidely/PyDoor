@@ -4,6 +4,7 @@ from datetime import datetime
 
 from modules.clients import Client
 
+
 def webcam(client: Client) -> str:
     """ Capture webcam """
     logging.debug('Capturing webcam (%s)' % client.id)

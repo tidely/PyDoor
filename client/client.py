@@ -1,17 +1,12 @@
-import logging
-
 import json
+import logging
 import subprocess
-from io import StringIO
 from contextlib import redirect_stdout, suppress
+from io import StringIO
 
 from cryptography import x509
-
+from modules import clipboard, download, screen, webcam
 from utils.baseclient import BaseClient
-from modules import screen
-from modules import webcam
-from modules import clipboard
-from modules import download
 
 logging.basicConfig(level=logging.DEBUG)
 

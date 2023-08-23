@@ -1,9 +1,8 @@
-import socket
 import logging
+import socket
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher
-
 
 # Padding for AES
 pad = padding.PKCS7(256)

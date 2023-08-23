@@ -1,17 +1,16 @@
-import os
-import socket
-import queue
-import threading
 import logging
+import os
+import queue
 import select
+import socket
+import threading
 import uuid
 
 from cryptography import x509
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from modules.clients import Client
 
 
