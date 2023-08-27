@@ -10,7 +10,7 @@ def copy(client: Client, text: str) -> None:
     client.write(text.encode())
 
     response = client.read().decode()
-    if client.read() != 'SUCCESS':
+    if response != 'SUCCESS':
         logging.error('Error copying to client clipboard (%s): %s' % (client.id, response))
         raise RuntimeError(f'Error copying to client clipboard: {response}')
 

