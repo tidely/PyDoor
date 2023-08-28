@@ -14,10 +14,11 @@ def receive(client: Client, filename: str, save_name: str) -> None:
             data = client.read()
             if data == b'ERROR':
                 logging.info('Client encountered error transferring file "%s" (%s)' % (filename, client.id))
-                raise RuntimeError('Client encountered error transfering file: ' + client.read().decode())
+                raise RuntimeError(f'Client encountered error transfering file: {client.read().decode()}')
             if data == b'FILE_TRANSFER_DONE':
                 break
             file.write(data)
+
 
 def send(client: Client, filename: str, save_name: str, blocksize: int = 32768) -> None:
     """ Send a file to client """

@@ -36,8 +36,8 @@ class BaseServer:
     accept_event = threading.Event()
 
     def __init__(self,
-        certificate: x509.Certificate,
-        private_key: ec.EllipticCurvePrivateKey
+            certificate: x509.Certificate,
+            private_key: ec.EllipticCurvePrivateKey
         ) -> None:
         """ Create Thread and load certificate """
         # Create thread

