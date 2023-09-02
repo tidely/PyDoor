@@ -181,6 +181,9 @@ class Client(BaseClient):
 
         try:
             windows.lock()
+        except AttributeError as error:
+            logging.error("Could not lock machine: %s" % str(error))
+            self.write(b"Locking is only supported on Windows.")
         except OSError as error:
             logging.error("Could not lock machine: %s" % str(error))
             self.write(str(error).encode())
