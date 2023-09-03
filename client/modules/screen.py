@@ -1,3 +1,4 @@
+""" Screen functionality """
 from io import BytesIO
 
 import pyscreeze

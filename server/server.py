@@ -18,7 +18,7 @@ with suppress(ImportError):
 logging.basicConfig(level=logging.DEBUG)
 socket.setdefaulttimeout(10)
 
-menu_help = """
+MENU_HELP = """
 Commands:
 
 list
@@ -27,7 +27,7 @@ shutdown
 help
 """
 
-interact_help = """
+INTERACT_HELP = """
 Available commands:
 
 shell
@@ -66,9 +66,9 @@ class ServerCLI(BaseServer, cmd.Cmd):
     def do_help(self, _) -> None:
         """ Print help message """
         if self.client is None:
-            print(menu_help)
+            print(MENU_HELP)
         else:
-            print(interact_help)
+            print(INTERACT_HELP)
 
     def __check_select(self) -> bool | None:
         """ Check if a client is selected """
@@ -76,7 +76,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print("Select a client first.")
             return True
 
-    def do_open(self, id) -> None:
+    def do_open(self, select_id) -> None:
         """ Interact with a client """
         if self.client is not None:
             print('A client has already been selected.')
@@ -89,7 +89,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
         # Check if the given id matches a client.id
         for client in clients:
-            if client.id == id:
+            if client.id == select_id:
                 self.client = client
                 break
 
@@ -118,7 +118,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         """ Open a shell to client """
         if self.__check_select(): return
 
-        logging.debug('Launched shell (%s)' % self.client.id)
+        logging.debug('Launched shell (%s)', self.client.id)
         while True:
             command = input('shell> ')
 
@@ -142,7 +142,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             try:
                 print(self.client.shell(command).decode(), end='')
             except TimeoutError:
-                logging.info('Shell command timed out: %s' % self.client.id)
+                logging.info('Shell command timed out: %s', self.client.id)
                 # Prompt user if they want to increase the timeout limit
                 if increase_timeout_prompt():
                     # Indefinitely block for output
@@ -156,7 +156,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         """ Open a python interpreter to client """
         if self.__check_select(): return
 
-        logging.debug('Launched python interpreter (%s)' % self.client.id)
+        logging.debug('Launched python interpreter (%s)', self.client.id)
         while True:
             command = input('>>> ')
 
@@ -168,7 +168,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             try:
                 print(self.client.python(command).decode(), end='')
             except TimeoutError:
-                logging.info('Python command timed out: %s' % self.client.id)
+                logging.info('Python command timed out: %s', self.client.id)
                 # Prompt user if they want to increase the timeout limit
                 if increase_timeout_prompt():
                     # Indefinitely block for output

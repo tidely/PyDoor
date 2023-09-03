@@ -1,3 +1,4 @@
+""" Webcam functionality """
 from typing import Union
 
 import cv2

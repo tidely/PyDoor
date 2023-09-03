@@ -1,3 +1,4 @@
+""" Client object """
 import logging
 import socket
 
@@ -5,8 +6,8 @@ from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher
 
 # Padding for AES
-pad = padding.PKCS7(256)
-header_length = 8
+PAD = padding.PKCS7(256)
+HEADER_LENGTH = 8
 
 
 class Client:
@@ -25,7 +26,7 @@ class Client:
         """ Encrypt data """
 
         # Pad data
-        padder = pad.padder()
+        padder = PAD.padder()
         padded_data = padder.update(data) + padder.finalize()
 
         # Encrypt padded data
@@ -42,7 +43,7 @@ class Client:
         decrypted_data = decryptor.update(data) + decryptor.finalize()
 
         # Unpad data
-        unpadder = pad.unpadder()
+        unpadder = PAD.unpadder()
         unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
 
         return unpadded_data
@@ -54,7 +55,7 @@ class Client:
             buffer = self.conn.recv(amount)
             if not buffer:
                 # Assume connection was closed
-                logging.info('Assuming connection was closed: %s' % str(self.address))
+                logging.info('Assuming connection was closed: %s', str(self.address))
                 raise ConnectionResetError
             data += buffer
 
@@ -62,14 +63,14 @@ class Client:
 
     def _read(self) -> bytes:
         """ Read messages from client """
-        header = self.__read(header_length)
+        header = self.__read(HEADER_LENGTH)
         message_length = int.from_bytes(header, 'big')
         return self.__read(message_length)
 
     def _write(self, data: bytes) -> None:
         """ Write message data to peer """
         # Create header for data
-        header = len(data).to_bytes(header_length, byteorder='big')
+        header = len(data).to_bytes(HEADER_LENGTH, byteorder='big')
         message = header + data
         self.conn.sendall(message)
 

@@ -1,3 +1,4 @@
+""" Base Server """
 import logging
 import os
 import queue
@@ -75,7 +76,7 @@ class BaseServer:
             try:
                 cipher = self.handshake(client)
             except Exception as error:
-                logging.debug('Handshake with peer failed: %s' % str(error))
+                logging.debug('Handshake with peer failed: %s', str(error))
                 conn.close()
             else:
                 client.add_cipher(cipher)
@@ -159,7 +160,7 @@ class BaseServer:
                     self.clients.remove(client)
                 else:
                     # Buffer had data
-                    logging.debug('Received data from %s during listing: %s' % (client.address, data))
+                    logging.debug('Received data from %s during listing: %s', client.address, data)
                 finally:
                     client.conn.settimeout(socket.getdefaulttimeout())
 
@@ -175,5 +176,4 @@ class BaseServer:
             # Socket was not connected.
             pass
         except Exception as error:
-            logging.error('An error occurred while server was shutting down: %s' % str(error))
-
+            logging.error('An error occurred while server was shutting down: %s', str(error))

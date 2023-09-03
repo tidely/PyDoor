@@ -1,3 +1,4 @@
+""" Clipboard functionality """
 import pyperclip
 
 

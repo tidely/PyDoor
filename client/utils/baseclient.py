@@ -50,7 +50,7 @@ class BaseClient:
             try:
                 self.handshake()
             except Exception as error:
-                logging.debug('Handshake with peer failed: %s' % str(error))
+                logging.debug('Handshake with peer failed: %s', str(error))
             else:
                 self.address = address
                 break
@@ -137,7 +137,7 @@ class BaseClient:
             buffer = self.sock.recv(amount)
             if not buffer:
                 # Assume connection was closed
-                logging.info('Assuming connection was closed: %s' % str(self.address))
+                logging.info('Assuming connection was closed: %s', str(self.address))
                 raise ConnectionResetError
             data += buffer
 
