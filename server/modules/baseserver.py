@@ -5,8 +5,8 @@ import queue
 import select
 import socket
 import threading
-import uuid
 import time
+import uuid
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -176,6 +176,13 @@ class BaseServer:
         latency = round(time.time() * 1000) - ms_before
         logging.debug("Client (%s) latency is %sms", client.id, latency)
         return latency
+
+    def disconnect(self, client: Client) -> None:
+        """ Disconnect a specific client """
+        logging.debug("Disconnecting client (%s)", client.id)
+        client.conn.close()
+        if client in self.clients:
+            self.clients.remove(client)
 
     def shutdown(self) -> None:
         """ Shutdown server """

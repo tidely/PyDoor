@@ -41,6 +41,7 @@ receive
 send
 download
 lock (windows only)
+disconnect
 exit
 """
 
@@ -283,6 +284,15 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print(str(error))
         else:
             print('Successfully locked client machine.')
+
+    def do_disconnect(self, _) -> None:
+        """ Disconnect a client """
+        if self.__check_select(): return
+
+        self.disconnect(self.client)
+        print("Disconnected client.")
+        self.client = None
+        self.prompt = "> "
 
 
 if __name__ == '__main__':
