@@ -322,6 +322,7 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             server.client = None
             server.prompt = DEFAULT_PROMPT
+            print() # Start on a new line
             continue
         else:
             break
