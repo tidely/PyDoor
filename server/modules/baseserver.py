@@ -187,6 +187,8 @@ class BaseServer:
     def shutdown(self) -> None:
         """ Shutdown server """
         logging.debug('Shutting down server')
+        # Stop accept thread
+        self.accept_event.set()
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()

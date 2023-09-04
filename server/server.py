@@ -18,6 +18,8 @@ with suppress(ImportError):
 logging.basicConfig(level=logging.DEBUG)
 socket.setdefaulttimeout(10)
 
+DEFAULT_PROMPT = "> "
+
 MENU_HELP = """
 Commands:
 
@@ -49,7 +51,7 @@ exit
 class ServerCLI(BaseServer, cmd.Cmd):
     """ CLI for BaseServer """
 
-    prompt = "> "
+    prompt = DEFAULT_PROMPT
     client = None
 
     def __init__(self, certificate: x509.Certificate, private_key: ec.EllipticCurvePrivateKey):
@@ -292,7 +294,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         self.disconnect(self.client)
         print("Disconnected client.")
         self.client = None
-        self.prompt = "> "
+        self.prompt = DEFAULT_PROMPT
 
 
 if __name__ == '__main__':
@@ -313,5 +315,13 @@ if __name__ == '__main__':
     connection = server.connections_queue.get()
     print(connection.id.encode())
 
-    # Begin server CLI
-    server.cmdloop()
+    # Start Server CLI
+    while True:
+        try:
+            server.cmdloop()
+        except KeyboardInterrupt:
+            server.client = None
+            server.prompt = DEFAULT_PROMPT
+            continue
+        else:
+            break
