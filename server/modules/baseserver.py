@@ -6,6 +6,7 @@ import select
 import socket
 import threading
 import uuid
+import time
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -165,6 +166,16 @@ class BaseServer:
                     client.conn.settimeout(socket.getdefaulttimeout())
 
         return self.clients
+
+    def ping(self, client: Client) -> int | bool:
+        """ Measure socket latency in ms """
+        logging.debug("Pinging client (%s)", client.id)
+        ms_before = round(time.time() * 1000)
+        client.write(b'PING')
+        client.read()
+        latency = round(time.time() * 1000) - ms_before
+        logging.debug("Client (%s) latency is %sms", client.id, latency)
+        return latency
 
     def shutdown(self) -> None:
         """ Shutdown server """

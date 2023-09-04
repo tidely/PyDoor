@@ -30,6 +30,7 @@ help
 INTERACT_HELP = """
 Available commands:
 
+ping
 shell
 python
 screenshot
@@ -62,6 +63,17 @@ class ServerCLI(BaseServer, cmd.Cmd):
         """ Shutdown the server """
         self.shutdown()
         return True
+
+    def do_ping(self, _) -> None:
+        """ Get client latency """
+        if self.__check_select(): return
+
+        try:
+            latency = self.ping(self.client)
+        except TimeoutError:
+            print("Client timed out.")
+        else:
+            print(f'Ping: {latency}ms')
 
     def do_help(self, _) -> None:
         """ Print help message """

