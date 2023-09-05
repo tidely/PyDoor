@@ -116,16 +116,16 @@ class Client(BaseClient):
         """ Paste from clipboard """
         logging.debug('Attempting to paste from clipboard')
         try:
-            data = clipboard.paste()
-            if data is None:
-                raise clipboard.pyperclip.PyperclipException('Clipboard is empty.')
+            content = clipboard.paste()
         except RuntimeError as error:
             logging.error('Error occurred pasting from clipboard: %s', str(error))
             self.write(b'ERROR')
             self.write(str(error).encode())
         else:
-            logging.info('Pasted "%s" from clipboard', data)
-            self.write(data.encode())
+            if content is None:
+                content = ''
+            logging.info('Pasted "%s" from clipboard', content)
+            self.write(content.encode())
 
     def send_file(self) -> None:
         """ Send a file to server """

@@ -82,6 +82,7 @@ class BaseServer:
             else:
                 client.add_cipher(cipher)
                 self.clients.append(client)
+                self.ids.append(client.id)
                 self.connections_queue.put(client)
 
     def handshake(self, client: Client) -> Cipher:
@@ -133,7 +134,7 @@ class BaseServer:
             algorithm=algorithms.AES256(derived_key),
             mode=modes.CBC(iv)
         )
-        logging.info('Handshake completed successfully')
+        logging.info('Handshake completed with client (%s) at %s', client.id, client.address)
         return cipher
 
     def list(self) -> list:
@@ -150,7 +151,7 @@ class BaseServer:
         for client in clients:
             # Check for errors
             if client.conn in errors:
-                self.clients.remove(client)
+                self.disconnect()
             if client.conn in readable:
                 # Check if socket is still connected
                 client.conn.settimeout(0)
@@ -158,22 +159,25 @@ class BaseServer:
                     data = client._read()
                 except OSError:
                     # Peer has disconnected
-                    self.clients.remove(client)
+                    self.disconnect(client)
+                    continue
                 else:
                     # Buffer had data
                     logging.debug('Received data from %s during listing: %s', client.address, data)
-                finally:
-                    client.conn.settimeout(socket.getdefaulttimeout())
+
+                client.conn.settimeout(socket.getdefaulttimeout())
 
         return self.clients
 
     def ping(self, client: Client) -> int | bool:
         """ Measure socket latency in ms """
         logging.debug("Pinging client (%s)", client.id)
+
         ms_before = round(time.time() * 1000)
         client.write(b'PING')
         client.read()
         latency = round(time.time() * 1000) - ms_before
+
         logging.debug("Client (%s) latency is %sms", client.id, latency)
         return latency
 
@@ -183,6 +187,8 @@ class BaseServer:
         client.conn.close()
         if client in self.clients:
             self.clients.remove(client)
+        if client.id in self.ids:
+            self.ids.remove(client.id)
 
     def shutdown(self) -> None:
         """ Shutdown server """
