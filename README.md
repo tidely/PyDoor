@@ -5,27 +5,28 @@ Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.
 ## Cross-Platform Features  
   
 * Multi-client support  
-* Cross-platform  
-* Remote Shell that updates in real time  
-* Remote Python Interpreter  
-* Simple File Transfer  
 * ECDH Key Exchange  
 * AES256 Encryption  
-* Keylogger  
-* Manage Clipboard Remotely  
+* Real-time Shell  
+* Python Interpreter  
+* File Transfer  
+* Copy/Paste Clipboard  
 * Capture Webcam  
-* Take Screenshots Remotely  
-* Remotely Zip Files  
-* Sending commands to all clients  
+* Take Screenshots  
 * Download files from the web  
 * Restart Sessions  
   
 ## Windows Specific Features  
   
-* Add Client to Startup  
-* Lock, Shutdown and Restart Client Machines  
+* Lock Client Machines  
   
 Windows Specific Features can be done manually on other OS's  
+  
+## Feature Roadmap  
+  
+* Broadcasting commands  
+* Keylogger  
+* Adding Client to Startup (Windows)  
   
 ## Installation  
   
@@ -39,10 +40,10 @@ You will need:
 ## Usage  
   
 Run server:  
-`python server-cli.py`  
+`python3 server.py`  
   
 Run client:  
-`python client.py`  
+`python3 client.py`  
   
 ## FAQ  
   
