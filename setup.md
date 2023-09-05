@@ -12,7 +12,7 @@ Setup [Port forwarding](https://en.wikipedia.org/wiki/Port_forwarding) in your r
   
 ### Choose server port  
   
-Choose a server port in [server-cli.py](https://github.com/Y4hL/PyDoor/blob/master/server/server-cli.py)    
+Choose a server port in [server.py](https://github.com/Y4hL/PyDoor/blob/master/server/server-cli.py)  
   
 ## Client Setup  
   
