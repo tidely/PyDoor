@@ -1,16 +1,16 @@
 """ Webcam functionality """
 from typing import Union
 
-import cv2
+from cv2 import VideoCapture, imencode
 
 
 def capture_webcam() -> Union[bytes, None]:
     """ Capture a webcam image """
-    camera = cv2.VideoCapture(0)
+    camera = VideoCapture(0)
     state, img = camera.read()
     camera.release()
     if state:
-        is_success, arr = cv2.imencode('.png', img)
+        is_success, arr = imencode('.png', img)
         if is_success:
             return arr.tobytes()
     raise RuntimeError('Could not capture webcam')
