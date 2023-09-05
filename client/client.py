@@ -171,7 +171,10 @@ class Client(BaseClient):
 
         try:
             download.download(url, filename)
-        except RuntimeError as error:
+        except TimeoutError:
+            logging.error("Download of '%s' timed out", url)
+            self.write(b"Download timed out.")
+        except (RuntimeError, OSError) as error:
             logging.error("Error downloading file from the web: %s", str(error))
             self.write(str(error).encode())
         else:

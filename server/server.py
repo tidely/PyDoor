@@ -1,3 +1,4 @@
+""" Server CLI for PyDoor """
 import cmd
 import logging
 import socket
@@ -9,7 +10,6 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, filetransfer, screenshot, webcam, windows
 from modules.baseserver import BaseServer
 from utils import terminal
-from utils.prompts import increase_timeout_prompt
 
 # Enables using arrowkeys on unix-like systems
 with suppress(ImportError):
@@ -159,7 +159,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             except TimeoutError:
                 logging.info('Shell command timed out: %s', self.client.id)
                 # Prompt user if they want to increase the timeout limit
-                if increase_timeout_prompt():
+                if terminal.increase_timeout_prompt():
                     # Indefinitely block for output
                     self.client.conn.settimeout(None)
                     print(self.client.read().decode(), end='')
@@ -185,7 +185,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             except TimeoutError:
                 logging.info('Python command timed out: %s', self.client.id)
                 # Prompt user if they want to increase the timeout limit
-                if increase_timeout_prompt():
+                if terminal.increase_timeout_prompt():
                     # Indefinitely block for output
                     self.client.conn.settimeout(None)
                     print(self.client.read().decode(), end='')
@@ -274,7 +274,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         except RuntimeError as error:
             print(str(error))
         else:
-            print("Successfully downloaded file.")
+            print("File is downloading in the background.")
 
     def do_lock(self, _) -> None:
         """ Lock client machine """
@@ -319,7 +319,7 @@ if __name__ == '__main__':
     while True:
         try:
             server.cmdloop()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, ConnectionResetError):
             server.client = None
             server.prompt = DEFAULT_PROMPT
             print() # Start on a new line
