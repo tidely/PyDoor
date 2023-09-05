@@ -15,3 +15,15 @@ def increase_timeout_prompt():
         return True
 
     return False
+
+def task_print(tasks: list) -> None:
+    """ Given a list of tasks, print them nicely to the user """
+    if len(tasks) == 0:
+        print("No tasks are running.")
+        return
+
+    print("Running Tasks\n")
+    for task in tasks:
+        match task[0]:
+            case "download":
+                print(f"Type: Download | url: {task[1]} | file: {task[2]} | ThreadID: {task[3]}")

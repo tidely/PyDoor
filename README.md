@@ -13,7 +13,8 @@ Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.
 * Copy/Paste Clipboard  
 * Capture Webcam  
 * Take Screenshots  
-* Download files from the web  
+* File Downloader  
+* Background Tasks  
 * Restart Sessions  
   
 ## Windows Specific Features  
@@ -24,6 +25,7 @@ Windows Specific Features can be done manually on other OS's
   
 ## Feature Roadmap  
   
+* Threaded Shell and Interpreter  
 * Broadcasting commands  
 * Keylogger  
 * Adding Client to Startup (Windows)  

