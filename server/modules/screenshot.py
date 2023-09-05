@@ -1,6 +1,5 @@
 """ Screenshot functionality """
 import logging
-import socket
 from datetime import datetime
 
 from modules.clients import Client
