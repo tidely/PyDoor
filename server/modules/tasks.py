@@ -15,7 +15,6 @@ def tasks(client: Client) -> list:
     logging.info("Received tasks from client (%s): %s", client.id, response)
     return json.loads(response)
 
-
 def stoptask(client: Client, task_id: str) -> bool:
     """ Stop a task on a client """
     logging.debug("Attempting to stop task (%s) on client (%s)", task_id, client.id)
@@ -25,6 +24,8 @@ def stoptask(client: Client, task_id: str) -> bool:
 
     response = client.read().decode()
     if response != "STOPPED":
+        logging.error("Task '%s' does not exist on client (%s)", task_id, client.id)
         return False
 
+    logging.info("Task '%s' stopped on client (%s)", task_id, client.id)
     return True
