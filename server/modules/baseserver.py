@@ -8,7 +8,6 @@ import threading
 import time
 import uuid
 
-from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -37,15 +36,10 @@ class BaseServer:
     # Event to stop listening to new connections
     accept_event = threading.Event()
 
-    def __init__(self,
-            certificate: x509.Certificate,
-            private_key: ec.EllipticCurvePrivateKey
-        ) -> None:
+    def __init__(self, private_key: ec.EllipticCurvePrivateKey) -> None:
         """ Create Thread and load certificate """
         # Create thread
         self.accept_thread = threading.Thread(target=self._accept, daemon=True)
-
-        self.certificate = certificate
         self.private_key = private_key
 
     def start(self, address) -> None:
@@ -100,11 +94,11 @@ class BaseServer:
         # Keys used for session
         private_key = ec.generate_private_key(ec.SECP521R1())
         pem_public_key = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM, 
+            encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
 
-        # Sign public key using certificate private key
+        # Sign public key using private key
         signature = self.private_key.sign(
             pem_public_key,
             ec.ECDSA(hashes.SHA512())

@@ -1,14 +1,12 @@
 """ Base Class for the Client, handles handshake, encryption and messages """
-import time
-import socket
 import logging
+import socket
+import time
 
-from cryptography import x509
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes, padding, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 socket.setdefaulttimeout(10)
 
@@ -29,9 +27,9 @@ class BaseClient:
     # Padding for AES
     pad = padding.PKCS7(256)
 
-    def __init__(self, certificate: x509.Certificate) -> None:
+    def __init__(self, public_key: ec.EllipticCurvePublicKey) -> None:
         """ Define a trusted certificate """
-        self.certificate = certificate
+        self.public_key = public_key
 
     def connect(self, address: tuple) -> None:
         """ Connect to peer """
@@ -47,7 +45,8 @@ class BaseClient:
                 self.sock.settimeout(10)
                 time.sleep(1)
                 continue
-
+            self.handshake()
+            return
             try:
                 self.handshake()
             except Exception as error:
@@ -71,7 +70,7 @@ class BaseClient:
         # Keys used for session
         private_key = ec.generate_private_key(ec.SECP521R1())
         pem_public_key = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM, 
+            encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
         # Exchange public keys
@@ -80,7 +79,7 @@ class BaseClient:
         signature = self._read()
 
         # Verify signature
-        self.certificate.public_key().verify(
+        self.public_key.verify(
             signature,
             serialized_peer_public_key,
             ec.ECDSA(hashes.SHA512())

