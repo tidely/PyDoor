@@ -83,15 +83,3 @@ class Client:
     def write(self, data: bytes) -> bool:
         """ Encrypt a message and send it to a peer """
         return self._write(self._encrypt(data))
-
-    def shell(self, command: str) -> None:
-        """ Execute a shell command on client """
-        self.write(b'SHELL')
-        self.write(command.encode())
-        return self.read()
-
-    def python(self, command: str) -> None:
-        """ Execute a python command on client """
-        self.write(b'PYTHON')
-        self.write(command.encode())
-        return self.read()
