@@ -151,7 +151,7 @@ class BaseServer:
         for client in clients:
             # Check for errors
             if client.conn in errors:
-                self.disconnect()
+                self.disconnect(client)
             if client.conn in readable:
                 # Check if socket is still connected
                 client.conn.settimeout(0)

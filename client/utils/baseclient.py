@@ -1,3 +1,4 @@
+""" Base Class for the Client, handles handshake, encryption and messages """
 import time
 import socket
 import logging

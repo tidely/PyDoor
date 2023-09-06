@@ -13,6 +13,8 @@ HEADER_LENGTH = 8
 class Client:
     """ Client class """
 
+    cipher = None
+
     def __init__(self, conn: socket.socket, address: tuple, id: str) -> None:
         self.conn = conn
         self.address = address
