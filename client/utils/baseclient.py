@@ -45,8 +45,7 @@ class BaseClient:
                 self.sock.settimeout(10)
                 time.sleep(1)
                 continue
-            self.handshake()
-            return
+
             try:
                 self.handshake()
             except Exception as error:
