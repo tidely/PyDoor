@@ -206,8 +206,8 @@ class Client(BaseClient):
         """ Get current tasks (background threads) """
         tasks = []
         for task in threading.enumerate():
-            # Skip threads that aren't server initiated tasks
-            if not task.name.startswith('['):
+            # Skip main thread
+            if task == threading.main_thread():
                 continue
 
             info = json.loads(task.name)
@@ -222,8 +222,8 @@ class Client(BaseClient):
 
         # If the task is running, set the stop event
         for task in threading.enumerate():
-            # Skip threads that aren't server initiated tasks
-            if not task.name.startswith('['):
+            # Skip main thread
+            if task == threading.main_thread():
                 continue
 
             if task_id == str(task.native_id):
