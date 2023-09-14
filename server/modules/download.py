@@ -3,7 +3,7 @@ import json
 import logging
 
 from modules.clients import Client
-from utils.timeout_handler import TimeoutSetter
+from utils.timeout_handler import timeoutsetter
 
 
 def download(client: Client, url: str, filename: str, timeout: int = 30) -> bool:
@@ -13,7 +13,7 @@ def download(client: Client, url: str, filename: str, timeout: int = 30) -> bool
     client.write(b'DOWNLOAD')
     client.write(json.dumps((url, filename)).encode())
 
-    with TimeoutSetter(client, timeout):
+    with timeoutsetter(client, timeout):
         response = client.read().decode()
 
     if response != "Success":
