@@ -19,7 +19,7 @@ def copy(client: Client, text: str) -> None:
 
 def paste(client: Client) -> str:
     """ Paste from clipboard """
-    logging.debug('Pasting from client clipboard')
+    logging.debug('Pasting from client clipboard (%s)', client.id)
     client.write(b'PASTE')
 
     clipboard = client.read().decode()
