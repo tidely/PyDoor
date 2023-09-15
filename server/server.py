@@ -254,6 +254,10 @@ class ServerCLI(BaseServer, cmd.Cmd):
         save_name = input('Save file as: ')
         try:
             filetransfer.send(self.client, filename, save_name)
+        except PermissionError:
+            print('Insufficient permissions to read file.')
+        except FileNotFoundError:
+            print('File does not exist.')
         except RuntimeError as error:
             print(str(error))
         else:

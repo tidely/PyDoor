@@ -1,4 +1,5 @@
 """ File transfer functionality """
+import os
 import logging
 
 from modules.clients import Client
@@ -7,6 +8,7 @@ from modules.clients import Client
 def receive(client: Client, filename: str, save_name: str) -> None:
     """ Receive a file from the client """
     logging.debug('Receiving file "%s" from client (%s)', filename, client.id)
+
     client.write(b'SEND_FILE')
     client.write(filename.encode())
 
@@ -24,24 +26,26 @@ def send(client: Client, filename: str, save_name: str, blocksize: int = 32768) 
     """ Send a file to client """
     logging.debug('Sending file "%s" to client (%s)', filename, client.id)
 
+    # Check that the file exists and it's permissions before calling client
+    if not os.path.isfile(filename):
+        raise FileNotFoundError
+
+    if not os.access(filename, os.R_OK):
+        raise PermissionError
+
     client.write(b'RECEIVE_FILE')
     client.write(save_name.encode())
 
     response = client.read().decode()
     if response != 'FILE_OPENED':
-        raise RuntimeError(f'Error occurred sending file to client: {response}')
+        raise RuntimeError(f'Client could not open file: {response}')
 
-    try:
-        with open(filename, 'rb') as file:
-            while True:
-                block = file.read(blocksize)
-                if not block:
-                    break
-                client.write(block)
+    with open(filename, 'rb') as file:
+        while True:
+            block = file.read(blocksize)
+            if not block:
+                break
+            client.write(block)
 
-    except (FileNotFoundError, PermissionError) as error:
-        logging.error('Unable to send file "%s" to client (%s): %s', filename, client.id, str(error))
-        client.write(b'FILE_TRANSFER_DONE')
-    else:
-        client.write(b'FILE_TRANSFER_DONE')
-        logging.info('Successfully transferred file "%s" to client (%s)', filename, client.id)
+    logging.info('Successfully transferred file "%s" to client (%s)', filename, client.id)
+    client.write(b'FILE_TRANSFER_DONE')
