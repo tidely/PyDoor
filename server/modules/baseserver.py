@@ -12,6 +12,7 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from utils.timeout_handler import timeoutsetter
 from modules.clients import Client
 
 
@@ -148,18 +149,15 @@ class BaseServer:
                 self.disconnect(client)
             if client.conn in readable:
                 # Check if socket is still connected
-                client.conn.settimeout(0)
-                try:
-                    data = client._read()
-                except OSError:
-                    # Peer has disconnected
-                    self.disconnect(client)
-                    continue
-                else:
-                    # Buffer had data
-                    logging.debug('Received data from %s during listing: %s', client.address, data)
-
-                client.conn.settimeout(socket.getdefaulttimeout())
+                with timeoutsetter(client, None):
+                    try:
+                        data = client._read()
+                    except OSError:
+                        # Peer has disconnected
+                        self.disconnect(client)
+                    else:
+                        # Buffer had data
+                        logging.debug('Received data from %s during listing: %s', client.address, data)
 
         return self.clients
 

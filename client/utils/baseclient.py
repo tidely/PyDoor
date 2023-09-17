@@ -42,7 +42,7 @@ class BaseClient:
             except OSError:
                 self.sock.close()
                 self.sock = socket.socket()
-                self.sock.settimeout(10)
+                self.sock.settimeout(10.0)
                 time.sleep(1)
                 continue
 

@@ -5,7 +5,7 @@ from modules.clients import Client
 
 
 @contextmanager
-def timeoutsetter(client: Client, timeout: float) -> None:
+def timeoutsetter(client: Client, timeout: float | None) -> None:
     """ Temporarily set a clients timeout """
     default = client.conn.gettimeout()
     client.conn.settimeout(timeout)

@@ -6,12 +6,12 @@ from modules.clients import Client
 from utils.timeout_handler import timeoutsetter
 
 
-def screenshot(client: Client) -> str:
+def screenshot(client: Client, timeout: float | None = 120.0) -> str:
     """ Take a screenshot and save it in a file, returns filename """
     logging.debug('Taking screenshot (%s)', client.id)
     client.write(b'SCREENSHOT')
 
-    with timeoutsetter(client, 120):
+    with timeoutsetter(client, timeout):
         img_data = client.read()
 
     if img_data.startswith(b'ERROR'):
