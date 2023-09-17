@@ -29,9 +29,9 @@ class BaseServer:
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     # List of clients
-    clients = []
+    clients: list[Client] = []
     # List of client ids
-    ids = []
+    ids: list[str] = []
     # Queue for new connections
     connections_queue = queue.Queue()
     # Event to stop listening to new connections
@@ -43,7 +43,7 @@ class BaseServer:
         self.accept_thread = threading.Thread(target=self._accept, daemon=True)
         self.private_key = private_key
 
-    def start(self, address) -> None:
+    def start(self, address: tuple) -> None:
         """ Start the server """
         self.sock.bind(address)
         self.sock.listen()
