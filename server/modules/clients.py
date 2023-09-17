@@ -20,6 +20,10 @@ class Client:
         self.address = address
         self.id = id
 
+    def fileno(self) -> int:
+        """ Return file descriptior of client socket """
+        return self.conn.fileno()
+
     def add_cipher(self, cipher: Cipher) -> None:
         """ Add a cipher """
         self.cipher = cipher

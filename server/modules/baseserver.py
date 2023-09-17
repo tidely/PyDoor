@@ -140,24 +140,27 @@ class BaseServer:
         clients = self.clients.copy()
 
         # Check for disconnected clients
-        sockets = [client.conn for client in clients]
-        readable, _, errors = select.select(sockets, sockets, sockets)
+        readable, _, errors = select.select(clients, clients, clients, 60.0)
 
-        for client in clients:
-            # Check for errors
-            if client.conn in errors:
-                self.disconnect(client)
-            if client.conn in readable:
-                # Check if socket is still connected
-                with timeoutsetter(client, None):
-                    try:
-                        data = client._read()
-                    except (OSError, ConnectionError):
-                        # Peer has disconnected
-                        self.disconnect(client)
-                    else:
-                        # Buffer had data
-                        logging.debug('Received data from %s during listing: %s', client.address, data)
+        # Type hints
+        readable: list[Client]
+        errors: list[Client]
+
+        # Disconnect clients that returned an error
+        for client in errors:
+            self.disconnect(client)
+
+        # Since there is data to read, server and client are out of sync
+        # Try fixing this by removing the data in the buffer
+        for client in readable:
+            with timeoutsetter(client, None):
+                try:
+                    data = client.read()
+                except (OSError, ConnectionError):
+                    # Peer has disconnected
+                    self.disconnect(client)
+                else:
+                    logging.debug('Data in buffer (%s) during list: %s', client.id, data)
 
         return self.clients
 
