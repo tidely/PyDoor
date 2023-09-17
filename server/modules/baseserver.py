@@ -152,7 +152,7 @@ class BaseServer:
                 with timeoutsetter(client, None):
                     try:
                         data = client._read()
-                    except OSError:
+                    except (OSError, ConnectionError):
                         # Peer has disconnected
                         self.disconnect(client)
                     else:

@@ -336,7 +336,7 @@ if __name__ == '__main__':
     while True:
         try:
             server.cmdloop()
-        except (KeyboardInterrupt, ConnectionResetError):
+        except (KeyboardInterrupt, ConnectionError):
             server.client = None
             server.prompt = DEFAULT_PROMPT
             print() # Start on a new line

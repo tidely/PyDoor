@@ -1,5 +1,5 @@
 """ Timeout helper for clients """
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 from modules.clients import Client
 
@@ -12,4 +12,6 @@ def timeoutsetter(client: Client, timeout: float | None) -> None:
     try:
         yield
     finally:
-        client.conn.settimeout(default)
+        # Ignore if client has disconnected
+        with suppress(OSError, ConnectionError):
+            client.conn.settimeout(default)

@@ -36,7 +36,7 @@ class BaseClient:
         while True:
             try:
                 self.sock.connect(address)
-            except ConnectionRefusedError:
+            except ConnectionError:
                 # Socket is not open
                 continue
             except OSError:
