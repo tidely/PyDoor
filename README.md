@@ -1,6 +1,6 @@
 # PyDoor  
   
-Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.  
+Encrypted Backdoor/Reverse Shell/RAT written in Python.  
   
 ## Cross-Platform Features  
   
