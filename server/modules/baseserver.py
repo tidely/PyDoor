@@ -153,7 +153,7 @@ class BaseServer:
         # Since there is data to read, server and client are out of sync
         # Try fixing this by removing the data in the buffer
         for client in readable:
-            with timeoutsetter(client, None):
+            with timeoutsetter(client, 0.0):
                 try:
                     data = client.read()
                 except (OSError, ConnectionError):
