@@ -1,8 +1,9 @@
-""" Download functionality """
-import json
+""" Threaded download functionality """
 import threading
 
 import requests
+
+from utils.tasks import Task
 
 
 def download_stream(stream: requests.Response, filename: str, stop_event: threading.Event) -> None:
@@ -13,19 +14,19 @@ def download_stream(stream: requests.Response, filename: str, stop_event: thread
             if stop_event.is_set():
                 return
 
-def download(url: str, filename: str) -> None:
+
+def download(url: str, filename: str) -> Task:
     """ Download file from url """
 
     # Request a download stream
     stream = requests.get(url, stream=True, allow_redirects=True, timeout=20)
 
-    # Create a stop event
-    stop_event = threading.Event()
+    task = Task(
+        target=download_stream,
+        args=[stream, filename],
+        info=("Download", url, filename),
+        output=None
+    )
 
-    # Create a thread to download from stream
-    thread = threading.Thread(target=download_stream, args=(stream, filename, stop_event))
-    thread.stop_event = stop_event
-    thread.start()
-
-    # Native ID gets assigned after the thread starts
-    thread.name = json.dumps(("download", url, filename, thread.native_id))
+    task.start()
+    return task

@@ -1,6 +1,7 @@
 """ Terminal functionality """
 import os
 import platform
+from colorama import Fore
 
 
 def clear() -> None:
@@ -19,8 +20,20 @@ def task_print(tasks: list) -> None:
         print("No tasks are running.")
         return
 
-    print("Running Tasks\n")
+    print("-Tasks-")
+    print(f"State: {Fore.GREEN}Running{Fore.WHITE} - {Fore.RED}Stopped with output{Fore.WHITE}\n")
     for task in tasks:
-        match task[0]:
-            case "download":
-                print(f"Type: Download | url: {task[1]} | file: {task[2]} | ThreadID: {task[3]}")
+        identifier, native_id, command, *params = task
+
+        # Always print identifier
+        print(f"ID: {identifier[:5]} | ", end='')
+
+        # Print command type and status
+        print(f"Type: {Fore.GREEN if native_id else Fore.RED}{command}{Fore.WHITE} | ", end='')
+
+        # Additionals paremeters by type
+        match command:
+            case "Download":
+                print(f"url: {params[0]} | file: {task[1]}")
+            case "Python":
+                print(f"Command: {params[0]}")

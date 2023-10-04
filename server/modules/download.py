@@ -13,6 +13,7 @@ def download(client: Client, url: str, filename: str, timeout: float | None = 30
     client.write(b'DOWNLOAD')
     client.write(json.dumps((url, filename)).encode())
 
+    # Waits for the client to start the download, not for it to finish
     with timeoutsetter(client, timeout):
         response = client.read().decode()
 

