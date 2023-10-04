@@ -8,11 +8,13 @@ def clear() -> None:
     """ Clear the terminal on different OS's """
     os.system('cls' if platform.system() == 'Windows' else 'clear')
 
+
 def increase_timeout_prompt() -> bool:
     """ Prompt user to increase timeout limit """
     print('Client did not respond in time.')
     choice = input('Do you want to remove the timeout? ')
     return choice.strip().lower().startswith('y')
+
 
 def task_print(tasks: list) -> None:
     """ Given a list of tasks, print them nicely to the user """

@@ -18,6 +18,7 @@ def shell(client: Client, command: str) -> str:
     logging.debug("Command (%s) output from client (%s): %s", command, client.id, response)
     return response
 
+
 def python(client: Client, command: str) -> str:
     """ Run python command on client """
     logging.debug("Sending python command '%s' to client (%s)", command, client.id)

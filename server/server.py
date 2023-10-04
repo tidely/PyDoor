@@ -350,6 +350,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         self.client = None
         self.prompt = DEFAULT_PROMPT
 
+
 if __name__ == '__main__':
     from cryptography.hazmat.primitives import serialization
 

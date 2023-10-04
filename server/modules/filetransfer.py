@@ -22,6 +22,7 @@ def receive(client: Client, filename: str, save_name: str) -> None:
                 break
             file.write(data)
 
+
 def send(client: Client, filename: str, save_name: str, blocksize: int = 32768) -> None:
     """ Send a file to client """
     logging.debug('Sending file "%s" to client (%s)', filename, client.id)
