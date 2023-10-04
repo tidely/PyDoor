@@ -48,7 +48,7 @@ class BaseClient:
 
             try:
                 self.handshake()
-            except Exception as error:
+            except OSError as error:
                 logging.debug('Handshake with peer failed: %s', str(error))
             else:
                 self.address = address
