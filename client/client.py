@@ -76,17 +76,17 @@ class Client(BaseClient):
 
         # Create task
         task = pyshell.pyshell(command)
-        self.task_list.append(task)
 
-        # Define a timeout for the command
+        # Define timeout until task is put into background
         timeout = 50
 
         try:
             output: str = task.output.get(timeout=timeout)
         except queue.Empty:
+            # Add task to background tasks
+            self.task_list.append(task)
             self.write(f'Timed out after {timeout}s.'.encode())
         else:
-            self.task_list.remove(task)
             self.write(output.encode())
 
     def screenshot(self) -> None:

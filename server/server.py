@@ -56,8 +56,6 @@ class ServerCLI(BaseServer, cmd.Cmd):
     prompt = DEFAULT_PROMPT
     client = None
 
-    tasklist = []
-
     def __init__(self, private_key: ec.EllipticCurvePrivateKey):
         BaseServer.__init__(self, private_key)
         cmd.Cmd.__init__(self)
@@ -124,7 +122,6 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print("No client is selected. To shutdown the server, use 'shutdown'.")
             return
 
-        self.tasklist = []
         self.client = None
         self.prompt = '> '
 
@@ -295,8 +292,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
         """ Fetch all running tasks """
         if self.__check_select(): return
 
-        self.tasklist = tasks.tasks(self.client)
-        terminal.task_print(self.tasklist)
+        self.client.tasklist = tasks.tasks(self.client)
+        terminal.task_print(self.client.tasklist)
 
     def do_stoptask(self, task_id: str) -> None:
         """ Stop a task on a client """
@@ -309,7 +306,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             return
 
         # Find complete task identifier
-        identifier = tasks.find(self.tasklist, task_id)
+        identifier = tasks.find(self.client.tasklist, task_id)
         if identifier is None:
             print("Task doesn't exist.")
             return
@@ -331,7 +328,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print("Usage: output (task id)")
             return
 
-        identifier = tasks.find(self.tasklist, task_id)
+        identifier = tasks.find(self.client.tasklist, task_id)
         if identifier is None:
             print("Task doesn't exist.")
             return
@@ -352,7 +349,6 @@ class ServerCLI(BaseServer, cmd.Cmd):
         print("Disconnected client.")
         self.client = None
         self.prompt = DEFAULT_PROMPT
-        self.tasklist = []
 
 if __name__ == '__main__':
     from cryptography.hazmat.primitives import serialization
