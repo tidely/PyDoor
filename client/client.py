@@ -79,7 +79,7 @@ class Client(BaseClient):
         self.task_list.append(task)
 
         # Define a timeout for the command
-        timeout = 60
+        timeout = 50
 
         try:
             output: str = task.output.get(timeout=timeout)
