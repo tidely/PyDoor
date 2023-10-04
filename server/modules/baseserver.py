@@ -7,6 +7,7 @@ import socket
 import threading
 import time
 import uuid
+from contextlib import suppress
 
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -190,11 +191,8 @@ class BaseServer:
         logging.debug('Shutting down server')
         # Stop accept thread
         self.accept_event.set()
-        try:
+
+        # Suppress OSError (socket not connected)
+        with suppress(OSError):
             self.sock.shutdown(socket.SHUT_RDWR)
             self.sock.close()
-        except OSError:
-            # Socket was not connected.
-            pass
-        except Exception as error:
-            logging.error('An error occurred while server was shutting down: %s', str(error))
