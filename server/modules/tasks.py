@@ -25,7 +25,7 @@ def stoptask(client: Client, task_id: str) -> bool:
 
     response = client.read().decode()
     if response != "STOPPED":
-        logging.error("Task '%s' does not exist on client (%s)", task_id, client.id)
+        logging.error("Task '%s' not stopped on client (%s): %s", task_id, client.id, response)
         raise RuntimeError(f'Task not stopped: {response}')
 
     logging.debug("Task '%s' stopped on client (%s)", task_id, client.id)
