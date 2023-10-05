@@ -16,8 +16,9 @@ def receive(client: Client, filename: str, save_name: str) -> None:
         while True:
             data = client.read()
             if data == b'ERROR':
-                logging.info('Client encountered error transferring file "%s" (%s)', filename, client.id)
-                raise RuntimeError(f'Client encountered error transfering file: {client.read().decode()}')
+                error = client.read().decode()
+                logging.info('File "%s" transfer failed (%s): %s', filename, client.id, error)
+                raise RuntimeError(f'File transfer failed: {error}')
             if data == b'FILE_TRANSFER_DONE':
                 break
             file.write(data)

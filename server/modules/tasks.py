@@ -40,14 +40,14 @@ def output(client: Client, task_id: str) -> str:
 
     response = client.read().decode()
     if response != 'READY':
-        logging.error("Task (%s) did not return output from client (%s): %s", task_id, client.id, response)
+        logging.error("No output from task (%s) on client (%s): %s", task_id, client.id, response)
         raise RuntimeError(f'No output from Task: {response}')
 
     logging.debug("Task (%s) returned output from client (%s)", task_id, client.id)
     return client.read().decode()
 
 
-def find(task_list: list, task_id: str) -> str:
+def find(task_list: list, task_id: str) -> str | None:
     """ Given a list of tasks, and a shortened task id, find full identifier """
     complete_id = None
     for task in task_list:
