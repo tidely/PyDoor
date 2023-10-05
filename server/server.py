@@ -23,7 +23,7 @@ MENU_HELP = """
 Commands:
 
 list
-open (ID)
+open (port)
 shutdown
 help
 """
@@ -93,10 +93,14 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print("Select a client first.")
             return True
 
-    def do_open(self, select_id) -> None:
+    def do_open(self, select_id: str) -> None:
         """ Interact with a client """
         if self.client is not None:
             print('A client has already been selected.')
+            return
+
+        if not select_id.strip():
+            print("Usage: open (port)")
             return
 
         # Ensure clients don't get removed mid loop
@@ -106,7 +110,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         self.client = next((client for client in clients if client.id.startswith(select_id)), None)
 
         if self.client is None:
-            print('Invalid client ID')
+            print('Invalid port')
             return
 
         self.prompt = f'{self.client.address[0]}> '
@@ -124,7 +128,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         """ CLI for list """
         clients = self.list()
         for client in clients:
-            print(f'ID: {client.id} / Address: {client.address}')
+            print(f'Port: {client.id} / Address: {client.address[0]}')
 
     def do_shell(self, _) -> None:
         """ Open a shell to client """

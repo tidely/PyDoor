@@ -16,10 +16,10 @@ class Client:
     cipher = None
     tasklist = []
 
-    def __init__(self, conn: socket.socket, address: tuple, id: str) -> None:
+    def __init__(self, conn: socket.socket, address: tuple) -> None:
         self.conn = conn
         self.address = address
-        self.id = id
+        self.id = str(address[1])
 
     def fileno(self) -> int:
         """ Return file descriptior of client socket """

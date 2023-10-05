@@ -62,12 +62,7 @@ class BaseServer:
             except (BlockingIOError, TimeoutError):
                 continue
 
-            # Generate a new unique id for client
-            id = str(uuid.uuid4())[:5]
-            while id in self.ids:
-                id = str(uuid.uuid4())[:5]
-
-            client = Client(conn, address, id)
+            client = Client(conn, address)
 
             # Perform handshake with client
             try:
