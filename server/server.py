@@ -99,16 +99,11 @@ class ServerCLI(BaseServer, cmd.Cmd):
             print('A client has already been selected.')
             return
 
-        # Create a copy of the clients list
-        # This ensures the list is looped through entirely
-        # as some items may be otherwise removed mid loop
+        # Ensure clients don't get removed mid loop
         clients = self.clients.copy()
 
-        # Check if the given id matches a client.id
-        for client in clients:
-            if client.id == select_id:
-                self.client = client
-                break
+        # Find a client.id starting with select_id, default None
+        self.client = next((client for client in clients if client.id.startswith(select_id)), None)
 
         if self.client is None:
             print('Invalid client ID')
