@@ -176,17 +176,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             if command.strip().lower() in ['exit', 'exit()']:
                 break
 
-            # Increase timeout for interpreter
-            with timeoutsetter(self.client, 60):
-                try:
-                    print(shells.python(self.client, command), end='')
-                except TimeoutError:
-                    logging.info('Python command timed out: %s', self.client.id)
-                    # Prompt user if they want to increase the timeout limit
-                    if terminal.increase_timeout_prompt():
-                        # Indefinitely block for output
-                        self.client.conn.settimeout(None)
-                        print(self.client.read().decode(), end='')
+            print(shells.python(self.client, command), end='')
 
     def do_screenshot(self, _) -> None:
         """ Take a screenshot and save it in a file """
