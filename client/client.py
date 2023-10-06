@@ -94,7 +94,7 @@ class Client(BaseClient):
         except queue.Empty:
             # Add task to background tasks
             self.task_list.append(task)
-            self.write(f'Timed out after {timeout}s.'.encode())
+            self.write(f'Timed out after {timeout}s.\n'.encode())
         else:
             self.write(output.encode())
 
