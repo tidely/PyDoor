@@ -150,8 +150,9 @@ class ServerCLI(BaseServer, cmd.Cmd):
             comm, *_ = command.split()
             if comm.lower() in ['cd', 'chdir']:
 
-                print(self.client.shell(command).decode(), end='')
-                # TODO: update cwd accordingly
+                print("Write full path for commands or")
+                print("Use python to change directories: import os; os.chdir('directory')")
+                continue
 
             # Increase timeout for shell
             with timeoutsetter(self.client, 60):
