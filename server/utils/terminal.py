@@ -3,6 +3,8 @@ import os
 import platform
 from colorama import Fore
 
+from modules.clients import Client
+
 
 def clear() -> None:
     """ Clear the terminal on different OS's """
@@ -39,3 +41,30 @@ def task_print(tasks: list) -> None:
                 print(f"url: {params[0]} | file: {task[1]}")
             case "Python":
                 print(f"Command: {params[0]}")
+
+
+def make_prompt(client: Client, cwd: str) -> str:
+    """ Given a client and a cwd, generate the proper shell prompt for it """
+
+    match client.system:
+        case "Windows":
+            prompt = f"{cwd}> "
+        case "Linux":
+            prompt = f"{client.user}@{client.hostname}:{cwd.replace(client.home, '~')}$ "
+        case "Darwin":
+            if cwd == client.home:
+                folder = '~'
+            elif os.path.split(cwd)[0] == "/":
+                # If cwd is root or one subfolder down
+                folder = cwd
+            else:
+                # Only display current folder
+                folder = os.path.basename(cwd)
+
+            prompt = f"{client.user}@{client.hostname} {folder} % "
+
+        case _:
+            # Use Windows style by default
+            prompt = f"{cwd}> "
+
+    return prompt
