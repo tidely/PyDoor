@@ -54,7 +54,7 @@ class Client(BaseClient):
             case 'LOCK':
                 self.lock()
             case 'TASKS':
-                self.tasks()
+                self.get_tasks()
             case 'STOPTASK':
                 self.stoptask()
             case 'TASKOUTPUT':
@@ -223,7 +223,7 @@ class Client(BaseClient):
             logging.info("Locked machine")
             self.write(b'LOCKED')
 
-    def tasks(self) -> None:
+    def get_tasks(self) -> None:
         """ Get current tasks (background threads), removes fully processed ones """
         task_info = []
         tasks.clean(self.task_list)

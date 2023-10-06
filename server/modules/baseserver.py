@@ -29,7 +29,7 @@ class BaseServer:
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     # List of clients
-    clients: list[Client] = []
+    _clients: list[Client] = []
     # List of client ids
     ids: list[str] = []
     # Queue for new connections
@@ -70,7 +70,7 @@ class BaseServer:
                 logging.debug('Handshake with peer failed: %s', str(error))
                 conn.close()
             else:
-                self.clients.append(client)
+                self._clients.append(client)
                 self.ids.append(client.id)
                 self.connections_queue.put(client)
 
@@ -130,12 +130,12 @@ class BaseServer:
 
         logging.info('Handshake completed with client (%s) at %s', client.id, client.address)
 
-    def list(self) -> list:
+    def clients(self) -> list[Client]:
         """ List connected clients """
-        if len(self.clients) == 0:
-            return self.clients
+        if len(self._clients) == 0:
+            return self._clients
 
-        clients = self.clients.copy()
+        clients = self._clients.copy()
 
         # Check for disconnected clients
         readable, _, errors = select.select(clients, clients, clients, 60.0)
@@ -160,7 +160,7 @@ class BaseServer:
                 else:
                     logging.debug('Data in buffer (%s) during list: %s', client.id, data)
 
-        return self.clients
+        return self._clients
 
     def ping(self, client: Client) -> int | bool:
         """ Measure socket latency in ms """
@@ -179,7 +179,7 @@ class BaseServer:
         logging.debug("Disconnecting client (%s)", client.id)
         client.conn.close()
         if client in self.clients:
-            self.clients.remove(client)
+            self._clients.remove(client)
         if client.id in self.ids:
             self.ids.remove(client.id)
 
