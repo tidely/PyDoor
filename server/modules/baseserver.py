@@ -6,7 +6,6 @@ import select
 import socket
 import threading
 import time
-import uuid
 from contextlib import suppress
 
 from cryptography.hazmat.primitives import hashes, serialization
@@ -66,12 +65,11 @@ class BaseServer:
 
             # Perform handshake with client
             try:
-                cipher = self.handshake(client)
+                self.handshake(client)
             except Exception as error:
                 logging.debug('Handshake with peer failed: %s', str(error))
                 conn.close()
             else:
-                client.add_cipher(cipher)
                 self.clients.append(client)
                 self.ids.append(client.id)
                 self.connections_queue.put(client)
@@ -121,12 +119,11 @@ class BaseServer:
         iv = os.urandom(16)
         client._write(iv)
 
-        cipher = Cipher(
+        client.cipher = Cipher(
             algorithm=algorithms.AES256(derived_key),
             mode=modes.CBC(iv)
         )
         logging.info('Handshake completed with client (%s) at %s', client.id, client.address)
-        return cipher
 
     def list(self) -> list:
         """ List connected clients """

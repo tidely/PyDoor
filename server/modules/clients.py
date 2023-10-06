@@ -13,7 +13,7 @@ HEADER_LENGTH = 8
 class Client:
     """ Client class """
 
-    cipher = None
+    cipher: Cipher | None = None
     tasklist = []
 
     def __init__(self, conn: socket.socket, address: tuple) -> None:
@@ -24,10 +24,6 @@ class Client:
     def fileno(self) -> int:
         """ Return file descriptior of client socket """
         return self.conn.fileno()
-
-    def add_cipher(self, cipher: Cipher) -> None:
-        """ Add a cipher """
-        self.cipher = cipher
 
     def _encrypt(self, data: bytes) -> bytes:
         """ Encrypt data """
