@@ -74,7 +74,7 @@ class BaseServer:
                 self.ids.append(client.id)
                 self.connections_queue.put(client)
 
-    def handshake(self, client: Client) -> Cipher:
+    def handshake(self, client: Client) -> None:
         """
         Handshake 
 
@@ -123,6 +123,10 @@ class BaseServer:
             algorithm=algorithms.AES256(derived_key),
             mode=modes.CBC(iv)
         )
+
+        # Get peer system information
+        client.system, client.user, client.home  = client.read().decode().strip().split()
+
         logging.info('Handshake completed with client (%s) at %s', client.id, client.address)
 
     def list(self) -> list:

