@@ -64,7 +64,7 @@ class Client:
             buffer = self.conn.recv(amount)
             if not buffer:
                 # Assume connection was closed
-                logging.info('Assuming connection was closed: %s', str(self.address))
+                logging.error('Assuming connection was closed: %s', str(self.address))
                 raise ConnectionResetError
             data += buffer
 
