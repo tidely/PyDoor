@@ -20,6 +20,7 @@ class Client:
     system: str = '' # platform.system()
     user: str = '' # getpass.getuser()
     home: str = '' # os.path.expanduser("~")
+    hostname: str = '' # socket.gethostname()
 
     def __init__(self, conn: socket.socket, address: tuple) -> None:
         self.conn = conn

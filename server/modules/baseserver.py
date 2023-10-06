@@ -125,7 +125,8 @@ class BaseServer:
         )
 
         # Get peer system information
-        client.system, client.user, client.home  = client.read().decode().strip().split()
+        info = client.read().decode().strip().split()
+        client.system, client.user, client.home, client.hostname = info
 
         logging.info('Handshake completed with client (%s) at %s', client.id, client.address)
 

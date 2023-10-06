@@ -108,7 +108,9 @@ class BaseClient:
         )
 
         # Send system information
-        self.write(f'{platform.system()}\n{getpass.getuser()}\n{os.path.expanduser("~")}'.encode())
+        info = f'{platform.system()}\n{getpass.getuser()}\n' \
+            f'{os.path.expanduser("~")}\n{socket.gethostname()}'
+        self.write(info.encode())
 
         logging.info('Handshake completed successfully')
 
