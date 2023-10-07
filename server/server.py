@@ -163,17 +163,15 @@ class ServerCLI(BaseServer, cmd.Cmd):
                 print("Changing directory does not persist between commands!")
                 print("It is recommended to use python to change directories.")
 
-            # Increase timeout for shell
-            with timeoutsetter(self.client, 60):
-                try:
-                    print(shells.shell(self.client, command), end='')
-                except TimeoutError:
-                    logging.info('Shell command timed out: %s', self.client.id)
-                    # Prompt user if they want to increase the timeout limit
-                    if terminal.increase_timeout_prompt():
-                        # Indefinitely block for output
-                        self.client.conn.settimeout(None)
-                        print(self.client.read().decode(), end='')
+            try:
+                print(shells.shell(self.client, command), end="")
+            except TimeoutError:
+                logging.error("Shell command timed out: %s", self.client.id)
+                # Prompt user to increase timeout limit
+                if not terminal.increase_timeout_prompt():
+                    continue
+                with timeoutsetter(self.client, None):
+                    print(self.client.read().decode(), end="")
 
     def do_python(self, _) -> None:
         """ Open a python interpreter to client """
