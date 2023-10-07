@@ -157,13 +157,11 @@ class ServerCLI(BaseServer, cmd.Cmd):
                 case '':
                     continue
 
-            # Check if the directory is changed, in which case it should be remembered
+            # Warn user when changing directory, that it does not persist between commands
             comm, *_ = command.split()
             if comm.lower() in ['cd', 'chdir']:
-
-                print("Write full path for commands or")
-                print("Use python to change directories: import os; os.chdir('directory')")
-                continue
+                print("Changing directory does not persist between commands!")
+                print("It is recommended to use python to change directories.")
 
             # Increase timeout for shell
             with timeoutsetter(self.client, 60):
