@@ -6,7 +6,7 @@ from modules.clients import Client
 
 def getcwd(client: Client) -> str:
     """ Get the current working directory """
-    logging.info("Getting cwd from client (%s)", client.id)
+    logging.info("Getting cwd from client (%s)", client.port)
 
     client.write(b"CWD")
 

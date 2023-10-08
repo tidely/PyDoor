@@ -71,7 +71,6 @@ class BaseServer:
                 conn.close()
             else:
                 self._clients.append(client)
-                self.ids.append(client.id)
                 self.connections_queue.put(client)
 
     def handshake(self, client: Client) -> None:
@@ -128,7 +127,7 @@ class BaseServer:
         info = client.read().decode().strip().split()
         client.system, client.user, client.home, client.hostname = info
 
-        logging.info('Handshake completed with client (%s) at %s', client.id, client.address)
+        logging.info('Handshake completed with client (%s) at %s', client.port, client.address)
 
     def clients(self) -> list[Client]:
         """ List connected clients """
@@ -158,30 +157,28 @@ class BaseServer:
                     # Peer has disconnected
                     self.disconnect(client)
                 else:
-                    logging.debug('Data in buffer (%s) during list: %s', client.id, data)
+                    logging.debug('Data in buffer (%s) during list: %s', client.port, data)
 
         return self._clients
 
     def ping(self, client: Client) -> int | bool:
         """ Measure socket latency in ms """
-        logging.debug("Pinging client (%s)", client.id)
+        logging.debug("Pinging client (%s)", client.port)
 
         ms_before = round(time.time() * 1000)
         client.write(b'PING')
         client.read()
         latency = round(time.time() * 1000) - ms_before
 
-        logging.debug("Client (%s) latency is %sms", client.id, latency)
+        logging.debug("Client (%s) latency is %sms", client.port, latency)
         return latency
 
     def disconnect(self, client: Client) -> None:
         """ Disconnect a specific client """
-        logging.debug("Disconnecting client (%s)", client.id)
+        logging.debug("Disconnecting client (%s)", client.port)
         client.conn.close()
         if client in self.clients:
             self._clients.remove(client)
-        if client.id in self.ids:
-            self.ids.remove(client.id)
 
     def shutdown(self) -> None:
         """ Shutdown server """

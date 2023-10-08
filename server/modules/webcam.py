@@ -8,14 +8,14 @@ from utils.timeout_handler import timeoutsetter
 
 def webcam(client: Client, filename: str = None, timeout: float | None = 120.0) -> str:
     """ Capture webcam """
-    logging.debug('Capturing webcam (%s)', client.id)
+    logging.debug('Capturing webcam (%s)', client.port)
     client.write(b'WEBCAM')
 
     with timeoutsetter(client, timeout):
         img_data = client.read()
 
     if img_data == b'ERROR':
-        logging.error('Unable to capture webcam (%s)', client.id)
+        logging.error('Unable to capture webcam (%s)', client.port)
         raise RuntimeError('Unable to capture webcam')
 
     if filename is None:
@@ -23,5 +23,5 @@ def webcam(client: Client, filename: str = None, timeout: float | None = 120.0) 
 
     with open(filename, 'wb') as file:
         file.write(img_data)
-    logging.info('Saved webcam capture at (%s): %s', client.id, filename)
+    logging.info('Saved webcam capture at (%s): %s', client.port, filename)
     return filename

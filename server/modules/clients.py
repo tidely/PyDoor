@@ -1,6 +1,8 @@
 """ Client object """
 import logging
 import socket
+import uuid
+
 
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers import Cipher
@@ -25,7 +27,8 @@ class Client:
     def __init__(self, conn: socket.socket, address: tuple) -> None:
         self.conn = conn
         self.address = address
-        self.id = str(address[1])
+        self.port = address[-1]
+        self.identifier = uuid.uuid4()
 
     def fileno(self) -> int:
         """ Return file descriptior of client socket """

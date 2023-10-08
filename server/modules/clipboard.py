@@ -6,27 +6,27 @@ from modules.clients import Client
 
 def copy(client: Client, text: str) -> None:
     """ Copy to client clipboard """
-    logging.debug('Copying to client clipboard (%s)', client.id)
+    logging.debug('Copying to client clipboard (%s)', client.port)
     client.write(b'COPY')
     client.write(text.encode())
 
     response = client.read().decode()
     if response != 'SUCCESS':
-        logging.error('Error copying to client clipboard (%s): %s', client.id, response)
+        logging.error('Error copying to client clipboard (%s): %s', client.port, response)
         raise RuntimeError(f'Error copying to client clipboard: {response}')
 
-    logging.info('Copied "%s" to client clipboard (%s)', text, client.id)
+    logging.info('Copied "%s" to client clipboard (%s)', text, client.port)
 
 def paste(client: Client) -> str:
     """ Paste from clipboard """
-    logging.debug('Pasting from client clipboard (%s)', client.id)
+    logging.debug('Pasting from client clipboard (%s)', client.port)
     client.write(b'PASTE')
 
     clipboard = client.read().decode()
     if clipboard == 'ERROR':
         error = client.read().decode()
-        logging.error('Error pasting from clipboard (%s): %s', client.id, error)
+        logging.error('Error pasting from clipboard (%s): %s', client.port, error)
         raise RuntimeError(f'Error pasting from clipboard: {error}')
 
-    logging.info('Pasted "%s" from client clipboard (%s)', clipboard, client.id)
+    logging.info('Pasted "%s" from client clipboard (%s)', clipboard, client.port)
     return clipboard
