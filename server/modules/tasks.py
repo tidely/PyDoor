@@ -4,8 +4,19 @@ import logging
 
 from modules.clients import Client
 
+class Task:
+    """ Task object """
 
-def tasks(client: Client) -> list:
+    def __init__(self, task: list) -> None:
+        """ Create task object from list """
+        identifier, native_id, command, *extra = task
+        self.identifier: str = identifier
+        self.native_id: int | None = native_id
+        self.command: str = command
+        self.extra: list = extra
+
+
+def tasks(client: Client) -> list[Task]:
     """ Fetch running tasks on a client """
     logging.debug("Fetching tasks from client (%s)", client.port)
 
@@ -13,46 +24,40 @@ def tasks(client: Client) -> list:
     response = client.read().decode()
 
     logging.debug("Received tasks from client (%s): %s", client.port, response)
-    return json.loads(response)
+    return list(map(Task, json.loads(response)))
 
 
-def stoptask(client: Client, task_id: str) -> bool:
+def stoptask(client: Client, task: Task) -> bool:
     """ Stop a task on a client """
-    logging.debug("Attempting to stop task (%s) on client (%s)", task_id, client.port)
+    logging.debug("Attempting to stop task (%s) on client (%s)", task.identifier, client.port)
 
     client.write(b"STOPTASK")
-    client.write(task_id.encode())
+    client.write(task.identifier.encode())
 
     response = client.read().decode()
     if response != "STOPPED":
-        logging.error("Task '%s' not stopped on client (%s): %s", task_id, client.port, response)
+        logging.error("Task '%s' not stopped on client (%s): %s", task.identifier, client.port, response)
         raise RuntimeError(f'Task not stopped: {response}')
 
-    logging.debug("Task '%s' stopped on client (%s)", task_id, client.port)
+    logging.debug("Task '%s' stopped on client (%s)", task.identifier, client.port)
 
 
-def output(client: Client, task_id: str) -> str:
+def output(client: Client, task: Task) -> str:
     """ Attempt to get the output of a background task """
-    logging.debug("Getting output for task (%s)", task_id)
+    logging.debug("Getting output for task (%s)", task.identifier)
 
     client.write(b'TASKOUTPUT')
-    client.write(task_id.encode())
+    client.write(task.identifier.encode())
 
     response = client.read().decode()
     if response != 'READY':
-        logging.error("No output from task (%s) on client (%s): %s", task_id, client.port, response)
+        logging.error("No output from task (%s) on client (%s): %s", task.identifier, client.port, response)
         raise RuntimeError(f'No output from Task: {response}')
 
-    logging.debug("Task (%s) returned output from client (%s)", task_id, client.port)
+    logging.debug("Task (%s) returned output from client (%s)", task.identifier, client.port)
     return client.read().decode()
 
 
-def find(task_list: list, task_id: str) -> str | None:
-    """ Given a list of tasks, and a shortened task id, find full identifier """
-    complete_id = None
-    for task in task_list:
-        if task[0].startswith(task_id):
-            complete_id = task[0]
-            break
-
-    return complete_id
+def find(task_list: list[Task], task_id: str) -> str | None:
+    """ Find task from a list given a shortened task identifier, None if not found """
+    return next((task for task in task_list if task.identifier.startswith(task_id)), None)

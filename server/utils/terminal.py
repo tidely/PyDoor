@@ -4,6 +4,7 @@ import platform
 from colorama import Fore
 
 from modules.clients import Client
+from modules.tasks import Task
 
 
 def clear() -> None:
@@ -18,7 +19,7 @@ def increase_timeout_prompt() -> bool:
     return choice.strip().lower().startswith('y')
 
 
-def task_print(tasks: list) -> None:
+def task_print(tasks: list[Task]) -> None:
     """ Given a list of tasks, print them nicely to the user """
     if len(tasks) == 0:
         print("No tasks are running.")
@@ -27,20 +28,19 @@ def task_print(tasks: list) -> None:
     print("-Tasks-")
     print(f"State: {Fore.GREEN}Running{Fore.WHITE} - {Fore.RED}Stopped with output{Fore.WHITE}\n")
     for task in tasks:
-        identifier, native_id, command, *params = task
 
         # Always print identifier
-        print(f"ID: {identifier[:5]} | ", end='')
+        print(f"ID: {task.identifier[:5]} | ", end='')
 
         # Print command type and status
-        print(f"Type: {Fore.GREEN if native_id else Fore.RED}{command}{Fore.WHITE} | ", end='')
+        print(f"Type: {Fore.GREEN if task.native_id else Fore.RED}{task.command}{Fore.WHITE} | ", end='')
 
         # Additionals paremeters by type
-        match command:
+        match task.command:
             case "Download":
-                print(f"url: {params[0]} | file: {task[1]}")
+                print(f"url: {task.extra[0]} | file: {task.extra[1]}")
             case "Python":
-                print(f"Command: {params[0]}")
+                print(f"Command: {task.extra[0]}")
 
 
 def make_prompt(client: Client, cwd: str) -> str:
