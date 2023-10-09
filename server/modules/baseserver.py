@@ -16,7 +16,7 @@ from utils.timeout_handler import timeoutsetter
 from modules.clients import Client
 
 
-class BaseServer:
+class Server:
     """
     Base Server
     """

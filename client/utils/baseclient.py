@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 socket.setdefaulttimeout(10)
 
 
-class BaseClient:
+class Client:
     """
     Base Client
     """

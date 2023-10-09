@@ -7,7 +7,7 @@ from contextlib import suppress
 from cryptography.hazmat.primitives.asymmetric import ec
 from modules import (clipboard, download, filetransfer, screenshot,
                      shells, tasks, webcam, windows, helpers)
-from modules.baseserver import BaseServer
+from modules.baseserver import Server
 from utils import terminal
 from utils.timeout_handler import timeoutsetter
 
@@ -51,14 +51,14 @@ exit
 """
 
 
-class ServerCLI(BaseServer, cmd.Cmd):
+class ServerCLI(Server, cmd.Cmd):
     """ CLI for BaseServer """
 
     prompt = DEFAULT_PROMPT
     client = None
 
     def __init__(self, private_key: ec.EllipticCurvePrivateKey):
-        BaseServer.__init__(self, private_key)
+        Server.__init__(self, private_key)
         cmd.Cmd.__init__(self)
 
     def default(self, _) -> None:
