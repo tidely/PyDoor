@@ -7,7 +7,6 @@ import subprocess
 import queue
 from contextlib import suppress
 
-from cryptography.hazmat.primitives.asymmetric import ec
 from modules import clipboard, download, screen, webcam, windows, pyshell
 from utils.baseclient import Client
 from utils import tasks
