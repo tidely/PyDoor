@@ -33,9 +33,10 @@ def task_print(tasks: list[Task]) -> None:
         print(f"ID: {task.identifier[:5]} | ", end='')
 
         # Print command type and status
-        print(f"Type: {Fore.GREEN if task.native_id else Fore.RED}{task.command}{Fore.WHITE} | ", end='')
+        status = f"{Fore.GREEN if task.native_id else Fore.RED}{task.command}{Fore.WHITE}"
+        print(f"Type: {status} | ", end='')
 
-        # Additionals paremeters by type
+        # Additional paremeters by task type
         match task.command:
             case "Download":
                 print(f"url: {task.extra[0]} | file: {task.extra[1]}")
