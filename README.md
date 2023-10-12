@@ -5,8 +5,7 @@ Encrypted Backdoor/Reverse Shell/RAT written in Python.
 ## Cross-Platform Features  
   
 * Multi-client support  
-* ECDH Key Exchange  
-* AES256 Encryption  
+* TLSv1.3 Encryption  
 * Real-time Shell  
 * Python Interpreter  
 * File Transfer  
@@ -25,7 +24,7 @@ Windows Specific Features can be done manually on other OS's
   
 ## Feature Roadmap  
   
-* Threaded Shell and Interpreter  
+* Threaded Shell  
 * Broadcasting commands  
 * Keylogger  
 * Adding Client to Startup (Windows)  

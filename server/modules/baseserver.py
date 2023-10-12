@@ -1,17 +1,12 @@
 """ Base Server """
 import logging
-import os
+import ssl
 import queue
 import select
 import socket
 import threading
-import time
 from contextlib import suppress
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from utils.timeout_handler import timeoutsetter
 from modules.clients import Client
 
@@ -35,11 +30,11 @@ class Server:
     # Event to stop listening to new connections
     accept_event = threading.Event()
 
-    def __init__(self, private_key: ec.EllipticCurvePrivateKey) -> None:
+    def __init__(self, ssl_context: ssl.SSLContext) -> None:
         """ Create Thread and load certificate """
         # Create thread
         self.accept_thread = threading.Thread(target=self._accept, daemon=True)
-        self.private_key = private_key
+        self.context = ssl_context
 
     def start(self, address: tuple) -> None:
         """ Start the server """
@@ -59,73 +54,21 @@ class Server:
             except (BlockingIOError, TimeoutError):
                 continue
 
-            client = Client(conn, address)
-
-            # Perform handshake with client
             try:
-                self.handshake(client)
-            except Exception as error:
-                logging.debug('Handshake with peer failed: %s', str(error))
-                conn.close()
-            else:
-                self._clients.append(client)
-                self.connections_queue.put(client)
+                ssl_sock = self.context.wrap_socket(conn, server_side=True)
+            except ssl.SSLError as error:
+                logging.error("Error during ssl wrapping: %s", str(error))
+                continue
 
-    def handshake(self, client: Client) -> None:
-        """
-        Handshake 
 
-        Generate keypair
-        Exchange public keys
-        Verify signature
-        Generate shared session key
-        Server sends IV for AES256
-        Create AES cipher
-        """
+            client = Client(ssl_sock, address)
 
-        # Keys used for session
-        private_key = ec.generate_private_key(ec.SECP521R1())
-        pem_public_key = private_key.public_key().public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
+            # Get peer system information
+            info = client.read().decode().strip().split()
+            client.system, client.user, client.home, client.hostname = info
 
-        # Sign public key using private key
-        signature = self.private_key.sign(
-            pem_public_key,
-            ec.ECDSA(hashes.SHA512())
-        )
-        # Exchange public keys
-        client._write(pem_public_key)
-        serialized_peer_public_key = client._read()
-        client._write(signature)
-
-        # Exchange private and peer public key for shared key
-        peer_public_key = serialization.load_pem_public_key(serialized_peer_public_key)
-        shared_key = private_key.exchange(ec.ECDH(), peer_public_key)
-
-        # Derive key
-        derived_key = HKDF(
-            algorithm=hashes.SHA512(),
-            length=32,
-            salt=None,
-            info=None
-        ).derive(shared_key)
-
-        # Share IV for AES
-        iv = os.urandom(16)
-        client._write(iv)
-
-        client.cipher = Cipher(
-            algorithm=algorithms.AES256(derived_key),
-            mode=modes.CBC(iv)
-        )
-
-        # Get peer system information
-        info = client.read().decode().strip().split()
-        client.system, client.user, client.home, client.hostname = info
-
-        logging.info('Handshake completed with client (%s) at %s', client.port, client.address)
+            self._clients.append(client)
+            self.connections_queue.put(client)
 
     def clients(self) -> list[Client]:
         """ List connected clients """
@@ -158,18 +101,6 @@ class Server:
                     logging.debug('Data in buffer (%s) during list: %s', client.port, data)
 
         return self._clients
-
-    def ping(self, client: Client) -> int | bool:
-        """ Measure socket latency in ms """
-        logging.debug("Pinging client (%s)", client.port)
-
-        ms_before = round(time.time() * 1000)
-        client.write(b'PING')
-        client.read()
-        latency = round(time.time() * 1000) - ms_before
-
-        logging.debug("Client (%s) latency is %sms", client.port, latency)
-        return latency
 
     def disconnect(self, client: Client) -> None:
         """ Disconnect a specific client """
