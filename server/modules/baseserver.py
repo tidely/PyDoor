@@ -30,8 +30,6 @@ class Server:
 
     # List of clients
     _clients: list[Client] = []
-    # List of client ids
-    ids: list[str] = []
     # Queue for new connections
     connections_queue = queue.Queue()
     # Event to stop listening to new connections
