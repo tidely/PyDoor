@@ -1,7 +1,7 @@
 """ Client object """
-import logging
-import socket
+import ssl
 import uuid
+import logging
 
 HEADER_LENGTH = 8
 
@@ -18,7 +18,7 @@ class Client:
     home: str = '' # os.path.expanduser("~")
     hostname: str = '' # socket.gethostname()
 
-    def __init__(self, conn: socket.socket, address: tuple) -> None:
+    def __init__(self, conn: ssl.SSLSocket, address: tuple) -> None:
         self.conn = conn
         self.address = address
         self.port = address[-1]
