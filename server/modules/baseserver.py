@@ -106,7 +106,7 @@ class Server:
         """ Disconnect a specific client """
         logging.debug("Disconnecting client (%s)", client.port)
         client.conn.close()
-        if client in self.clients():
+        if client in self._clients:
             self._clients.remove(client)
 
     def shutdown(self) -> None:
