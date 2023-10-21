@@ -5,8 +5,9 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.types import (CERTIFICATE_PUBLIC_KEY_TYPES,
-                                                             CERTIFICATE_ISSUER_PUBLIC_KEY_TYPES)
+from cryptography.hazmat.primitives.asymmetric.types import (
+    CertificateIssuerPublicKeyTypes, CertificateIssuerPrivateKeyTypes
+)
 from cryptography.hazmat.primitives.asymmetric import ec
 
 # Server Name
@@ -37,9 +38,9 @@ def to_pem(obj: ec.EllipticCurvePrivateKey | x509.Certificate) -> None:
 
 def issue_certificate(
         subject_name: x509.Name,
-        subject_public_key: CERTIFICATE_PUBLIC_KEY_TYPES,
+        subject_public_key: CertificateIssuerPublicKeyTypes,
         issuer_name: x509.Name,
-        issuer_private_key: CERTIFICATE_ISSUER_PUBLIC_KEY_TYPES,
+        issuer_private_key: CertificateIssuerPrivateKeyTypes,
         valid_for_in_days: int
     ) -> x509.Certificate:
     """Generate a certificate using subject and issuer name,
