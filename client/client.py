@@ -230,10 +230,8 @@ class CommandClient(Client):
         """ Get current tasks (background threads), removes fully processed ones """
         task_info = []
         tasks.clean(self.task_list)
-        # Create a copy to make sure removing items does not interfere with looping
-        task_list = self.task_list.copy()
-        for task in task_list:
 
+        for task in self.task_list:
             info = [task.identifer, task.native_id if task.is_alive() else None]
             info.extend(json.loads(task.name))
 
