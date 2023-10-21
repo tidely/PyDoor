@@ -157,18 +157,19 @@ class CommandClient(Client):
         filename = self.read().decode()
         try:
             with open(filename, 'rb') as file:
-                while True:
-                    block = file.read(BLOCK_SIZE)
-                    if not block:
-                        break
-                    self.write(block)
+                # Confirm file was successfully opened
+                self.write(b'FILE_OPENED')
+                # Transfer file
+                self.ssl_sock.sendfile(file=file)
+
+            # Indicate transfer has completed
+            self.ssl_sock.sendall(b"FILE_TRANSFER_COMPLETE")
 
         except (FileNotFoundError, PermissionError) as error:
+            # Send error instead of FILE_OPENED
             logging.error('Error opening file %s: %s', filename, str(error))
-            self.write(b'ERROR')
             self.write(f'{error.__class__.__name__}: {str(error)}'.encode())
         else:
-            self.write(b'FILE_TRANSFER_DONE')
             logging.info('Successfully transferred file %s to server', str(filename))
 
     def receive_file(self) -> None:
@@ -179,14 +180,16 @@ class CommandClient(Client):
             with open(filename, 'wb') as file:
                 self.write(b'FILE_OPENED')
                 while True:
-                    block = self.read()
-                    if block == b'FILE_TRANSFER_DONE':
+                    block = self.ssl_sock.recv(4096)
+                    if block == b'FILE_TRANSFER_COMPLETE':
                         break
                     file.write(block)
 
-        except (PermissionError) as error:
-            logging.error('Error receiving file from server: %s', str(error))
+        except PermissionError as error:
+            logging.error('Insufficient permissions writing to file "%s" during receive', filename)
             self.write(f'{error.__class__.__name__}: {str(error)}')
+        else:
+            logging.info("Transferred '%s' from server successfully", filename)
 
     def download(self) -> None:
         """ Download a file from the web """
