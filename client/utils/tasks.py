@@ -56,3 +56,5 @@ def find(tasks: list[Task], task_id: str) -> Task | None:
             continue
 
         return task
+
+    return None
