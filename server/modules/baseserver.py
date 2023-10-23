@@ -118,7 +118,7 @@ class Server:
     def shutdown(self) -> None:
         """ Shutdown server """
         logging.debug('Shutting down server')
-        # Stop accept thread
+        # Stop accepting new clients
         self._stop.set()
 
         # Disconnect all clients

@@ -22,11 +22,12 @@ def paste(client: Client) -> str:
     logging.debug('Pasting from client clipboard (%s)', client.port)
     client.write(b'PASTE')
 
+    response = client.read().decode()
+    if response != 'SUCCESS':
+        logging.error('Error pasting from clipboard (%s): %s', client.port, response)
+        raise RuntimeError(f'Error pasting from clipboard: {response}')
+
     clipboard = client.read().decode()
-    if clipboard == 'ERROR':
-        error = client.read().decode()
-        logging.error('Error pasting from clipboard (%s): %s', client.port, error)
-        raise RuntimeError(f'Error pasting from clipboard: {error}')
 
     logging.info('Pasted "%s" from client clipboard (%s)', clipboard, client.port)
     return clipboard

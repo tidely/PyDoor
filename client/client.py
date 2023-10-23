@@ -143,12 +143,12 @@ class CommandClient(Client):
             content = clipboard.paste()
         except RuntimeError as error:
             logging.error('Error occurred pasting from clipboard: %s', str(error))
-            self.write(b'ERROR')
             self.write(str(error).encode())
         else:
             if content is None:
                 content = ''
             logging.info('Pasted "%s" from clipboard', content)
+            self.write(b'SUCCESS')
             self.write(content.encode())
 
     def send_file(self) -> None:
