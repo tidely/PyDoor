@@ -57,8 +57,8 @@ class ServerCLI(Server, cmd.Cmd):
     prompt = DEFAULT_PROMPT
     client = None
 
-    def __init__(self, ssl_context: ssl.SSLContext):
-        Server.__init__(self, ssl_context)
+    def __init__(self, address: tuple[str, int], ssl_context: ssl.SSLContext):
+        Server.__init__(self, address, ssl_context)
         cmd.Cmd.__init__(self)
 
     def default(self, _) -> None:
@@ -370,11 +370,11 @@ if __name__ == '__main__':
     context.load_cert_chain("cert.pem", "private.pem")
 
     # Start server
-    server = ServerCLI(context)
-    server.start(('localhost', 6969))
+    server = ServerCLI(("localhost", 6969), context)
+    server.start()
 
     # Get a client that connected
-    connection = server.connections_queue.get()
+    connection = server.new_connections.get()
     print(f"{connection.port}".encode())
 
     # Start Server CLI

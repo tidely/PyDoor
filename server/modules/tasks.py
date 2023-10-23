@@ -36,7 +36,10 @@ def stoptask(client: Client, task: Task) -> bool:
 
     response = client.read().decode()
     if response != "STOPPED":
-        logging.error("Task '%s' not stopped on client (%s): %s", task.identifier, client.port, response)
+        logging.error(
+            "Task '%s' not stopped on client (%s): %s",
+            task.identifier, client.port, response
+        )
         raise RuntimeError(f'Task not stopped: {response}')
 
     logging.debug("Task '%s' stopped on client (%s)", task.identifier, client.port)
@@ -51,7 +54,10 @@ def output(client: Client, task: Task) -> str:
 
     response = client.read().decode()
     if response != 'READY':
-        logging.error("No output from task (%s) on client (%s): %s", task.identifier, client.port, response)
+        logging.error(
+            "No output from task (%s) on client (%s): %s",
+            task.identifier, client.port, response
+        )
         raise RuntimeError(f'No output from Task: {response}')
 
     logging.debug("Task (%s) returned output from client (%s)", task.identifier, client.port)

@@ -5,70 +5,78 @@ import queue
 import select
 import socket
 import threading
+import selectors
 from contextlib import suppress
+from concurrent import futures
 
 from utils.timeout_handler import timeoutsetter
 from modules.clients import Client
 
 
 class Server:
-    """
-    Base Server
-    """
+    """ Base Server class """
 
-    # Server address
-    address = None
-
-    # Create socket
-    sock = socket.socket()
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    # List of clients
+    # List of connected clients
     _clients: list[Client] = []
-    # Queue for new connections
-    connections_queue = queue.Queue()
-    # Event to stop listening to new connections
-    accept_event = threading.Event()
+    # Event to stop listening for new connections
+    _stop = threading.Event()
 
-    def __init__(self, ssl_context: ssl.SSLContext) -> None:
-        """ Create Thread and load certificate """
-        # Create thread
-        self.accept_thread = threading.Thread(target=self._accept, daemon=True)
-        self.context = ssl_context
+    def __init__(self,
+            address: tuple[str, int],
+            context: ssl.SSLContext | None = None,
+            queue_new_connections: bool = True
+        ) -> None:
+        """ Create and wrap socket with SSL """
+        # Create SSLSocket from context
+        self.socket = socket.socket()
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-    def start(self, address: tuple) -> None:
-        """ Start the server """
-        self.sock.bind(address)
-        self.sock.listen()
+        self.socket.bind(address)
+
+        if isinstance(context, ssl.SSLContext):
+            self.socket = context.wrap_socket(self.socket, server_side=True)
+        else:
+            logging.warning("No SSL Context provided! Running without SSL.")
+
         self.address = address
+        self.new_connections = queue.Queue() if queue_new_connections else None
 
-        self.accept_event.clear()
+    def start(self) -> None:
+        """ Start the server """
+        self.socket.listen()
 
-        self.accept_thread.start()
+        self._stop.clear()
 
-    def _accept(self) -> None:
-        """ Accept incoming connections """
-        while not self.accept_event.is_set():
-            try:
-                conn, address = self.sock.accept()
-            except (BlockingIOError, TimeoutError):
-                continue
+        # Create and start thread
+        threading.Thread(target=self.accept).start()
 
-            try:
-                ssl_sock = self.context.wrap_socket(conn, server_side=True)
-            except ssl.SSLError as error:
-                logging.error("Error during ssl wrapping: %s", str(error))
-                continue
+    def accept(self) -> None:
+        """ Listen for incoming connections, and accept them using a threadpool """
 
+        with futures.ThreadPoolExecutor() as executor, selectors.DefaultSelector() as selector:
+            # Register socket to wait for incoming connections
+            selector.register(self.socket, selectors.EVENT_READ)
 
-            client = Client(ssl_sock, address)
+            while not self._stop.is_set():
+                for _ in selector.select(timeout=1):
+                    executor.submit(self.handshake)
 
-            # Get peer system information
-            info = client.read().decode().strip().split()
-            client.system, client.user, client.home, client.hostname = info
+    def handshake(self) -> None:
+        """ Accept incoming connection, gets called from self.accept """
+        try:
+            connection, address = self.socket.accept()
+        except (BlockingIOError, TimeoutError):
+            return
 
-            self._clients.append(client)
-            self.connections_queue.put(client)
+        client = Client(connection, address)
+        # Receive system information
+        info = client.read().decode().strip().split()
+        client.system, client.user, client.home, client.hostname = info
+
+        self._clients.append(client)
+
+        if hasattr(self.new_connections, "put"):
+            self.new_connections.put(client)
 
     def clients(self) -> list[Client]:
         """ List connected clients """
@@ -113,9 +121,9 @@ class Server:
         """ Shutdown server """
         logging.debug('Shutting down server')
         # Stop accept thread
-        self.accept_event.set()
+        self._stop.set()
 
         # Suppress OSError (socket not connected)
         with suppress(OSError):
-            self.sock.shutdown(socket.SHUT_RDWR)
-            self.sock.close()
+            self.socket.shutdown(socket.SHUT_RDWR)
+        self.socket.close()
