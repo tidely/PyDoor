@@ -31,8 +31,6 @@ class Server:
         self.socket = socket.socket()
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        self.socket.bind(address)
-
         if isinstance(context, ssl.SSLContext):
             self.socket = context.wrap_socket(self.socket, server_side=True)
         else:
@@ -43,14 +41,12 @@ class Server:
 
     def start(self) -> None:
         """ Start the server """
+        self.socket.bind(self.address)
         self.socket.listen()
-
         self._stop.clear()
+        threading.Thread(target=self.listen).start()
 
-        # Create and start thread
-        threading.Thread(target=self.accept).start()
-
-    def accept(self) -> None:
+    def listen(self) -> None:
         """ Listen for incoming connections, and accept them using a threadpool """
 
         with futures.ThreadPoolExecutor() as executor, selectors.DefaultSelector() as selector:
@@ -59,9 +55,9 @@ class Server:
 
             while not self._stop.is_set():
                 for _ in selector.select(timeout=1):
-                    executor.submit(self.handshake)
+                    executor.submit(self.accept)
 
-    def handshake(self) -> None:
+    def accept(self) -> None:
         """ Accept incoming connection, gets called from self.accept """
         try:
             connection, address = self.socket.accept()
@@ -124,6 +120,10 @@ class Server:
         logging.debug('Shutting down server')
         # Stop accept thread
         self._stop.set()
+
+        # Disconnect all clients
+        for client in self._clients:
+            self.disconnect(client)
 
         # Suppress OSError (socket not connected)
         with suppress(OSError):
