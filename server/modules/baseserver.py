@@ -113,6 +113,8 @@ class Server:
     def disconnect(self, client: Client) -> None:
         """ Disconnect a specific client """
         logging.debug("Disconnecting client (%s)", client.port)
+        with suppress(OSError):
+            client.conn.shutdown(socket.SHUT_RDWR)
         client.conn.close()
         if client in self._clients:
             self._clients.remove(client)
