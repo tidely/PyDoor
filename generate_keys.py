@@ -1,5 +1,7 @@
 """ Generate EC private keys and corresponding certificates """
 import datetime
+import ipaddress
+
 
 from cryptography import x509
 from cryptography.x509.oid import NameOID
@@ -59,7 +61,10 @@ def issue_certificate(
     ).not_valid_after(
         datetime.datetime.utcnow() + datetime.timedelta(days=valid_for_in_days)
     ).add_extension(
-        x509.SubjectAlternativeName([x509.DNSName("localhost")]),
+        x509.SubjectAlternativeName([
+            x509.DNSName("localhost"),
+            x509.IPAddress(ipaddress.ip_address("0.0.0.0"))
+        ]),
         critical=False
     ).sign(
         issuer_private_key, hashes.SHA512()
