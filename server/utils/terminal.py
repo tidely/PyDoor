@@ -1,10 +1,24 @@
 """ Terminal functionality """
 import os
 import platform
+from typing import Callable
+
 from colorama import Fore
 
 from modules.clients import Client
 from modules.tasks import Task
+
+
+def require_client(func: Callable) -> Callable:
+    """ Decorator to require server.client to be defined to run function """
+    def wrapper(*args, **kwargs) -> None:
+        client: Client | None = args[0].client
+        if client is None:
+            print("Select a client first.")
+        else:
+            func(*args, **kwargs)
+
+    return wrapper
 
 
 def clear() -> None:
