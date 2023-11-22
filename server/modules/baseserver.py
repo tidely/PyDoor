@@ -82,11 +82,9 @@ class Server:
         clients = self._clients.copy()
 
         # Check for disconnected clients
-        readable, _, errors = select.select(clients, clients, clients, 60.0)
-
-        # Type hints
         readable: list[Client]
         errors: list[Client]
+        readable, _, errors = select.select(clients, clients, clients, 60.0)
 
         # Disconnect clients that returned an error
         for client in errors:

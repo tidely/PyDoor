@@ -4,6 +4,7 @@ import logging
 
 from modules.clients import Client
 
+
 class Task:
     """ Task object """
 
