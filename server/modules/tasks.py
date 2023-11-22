@@ -1,12 +1,18 @@
 """ Manage tasks on a client """
 import json
 import logging
-from collections import namedtuple
+from typing import NamedTuple
 
 from modules.clients import Client
 
 
-Task = namedtuple("Task", ["identifier", "native_id", "command", "extra"])
+class Task(NamedTuple):
+    """ Task object """
+    identifier: str
+    native_id: int | None
+    command: str
+    extra: list
+
 
 def create_task(arguments: list) -> Task:
     """ Handle the extra paremeters when passing into a Task """
