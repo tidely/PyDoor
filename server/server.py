@@ -1,5 +1,6 @@
 """ Server CLI for PyDoor """
 import cmd
+import shlex
 import logging
 import socket
 import ssl
@@ -146,9 +147,11 @@ class ServerCLI(Server, cmd.Cmd):
                 case '':
                     continue
 
-            # Warn user when changing directory, that it does not persist between commands
-            comm, *_ = command.split()
-            if comm.lower() in ['cd', 'chdir']:
+            # Extract keywords from command using shlex lexical analysis
+            keywords = shlex.split(command)
+
+            # Warn user that directory changes do not persist between commands
+            if any((keyword for keyword in keywords if keyword in ['cd', 'chdir'])):
                 print("Changing directory does not persist between commands!")
                 print("It is recommended to use python to change directories.")
 
