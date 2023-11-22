@@ -1,20 +1,17 @@
 """ Manage tasks on a client """
 import json
 import logging
+from collections import namedtuple
 
 from modules.clients import Client
 
 
-class Task:
-    """ Task object """
+Task = namedtuple("Task", ["identifier", "native_id", "command", "extra"])
 
-    def __init__(self, task: list) -> None:
-        """ Create task object from list """
-        identifier, native_id, command, *extra = task
-        self.identifier: str = identifier
-        self.native_id: int | None = native_id
-        self.command: str = command
-        self.extra: list = extra
+def create_task(arguments: list) -> Task:
+    """ Handle the extra paremeters when passing into a Task """
+    identifier, native_id, command, *extra = arguments
+    return Task(identifier, native_id, command, extra)
 
 
 def tasks(client: Client) -> list[Task]:
@@ -25,7 +22,7 @@ def tasks(client: Client) -> list[Task]:
     response = client.read().decode()
 
     logging.debug("Received tasks from client (%s): %s", client.port, response)
-    return list(map(Task, json.loads(response)))
+    return list(map(create_task, json.loads(response)))
 
 
 def stoptask(client: Client, task: Task) -> bool:
