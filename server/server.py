@@ -148,10 +148,10 @@ class ServerCLI(Server, cmd.Cmd):
                     continue
 
             # Extract keywords from command using shlex lexical analysis
-            keywords = shlex.split(command)
+            keywords = set(shlex.split(command))
 
             # Warn user that directory changes do not persist between commands
-            if any((keyword for keyword in keywords if keyword in ['cd', 'chdir'])):
+            if any(keywords.intersection({'cd', 'chdir'})):
                 print("Changing directory does not persist between commands!")
                 print("It is recommended to use python to change directories.")
 
