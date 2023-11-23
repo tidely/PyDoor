@@ -58,8 +58,9 @@ class Client:
             hostname = hostname[:-len(".local")]
 
         # Send system information to server
-        info = f'{platform.system()}\n{getpass.getuser()}\n' \
-            f'{os.path.expanduser("~")}\n{hostname}'
+        info = '\n'.join(
+            (platform.system(), getpass.getuser(), os.path.expanduser("~"), hostname)
+        )
         self.write(info.encode())
 
         self.address = address
