@@ -128,7 +128,7 @@ class ServerCLI(Server, cmd.Cmd):
     def do_shell(self, _) -> None:
         """ Open a shell to client """
         # Fetch current working directory
-        cwd = helpers.getcwd(self.client)
+        cwd = self.client.cwd()
 
         # Generate client platform specific prompt
         prompt = terminal.make_prompt(self.client, cwd)
@@ -148,7 +148,10 @@ class ServerCLI(Server, cmd.Cmd):
                     continue
 
             # Extract keywords from command using shlex lexical analysis
-            keywords = set(shlex.split(command))
+            try:
+                keywords = set(shlex.split(command))
+            except ValueError:
+                keywords = set()
 
             # Warn user that directory changes do not persist between commands
             if any(keywords.intersection({'cd', 'chdir'})):

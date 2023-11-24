@@ -65,10 +65,6 @@ class Server:
             return
 
         client = Client(connection, address)
-        # Receive system information
-        info = client.read().decode().strip().split()
-        client.system, client.user, client.home, client.hostname = info
-
         self._clients.append(client)
 
         if hasattr(self.new_connections, "put"):

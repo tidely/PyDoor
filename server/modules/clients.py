@@ -2,21 +2,17 @@
 import ssl
 import uuid
 import logging
+from functools import cached_property
+
 
 HEADER_LENGTH = 8
 
 
-class Client:
+class BaseClient:
     """ Client class """
 
     # List of tasks running on client
     tasklist = []
-
-    # Client system information (collected during handshake)
-    system: str = '' # platform.system()
-    user: str = '' # getpass.getuser()
-    home: str = '' # os.path.expanduser("~")
-    hostname: str = '' # socket.gethostname()
 
     def __init__(self, conn: ssl.SSLSocket, address: tuple) -> None:
         self.conn = conn
@@ -53,3 +49,46 @@ class Client:
         header = len(data).to_bytes(HEADER_LENGTH, byteorder='big')
         message = header + data
         self.conn.sendall(message)
+
+
+class Client(BaseClient):
+    """ BaseClient with added properties """
+
+    def cwd(self) -> str:
+        """ Current working directory """
+        logging.info("Getting cwd from client (%s)", self.port)
+
+        self.write(b"CWD")
+        return self.read().decode()
+
+    @cached_property
+    def system(self) -> str:
+        """ platform.system() """
+        logging.info("Fetching platform (%s)", self.port)
+
+        self.write(b"SYSTEM")
+        return self.read().decode()
+
+    @cached_property
+    def user(self) -> str:
+        """ getpass.getuser() """
+        logging.info("Fetching user (%s)", self.port)
+
+        self.write(b'USER')
+        return self.read().decode()
+
+    @cached_property
+    def home(self) -> str:
+        """ os.path.expanduser("~") """
+        logging.info("Fetching home (%s)", self.port)
+
+        self.write(b'HOME')
+        return self.read().decode()
+
+    @cached_property
+    def hostname(self) -> str:
+        """ socket.gethostname() """
+        logging.info("Fetching home (%s)", self.port)
+
+        self.write(b'HOSTNAME')
+        return self.read().decode()

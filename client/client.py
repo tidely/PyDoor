@@ -2,7 +2,10 @@
 import os
 import ssl
 import json
+import socket
 import logging
+import getpass
+import platform
 import subprocess
 import queue
 from contextlib import suppress
@@ -33,6 +36,14 @@ class CommandClient(Client):
                 self.ping()
             case "CWD":
                 self.cwd()
+            case "SYSTEM":
+                self.system()
+            case "USER":
+                self.user()
+            case "HOME":
+                self.home()
+            case "HOSTNAME":
+                self.hostname()
             case 'SHELL':
                 self.shell()
             case 'PYTHON':
@@ -71,6 +82,32 @@ class CommandClient(Client):
         """ Send cwd to server """
         logging.info("Sending cwd to server")
         self.write(os.getcwdb())
+
+    def system(self) -> None:
+        """ Send platform to server """
+        logging.info("Sending system to server")
+        self.write(platform.system().encode())
+
+    def user(self) -> None:
+        """ Send user to server """
+        logging.info("Sending user to server")
+        self.write(getpass.getuser().encode())
+
+    def home(self) -> None:
+        """ Send home to server """
+        logging.info("Sending home to server")
+        self.write(os.path.expanduser('~').encode())
+
+    def hostname(self) -> None:
+        """ Send hostname to server """
+        logging.info("Sending hostname to server")
+
+        hostname = socket.gethostname()
+        # Remove .local ending on macos
+        if platform.system() == "Darwin" and hostname.endswith(".local"):
+            hostname = hostname[:-len(".local")]
+
+        self.write(hostname.encode())
 
     def shell(self) -> None:
         """ Open a shell for peer """

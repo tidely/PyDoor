@@ -51,18 +51,6 @@ class Client:
             logging.error("Error during ssl wrapping: %s", str(error))
             return
 
-        # Get hostname
-        hostname = socket.gethostname()
-        # Remove .local ending on macos
-        if platform.system() == "Darwin" and hostname.endswith(".local"):
-            hostname = hostname[:-len(".local")]
-
-        # Send system information to server
-        info = '\n'.join(
-            (platform.system(), getpass.getuser(), os.path.expanduser("~"), hostname)
-        )
-        self.write(info.encode())
-
         self.address = address
         return True
 
