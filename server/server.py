@@ -7,7 +7,7 @@ import ssl
 from contextlib import suppress
 
 from modules import (clipboard, download, filetransfer, screenshot,
-                     shells, tasks, webcam, windows, helpers, network)
+                     shells, tasks, webcam, windows, network)
 from modules.baseserver import Server
 from utils import terminal, ignore
 from utils.timeout_handler import timeoutsetter
