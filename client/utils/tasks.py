@@ -1,7 +1,6 @@
 """ Custom Thread Class """
 import threading
 import queue
-import json
 import uuid
 
 
