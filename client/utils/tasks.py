@@ -6,35 +6,16 @@ import uuid
 
 
 class Task(threading.Thread):
-    """ Default Task Class """
+    """ Base Task Class """
 
-    def __init__(self,
-            target: object,
-            args: list,
-            info: list,
-            stop: threading.Event | None = threading.Event(),
-            output: queue.Queue | None = queue.Queue(),
-            daemon: bool = False
-        ) -> None:
-        """ Initialize thread """
+    def __init__(self, *args, **kwargs) -> None:
+        """ Create additional properties for task """
 
-        # Unique task identifier
         self.identifer = str(uuid.uuid4())
+        self.stop = threading.Event()
+        self.output = queue.Queue()
 
-        # Append additional options to args
-        if stop:
-            args.append(stop)
-        if output:
-            args.append(output)
-
-        threading.Thread.__init__(self,
-            target=target,
-            args=args,
-            daemon=daemon
-        )
-        self.name = json.dumps(info)
-        self.stop = stop
-        self.output = output
+        threading.Thread.__init__(self, *args, **kwargs)
 
 
 def clean(tasks: list[Task]) -> None:

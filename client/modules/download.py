@@ -1,18 +1,35 @@
 """ Threaded download functionality """
-import threading
+import json
 
 import requests
 
 from utils.tasks import Task
 
 
-def download_stream(stream: requests.Response, filename: str, stop_event: threading.Event) -> None:
-    """ Download a file from a stream """
-    with open(filename, "wb") as file:
-        for chunk in stream.iter_content(chunk_size=16384):
-            file.write(chunk)
-            if stop_event.is_set():
-                return
+class DownloadTask(Task):
+    """ Download Task """
+
+    def __init__(self, stream: requests.Response, filename: str, *args, **kwargs) -> None:
+        """ Overwrite output """
+        Task.__init__(self, *args, **kwargs)
+
+        # Arguments
+        self.stream = stream
+        self.filename = filename
+
+        # Task has no output
+        self.output = None
+
+        # Overwrite task name
+        self.name = json.dumps(("Download", stream.url, filename))
+
+    def run(self) -> None:
+        """ Download from stream """
+        with open(self.filename, "wb") as file:
+            for chunk in self.stream.iter_content(chunk_size=16384):
+                file.write(chunk)
+                if self.stop.is_set():
+                    break
 
 
 def download(url: str, filename: str) -> Task:
@@ -21,12 +38,6 @@ def download(url: str, filename: str) -> Task:
     # Request a download stream
     stream = requests.get(url, stream=True, allow_redirects=True, timeout=20)
 
-    task = Task(
-        target=download_stream,
-        args=[stream, filename],
-        info=("Download", url, filename),
-        output=None
-    )
-
+    task = DownloadTask(stream, filename)
     task.start()
     return task
