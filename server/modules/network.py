@@ -5,7 +5,7 @@ import logging
 from modules.clients import Client
 
 
-def ping(client: Client) -> int | bool:
+def ping(client: Client) -> int:
     """ Measure socket latency in ms """
     logging.debug("Pinging client (%s)", client.port)
 

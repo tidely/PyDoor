@@ -14,7 +14,7 @@ class BaseClient:
     # List of tasks running on client
     tasklist = []
 
-    def __init__(self, conn: ssl.SSLSocket, address: tuple) -> None:
+    def __init__(self, conn: ssl.SSLSocket, address: tuple[str, int]) -> None:
         self.conn = conn
         self.address = address
         self.port = address[-1]
