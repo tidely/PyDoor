@@ -1,10 +1,8 @@
 """ Webcam functionality """
-from typing import Union
-
 from cv2 import VideoCapture, imencode
 
 
-def capture_webcam() -> Union[bytes, None]:
+def capture_webcam() -> bytes:
     """ Capture a webcam image """
     camera = VideoCapture(0)
     state, img = camera.read()
