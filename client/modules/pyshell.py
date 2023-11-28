@@ -2,7 +2,7 @@
 import json
 import logging
 from io import StringIO
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 
 from utils.tasks import Task
 
@@ -26,17 +26,16 @@ class ShellTask(Task):
     def run(self) -> None:
         """ Execute python command """
         logging.debug('Executing python command: %s', self.command)
-        error_message = ''
+        python_error = ''
 
-        output = StringIO()
-        with redirect_stdout(output):
+        with redirect_stdout(StringIO()) as stdout, redirect_stderr(StringIO()) as stderr:
             try:
                 exec(self.command)
             except Exception as error:
-                error_message = f'{error.__class__.__name__}: {str(error)}\n'
+                python_error = f'{error.__class__.__name__}: {str(error)}\n'
 
         # Write command output into queue
-        self.output.put(output.getvalue() + error_message)
+        self.output.put(''.join((stdout.getvalue(), stderr.getvalue(), python_error)))
 
 
 def pyshell(command: str | list) -> Task:
