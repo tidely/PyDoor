@@ -1,11 +1,8 @@
 """ Base Class for the Client, handles handshake, encryption and messages """
-import os
 import ssl
-import logging
-import socket
 import time
-import platform
-import getpass
+import socket
+import logging
 
 from utils.helpers import run_till_true
 
