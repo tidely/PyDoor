@@ -71,10 +71,6 @@ class ServerCLI(Server, cmd.Cmd):
         self.shutdown()
         return True
 
-    def do_help(self, _) -> None:
-        """ Print help message """
-        print(INTERACT_HELP if self.client else MENU_HELP)
-
     def do_open(self, select_id: str) -> None:
         """ Interact with a client """
         if self.client is not None:
@@ -113,6 +109,10 @@ class ServerCLI(Server, cmd.Cmd):
         """ CLI for list """
         for client in self.clients():
             print(f'Port: {client.port} / Address: {client.address[0]}')
+
+    def do_help(self, _) -> None:
+        """ Print help message """
+        print(INTERACT_HELP if self.client else MENU_HELP)
 
     @terminal.require_client
     def do_ping(self, _) -> None:
