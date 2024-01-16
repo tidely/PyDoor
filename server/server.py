@@ -71,16 +71,6 @@ class ServerCLI(Server, cmd.Cmd):
         self.shutdown()
         return True
 
-    @terminal.require_client
-    def do_ping(self, _) -> None:
-        """ Get client latency """
-        try:
-            latency = network.ping(self.client)
-        except TimeoutError:
-            print("Client timed out.")
-        else:
-            print(f'Ping: {latency}ms')
-
     def do_help(self, _) -> None:
         """ Print help message """
         print(INTERACT_HELP if self.client else MENU_HELP)
@@ -123,6 +113,16 @@ class ServerCLI(Server, cmd.Cmd):
         """ CLI for list """
         for client in self.clients():
             print(f'Port: {client.port} / Address: {client.address[0]}')
+
+    @terminal.require_client
+    def do_ping(self, _) -> None:
+        """ Get client latency """
+        try:
+            latency = network.ping(self.client)
+        except TimeoutError:
+            print("Client timed out.")
+        else:
+            print(f'Ping: {latency}ms')
 
     @terminal.require_client
     def do_shell(self, _) -> None:
