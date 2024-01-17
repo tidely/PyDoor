@@ -2,6 +2,7 @@
 import os
 import platform
 from typing import Callable
+from functools import wraps
 
 from colorama import Fore
 
@@ -11,6 +12,7 @@ from modules.tasks import Task
 
 def require_client(func: Callable) -> Callable:
     """ Decorator to require server.client to be defined to run function """
+    @wraps(func)
     def wrapper(*args, **kwargs) -> None:
         client: Client | None = args[0].client
         if client is None:
