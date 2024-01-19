@@ -3,6 +3,7 @@ import os
 import platform
 from typing import Callable
 from functools import wraps
+from contextlib import suppress
 
 from colorama import Fore
 
@@ -21,6 +22,20 @@ def require_client(func: Callable) -> Callable:
             func(*args, **kwargs)
 
     return wrapper
+
+
+def ignore(*exceptions) -> Callable:
+    """ Create decorator to ignore exceptions """
+    def decorator(function: Callable) -> Callable:
+        """ Create wrapper """
+        @wraps(function)
+        def wrapper(*args, **kwargs) -> None:
+            """ Wrapper to ignote  """
+            with suppress(*exceptions):
+                function(*args, **kwargs)
+            print()
+        return wrapper
+    return decorator
 
 
 def clear() -> None:
