@@ -68,6 +68,6 @@ def output(client: Client, task: Task) -> str:
     return client.read().decode()
 
 
-def find(task_list: list[Task], task_id: str) -> str | None:
+def find(task_list: list[Task], task_id: str) -> Task | None:
     """ Find task from a list given a shortened task identifier, None if not found """
     return next((task for task in task_list if task.identifier.startswith(task_id)), None)

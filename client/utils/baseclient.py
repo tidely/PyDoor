@@ -27,7 +27,7 @@ class Client:
         self.context = context
 
     @run_till_true
-    def connect(self, address: tuple, retry_in_seconds: int = 5) -> None:
+    def connect(self, address: tuple, retry_in_seconds: int = 5) -> bool:
         """ Connect to peer """
 
         self.sock = socket.socket()
@@ -36,17 +36,17 @@ class Client:
             self.sock.connect(address)
         except ConnectionError:
             # Socket is not open
-            return
+            return False
         except OSError:
             self.sock.close()
             time.sleep(retry_in_seconds)
-            return
+            return False
 
         try:
             self.ssl_sock = self.context.wrap_socket(self.sock, server_hostname=address[0])
         except ssl.SSLError as error:
             logging.error("Error during ssl wrapping: %s", str(error))
-            return
+            return False
 
         self.address = address
         return True

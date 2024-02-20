@@ -289,13 +289,13 @@ class ServerCLI(Server, cmd.Cmd):
             return
 
         # Find complete task identifier
-        identifier = tasks.find(self.client.tasklist, task_id)
-        if identifier is None:
+        task = tasks.find(self.client.tasklist, task_id)
+        if task is None:
             print("Task doesn't exist.")
             return
 
         try:
-            tasks.stoptask(self.client, identifier)
+            tasks.stoptask(self.client, task)
         except RuntimeError as error:
             print(str(error))
         else:

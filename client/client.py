@@ -18,6 +18,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 BLOCK_SIZE = 32768
 
+
 class CommandClient(Client):
     """ Client for managing commands """
 
@@ -224,7 +225,7 @@ class CommandClient(Client):
 
         except PermissionError as error:
             logging.error('Insufficient permissions writing to file "%s" during receive', filename)
-            self.write(f'{error.__class__.__name__}: {str(error)}')
+            self.write(f'{error.__class__.__name__}: {str(error)}'.encode())
         else:
             logging.info("Transferred '%s' from server successfully", filename)
 
@@ -281,7 +282,7 @@ class CommandClient(Client):
         task_id = self.read().decode()
         logging.debug("Attempting to stop task (%s)", task_id)
 
-        task: tasks.Task = tasks.find(self.task_list, task_id)
+        task = tasks.find(self.task_list, task_id)
 
         if task is None:
             self.write(b'Task could not be found.')
@@ -303,7 +304,7 @@ class CommandClient(Client):
         task_id = self.read().decode()
         logging.debug("Attempting to get task (%s) output", task_id)
 
-        task: tasks.Task = tasks.find(self.task_list, task_id)
+        task = tasks.find(self.task_list, task_id)
 
         if task is None:
             self.write(b'Task could not be found.')
