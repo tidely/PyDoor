@@ -3,6 +3,7 @@ import json
 import logging
 from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
+from typing import Union
 
 from utils.tasks import Task
 
@@ -23,7 +24,7 @@ class ShellTask(Task):
         # Overwrite task name
         self.name = json.dumps(("Python", command))
 
-    def run(self) -> None:
+    def run(self):
         """ Execute python command """
         logging.debug('Executing python command: %s', self.command)
         python_error = ''
@@ -38,7 +39,7 @@ class ShellTask(Task):
         self.output.put(''.join((stdout.getvalue(), stderr.getvalue(), python_error)))
 
 
-def pyshell(command: str | list) -> Task:
+def pyshell(command: Union[str, list]) -> Task:
     """ Run a python exec command inside of a thread """
 
     task = ShellTask(command)

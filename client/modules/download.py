@@ -9,7 +9,7 @@ from utils.tasks import Task
 class DownloadTask(Task):
     """ Download Task """
 
-    def __init__(self, stream: requests.Response, filename: str, *args, **kwargs) -> None:
+    def __init__(self, stream: requests.Response, filename: str, *args, **kwargs):
         """ Overwrite output """
         Task.__init__(self, *args, **kwargs)
 
@@ -23,7 +23,7 @@ class DownloadTask(Task):
         # Overwrite task name
         self.name = json.dumps(("Download", stream.url, filename))
 
-    def run(self) -> None:
+    def run(self):
         """ Download from stream """
         with open(self.filename, "wb") as file:
             for chunk in self.stream.iter_content(chunk_size=16384):

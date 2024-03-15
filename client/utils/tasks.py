@@ -2,12 +2,13 @@
 import threading
 import queue
 import uuid
+from typing import Union
 
 
 class Task(threading.Thread):
     """ Base Task Class """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs):
         """ Create additional properties for task """
 
         self.identifer = str(uuid.uuid4())
@@ -17,7 +18,7 @@ class Task(threading.Thread):
         threading.Thread.__init__(self, *args, **kwargs)
 
 
-def clean(tasks: list[Task]) -> None:
+def clean(tasks: list[Task]):
     """ Given a list of tasks, remove completed and processed ones """
     # Create a copy to prevent issues looping through
     tasks_copy = tasks.copy()
@@ -27,7 +28,7 @@ def clean(tasks: list[Task]) -> None:
             continue
 
 
-def find(tasks: list[Task], task_id: str) -> Task | None:
+def find(tasks: list[Task], task_id: str) -> Union[Task, None]:
     """ Find a task with a specific task identifier, return None if not found """
     # Clean the task list
     clean(tasks)

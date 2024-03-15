@@ -3,6 +3,7 @@ import ssl
 import time
 import socket
 import logging
+from typing import Optional
 
 from utils.helpers import run_till_true
 
@@ -19,10 +20,10 @@ class Client:
 
     # Create socket
     sock = socket.socket()
-    ssl_sock: ssl.SSLSocket | None = None
-    address: tuple | None = None
+    ssl_sock: Optional[ssl.SSLSocket] = None
+    address: Optional[tuple] = None
 
-    def __init__(self, context: ssl.SSLContext) -> None:
+    def __init__(self, context: ssl.SSLContext):
         """ Define a trusted certificate """
         self.context = context
 
@@ -71,7 +72,7 @@ class Client:
         message_length = int.from_bytes(header, 'big')
         return self._read(message_length)
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: bytes):
         """ Write message data to peer """
         # Create header for data
         header = len(data).to_bytes(self.header_length, byteorder='big')

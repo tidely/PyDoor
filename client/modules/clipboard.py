@@ -2,7 +2,7 @@
 import pyperclip
 
 
-def copy(data: str) -> None:
+def copy(data: str):
     """ Copy to clipboard """
     pyperclip.copy(data)
 
