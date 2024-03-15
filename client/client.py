@@ -23,10 +23,10 @@ BLOCK_SIZE = 32768
 class CommandClient(Client):
     """Client for managing commands"""
 
-    # List of tasks that have output, but timed out
-    task_list: list[tasks.Task] = []
-
     def __init__(self, ssl_context: ssl.SSLContext):
+        # List of tasks that have output, but timed out
+        self.task_list: list[tasks.Task] = []
+
         Client.__init__(self, ssl_context)
 
     def listen(self):
