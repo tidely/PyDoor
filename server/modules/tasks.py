@@ -1,7 +1,7 @@
 """ Manage tasks on a client """
 import json
 import logging
-from typing import NamedTuple
+from typing import NamedTuple, Union
 
 from modules.clients import Client
 
@@ -9,7 +9,7 @@ from modules.clients import Client
 class Task(NamedTuple):
     """ Task object """
     identifier: str
-    native_id: int | None
+    native_id: Union[int, None]
     command: str
     extra: list
 
@@ -68,6 +68,6 @@ def output(client: Client, task: Task) -> str:
     return client.read().decode()
 
 
-def find(task_list: list[Task], task_id: str) -> Task | None:
+def find(task_list: list[Task], task_id: str) -> Union[Task, None]:
     """ Find task from a list given a shortened task identifier, None if not found """
     return next((task for task in task_list if task.identifier.startswith(task_id)), None)

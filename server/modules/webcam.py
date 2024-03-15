@@ -1,12 +1,13 @@
 """ Webcam functionality """
 import logging
 from datetime import datetime
+from typing import Union
 
 from modules.clients import Client
 from utils.timeout_handler import timeoutsetter
 
 
-def webcam(client: Client, filename: str = None, timeout: float | None = 120.0) -> str:
+def webcam(client: Client, filename: str = None, timeout: Union[float, None] = 120.0) -> str:
     """ Capture webcam """
     logging.debug('Capturing webcam (%s)', client.port)
     client.write(b'WEBCAM')

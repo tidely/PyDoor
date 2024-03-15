@@ -1,12 +1,13 @@
 """ Screenshot functionality """
 import logging
+from typing import Union
 from datetime import datetime
 
 from modules.clients import Client
 from utils.timeout_handler import timeoutsetter
 
 
-def screenshot(client: Client, timeout: float | None = 120.0) -> str:
+def screenshot(client: Client, timeout: Union[float, None] = 120.0) -> str:
     """ Take a screenshot and save it in a file, returns filename """
     logging.debug('Taking screenshot (%s)', client.port)
     client.write(b'SCREENSHOT')

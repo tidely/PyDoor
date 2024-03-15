@@ -4,7 +4,7 @@ import logging
 from modules.clients import Client
 
 
-def copy(client: Client, text: str) -> None:
+def copy(client: Client, text: str):
     """ Copy to client clipboard """
     logging.debug('Copying to client clipboard (%s)', client.port)
     client.write(b'COPY')

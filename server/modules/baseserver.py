@@ -8,6 +8,7 @@ import threading
 import selectors
 from contextlib import suppress
 from concurrent import futures
+from typing import Optional
 
 from utils.timeout_handler import timeoutsetter
 from modules.clients import Client
@@ -23,7 +24,7 @@ class Server:
 
     def __init__(self,
         address: tuple[str, int],
-        context: ssl.SSLContext | None = None,
+        context: Optional[ssl.SSLContext] = None,
         queue_new_connections: bool = True
     ):
         """ Create and wrap socket with SSL """

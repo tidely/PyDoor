@@ -1,12 +1,13 @@
 """ Download Functionality """
 import json
 import logging
+from typing import Union
 
 from modules.clients import Client
 from utils.timeout_handler import timeoutsetter
 
 
-def download(client: Client, url: str, filename: str, timeout: float | None = 30.0) -> bool:
+def download(client: Client, url: str, filename: str, timeout: Union[float, None] = 30.0) -> bool:
     """ Make the client download a file """
     logging.debug("Downloading file '%s' from '%s' to client (%s)", filename, url, client.port)
 

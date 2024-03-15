@@ -1,11 +1,12 @@
 """ Shell functionality """
 import logging
+from typing import Union
 
 from utils.timeout_handler import timeoutsetter
 from modules.clients import Client
 
 
-def shell(client: Client, command: str, timeout: float | None = 60.0) -> str:
+def shell(client: Client, command: str, timeout: Union[float, None] = 60.0) -> str:
     """ Run shell command on client """
     logging.debug("Sending shell command '%s' to client (%s)", command, client.port)
 
@@ -19,7 +20,7 @@ def shell(client: Client, command: str, timeout: float | None = 60.0) -> str:
     return response
 
 
-def python(client: Client, command: str, timeout: float | None = 60.0) -> str:
+def python(client: Client, command: str, timeout: Union[float, None] = 60.0) -> str:
     """ Run python command on client """
     logging.debug("Sending python command '%s' to client (%s)", command, client.port)
 
