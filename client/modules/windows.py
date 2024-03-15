@@ -3,6 +3,6 @@
 import ctypes
 
 
-def lock() -> None:
+def lock():
     """Lock Machine"""
     ctypes.windll.user32.LockWorkStation()
