@@ -42,7 +42,7 @@ class ShellTask(Task):
         self.output.put("".join((stdout.getvalue(), stderr.getvalue(), python_error)))
 
 
-def pyshell(command: Union[str, list]) -> Task:
+def pyshell(command: str) -> Task:
     """Run a python exec command inside of a thread"""
 
     task = ShellTask(command)
