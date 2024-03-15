@@ -1,12 +1,12 @@
 """ Timeout helper for clients """
 from contextlib import contextmanager, suppress
-from typing import Generator, Any
+from typing import Generator, Any, Union
 
 from modules.clients import Client
 
 
 @contextmanager
-def timeoutsetter(client: Client, timeout: float | None) -> Generator[None, Any, Any]:
+def timeoutsetter(client: Client, timeout: Union[float, None]) -> Generator[None, Any, Any]:
     """ Temporarily set a clients timeout """
     default = client.conn.gettimeout()
     client.conn.settimeout(timeout)

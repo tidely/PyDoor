@@ -14,7 +14,7 @@ class BaseClient:
     # List of tasks running on client
     tasklist = []
 
-    def __init__(self, conn: ssl.SSLSocket, address: tuple[str, int]) -> None:
+    def __init__(self, conn: ssl.SSLSocket, address: tuple[str, int]):
         self.conn = conn
         self.address = address
         self.port = address[-1]
@@ -43,7 +43,7 @@ class BaseClient:
         message_length = int.from_bytes(header, 'big')
         return self._read(message_length)
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: bytes):
         """ Write message data to peer """
         # Create header for data
         header = len(data).to_bytes(HEADER_LENGTH, byteorder='big')
