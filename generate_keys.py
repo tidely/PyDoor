@@ -26,7 +26,7 @@ SERVER_NAME = x509.Name(
 )
 
 
-def to_pem(obj: ec.EllipticCurvePrivateKey | x509.Certificate) -> None:
+def to_pem(obj: ec.EllipticCurvePrivateKey | x509.Certificate) -> bytes:
     """Save a private key to a file in PEM format"""
 
     if isinstance(obj, x509.Certificate):
