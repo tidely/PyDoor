@@ -62,7 +62,7 @@ class ServerCLI(Server, cmd.Cmd):
         Server.__init__(self, address, ssl_context)
         cmd.Cmd.__init__(self)
 
-    def default(self, _):
+    def default(self, line):
         """ Default error if command not found """
         print('Command was not recognized, type "help" for help.')
 
@@ -110,7 +110,7 @@ class ServerCLI(Server, cmd.Cmd):
         for client in self.clients():
             print(f'Port: {client.port} / Address: {client.address[0]}')
 
-    def do_help(self, _):
+    def do_help(self, arg):
         """ Print help message """
         print(INTERACT_HELP if self.client else MENU_HELP)
 

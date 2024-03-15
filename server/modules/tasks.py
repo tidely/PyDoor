@@ -31,7 +31,7 @@ def tasks(client: Client) -> list[Task]:
     return list(map(create_task, json.loads(response)))
 
 
-def stoptask(client: Client, task: Task) -> bool:
+def stoptask(client: Client, task: Task):
     """ Stop a task on a client """
     logging.debug("Attempting to stop task (%s) on client (%s)", task.identifier, client.port)
 

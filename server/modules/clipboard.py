@@ -17,6 +17,7 @@ def copy(client: Client, text: str):
 
     logging.info('Copied "%s" to client clipboard (%s)', text, client.port)
 
+
 def paste(client: Client) -> str:
     """ Paste from clipboard """
     logging.debug('Pasting from client clipboard (%s)', client.port)
