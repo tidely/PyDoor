@@ -6,7 +6,7 @@ import logging
 from modules.clients import Client
 
 
-def receive(client: Client, filename: str, save_name: str) -> None:
+def receive(client: Client, filename: str, save_name: str):
     """Receive a file from the client"""
     logging.debug('Receiving file "%s" from client (%s)', filename, client.port)
 
@@ -42,7 +42,7 @@ def receive(client: Client, filename: str, save_name: str) -> None:
     )
 
 
-def send(client: Client, filename: str, save_name: str) -> None:
+def send(client: Client, filename: str, save_name: str):
     """Send a file to client"""
     logging.debug('Sending file "%s" to client (%s)', filename, client.port)
 
