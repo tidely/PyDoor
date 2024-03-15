@@ -1,7 +1,7 @@
 """ Terminal functionality """
 import os
 import platform
-from typing import Callable
+from typing import Callable, Optional
 from functools import wraps
 from contextlib import suppress
 
@@ -14,8 +14,8 @@ from modules.tasks import Task
 def require_client(func: Callable) -> Callable:
     """ Decorator to require server.client to be defined to run function """
     @wraps(func)
-    def wrapper(*args, **kwargs) -> None:
-        client: Client | None = args[0].client
+    def wrapper(*args, **kwargs):
+        client: Optional[Client] = args[0].client
         if client is None:
             print("Select a client first.")
         else:
@@ -29,7 +29,7 @@ def ignore(*exceptions) -> Callable:
     def decorator(function: Callable) -> Callable:
         """ Create wrapper """
         @wraps(function)
-        def wrapper(*args, **kwargs) -> None:
+        def wrapper(*args, **kwargs):
             """ Wrapper to ignote  """
             with suppress(*exceptions):
                 function(*args, **kwargs)
