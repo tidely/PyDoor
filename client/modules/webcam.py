@@ -1,17 +1,17 @@
-import logging
-from typing import Union
-
-import cv2
+""" Webcam functionality """
+from cv2 import VideoCapture, imencode
 
 
-def capture_webcam() -> Union[bytes, None]:
+def capture_webcam() -> bytes:
     """ Capture a webcam image """
-    camera = cv2.VideoCapture(0)
+    camera = VideoCapture(0)
     state, img = camera.read()
     camera.release()
-    if state:
-        is_success, arr = cv2.imencode('.png', img)
-        if is_success:
-            logging.info('Captured webcam')
-            return arr.tobytes()
-    logging.error('Error capturing webcam')
+    if not state:
+        raise RuntimeError('Could not open camera (no permissions, or disconnected)')
+
+    success, png = imencode('.png', img)
+    if not success:
+        raise RuntimeError('Could not convert capture to png.')
+
+    return png.tobytes()

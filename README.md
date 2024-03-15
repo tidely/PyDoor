@@ -1,37 +1,39 @@
 # PyDoor  
   
-Encrypted Python Backdoor/Reverse Shell/RAT in Python 3.  
+Encrypted Backdoor/Reverse Shell/RAT written in Python.  
   
 ## Cross-Platform Features  
   
 * Multi-client support  
-* Cross-platform  
-* Remote Shell that updates in real time  
-* Remote Python Interpreter  
-* Simple File Transfer  
-* ECDH Key Exchange  
-* AES256 Encryption  
-* Keylogger  
-* Manage Clipboard Remotely  
+* TLSv1.3 Encryption  
+* Real-time Shell  
+* Python Interpreter  
+* File Transfer  
+* Copy/Paste Clipboard  
 * Capture Webcam  
-* Take Screenshots Remotely  
-* Remotely Zip Files
-* Sending commands to all clients  
-* Download files from the web  
+* Take Screenshots  
+* File Downloader  
+* Background Tasks  
 * Restart Sessions  
   
 ## Windows Specific Features  
   
-* Add Client to Startup  
-* Lock, Shutdown and Restart Client Machines  
+* Lock Client Machines  
   
 Windows Specific Features can be done manually on other OS's  
+  
+## Feature Roadmap  
+  
+* Threaded Shell  
+* Broadcasting commands  
+* Keylogger  
+* Adding Client to Startup (Windows)  
   
 ## Installation  
   
 You will need:  
   
-* [Python 3.6+](https://www.python.org/downloads)  
+* [Python 3.10+](https://www.python.org/downloads)  
   
 1. Download the repository via github or git eg. `git clone https://github.com/Y4hL/PyDoor`  
 2. Install the required modules by running `python -m pip install -r requirements.txt`  
@@ -39,10 +41,10 @@ You will need:
 ## Usage  
   
 Run server:  
-`python server-cli.py`  
+`python3 server.py`  
   
 Run client:  
-`python client.py`  
+`python3 client.py`  
   
 ## FAQ  
   

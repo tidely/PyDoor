@@ -5,3 +5,4 @@ psutil
 pynput
 requests
 opencv-python
+colorama
