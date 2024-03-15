@@ -19,13 +19,12 @@ class Client:
     # Header length
     header_length = 8
 
-    # Create socket
-    sock = socket.socket()
-    ssl_sock: Optional[ssl.SSLSocket] = None
-    address: Optional[tuple] = None
-
     def __init__(self, context: ssl.SSLContext):
         """Define a trusted certificate"""
+        self.sock = socket.socket()
+        self.address: Optional[tuple] = None
+        self.ssl_sock: Optional[ssl.SSLSocket] = None
+
         self.context = context
 
     @run_till_true
