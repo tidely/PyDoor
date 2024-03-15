@@ -22,10 +22,10 @@ class Server:
     _stop = threading.Event()
 
     def __init__(self,
-            address: tuple[str, int],
-            context: ssl.SSLContext | None = None,
-            queue_new_connections: bool = True
-        ) -> None:
+        address: tuple[str, int],
+        context: ssl.SSLContext | None = None,
+        queue_new_connections: bool = True
+    ):
         """ Create and wrap socket with SSL """
         # Create SSLSocket from context
         self.socket = socket.socket()
@@ -37,16 +37,16 @@ class Server:
             logging.warning("No SSL Context provided! Running without SSL.")
 
         self.address = address
-        self.new_connections = queue.Queue() if queue_new_connections else None
+        self.new_connections: queue.Queue[Client] = queue.Queue() if queue_new_connections else None
 
-    def start(self) -> None:
+    def start(self):
         """ Start the server """
         self.socket.bind(self.address)
         self.socket.listen()
         self._stop.clear()
         threading.Thread(target=self.listen).start()
 
-    def listen(self) -> None:
+    def listen(self):
         """ Listen for incoming connections, and accept them using a threadpool """
 
         with futures.ThreadPoolExecutor() as executor, selectors.DefaultSelector() as selector:
@@ -57,7 +57,7 @@ class Server:
                 for _ in selector.select(timeout=1):
                     executor.submit(self.accept)
 
-    def accept(self) -> None:
+    def accept(self):
         """ Accept incoming connection, gets called from self.accept """
         try:
             connection, address = self.socket.accept()
@@ -100,7 +100,7 @@ class Server:
 
         return self._clients
 
-    def disconnect(self, client: Client) -> None:
+    def disconnect(self, client: Client):
         """ Disconnect a specific client """
         logging.debug("Disconnecting client (%s)", client.port)
         with suppress(OSError):
@@ -109,7 +109,7 @@ class Server:
         if client in self._clients:
             self._clients.remove(client)
 
-    def shutdown(self) -> None:
+    def shutdown(self):
         """ Shutdown server """
         logging.debug('Shutting down server')
         # Stop accepting new clients
