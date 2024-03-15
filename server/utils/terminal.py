@@ -38,7 +38,7 @@ def ignore(*exceptions) -> Callable:
     return decorator
 
 
-def clear() -> None:
+def clear():
     """ Clear the terminal on different OS's """
     os.system('cls' if platform.system() == 'Windows' else 'clear')
 
@@ -50,7 +50,7 @@ def increase_timeout_prompt() -> bool:
     return choice.strip().lower().startswith('y')
 
 
-def task_print(tasks: list[Task]) -> None:
+def task_print(tasks: list[Task]):
     """ Given a list of tasks, print them nicely to the user """
     if len(tasks) == 0:
         print("No tasks are running.")
