@@ -40,7 +40,7 @@ class Server:
             logging.warning("No SSL Context provided! Running without SSL.")
 
         self.address = address
-        self.new_connections: queue.Queue[Client] = (
+        self.new_connections: Optional[queue.Queue[Client]] = (
             queue.Queue() if queue_new_connections else None
         )
 
@@ -72,7 +72,7 @@ class Server:
         client = Client(connection, address)
         self._clients.append(client)
 
-        if hasattr(self.new_connections, "put"):
+        if isinstance(self.new_connections, queue.Queue):
             self.new_connections.put(client)
 
     def clients(self) -> list[Client]:

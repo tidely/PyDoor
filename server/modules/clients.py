@@ -1,8 +1,9 @@
 """Client object"""
 
-import ssl
+import socket
 import uuid
 import logging
+from typing import Type
 from functools import cached_property
 
 
@@ -15,7 +16,7 @@ class BaseClient:
     # List of tasks running on client
     tasklist = []
 
-    def __init__(self, conn: ssl.SSLSocket, address: tuple[str, int]):
+    def __init__(self, conn: socket.socket, address: tuple[str, int]):
         self.conn = conn
         self.address = address
         self.port = address[-1]
