@@ -4,7 +4,6 @@ import json
 import logging
 from io import StringIO
 from contextlib import redirect_stdout, redirect_stderr
-from typing import Union
 
 from utils.tasks import Task
 
@@ -12,7 +11,7 @@ from utils.tasks import Task
 class ShellTask(Task):
     """Execute Python as task"""
 
-    def __init__(self, command: str, *args, **kwargs) -> None:
+    def __init__(self, command: str, *args, **kwargs):
         """Overwrite stop"""
         Task.__init__(self, *args, **kwargs)
 
