@@ -56,6 +56,7 @@ class Client:
 
     def _read(self, amount: int) -> bytes:
         """Receive raw data from peer"""
+        assert self.ssl_sock is not None, "ssl_sock is not connected"
         data = b""
         while len(data) < amount:
             buffer = self.ssl_sock.recv(amount)
@@ -75,6 +76,7 @@ class Client:
 
     def write(self, data: bytes):
         """Write message data to peer"""
+        assert self.ssl_sock is not None, "ssl_sock is not connected"
         # Create header for data
         header = len(data).to_bytes(self.header_length, byteorder="big")
         message = header + data
