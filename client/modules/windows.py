@@ -1,7 +1,8 @@
-""" Windows specific features """
+"""Windows specific features"""
+
 import ctypes
 
 
 def lock() -> None:
-    """ Lock Machine """
+    """Lock Machine"""
     ctypes.windll.user32.LockWorkStation()

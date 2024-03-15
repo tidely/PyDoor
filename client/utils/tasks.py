@@ -1,4 +1,5 @@
-""" Custom Thread Class """
+"""Custom Thread Class"""
+
 import threading
 import queue
 import uuid
@@ -6,10 +7,10 @@ from typing import Union
 
 
 class Task(threading.Thread):
-    """ Base Task Class """
+    """Base Task Class"""
 
     def __init__(self, *args, **kwargs):
-        """ Create additional properties for task """
+        """Create additional properties for task"""
 
         self.identifer = str(uuid.uuid4())
         self.stop = threading.Event()
@@ -19,7 +20,7 @@ class Task(threading.Thread):
 
 
 def clean(tasks: list[Task]):
-    """ Given a list of tasks, remove completed and processed ones """
+    """Given a list of tasks, remove completed and processed ones"""
     # Create a copy to prevent issues looping through
     tasks_copy = tasks.copy()
     for task in tasks_copy:
@@ -29,7 +30,7 @@ def clean(tasks: list[Task]):
 
 
 def find(tasks: list[Task], task_id: str) -> Union[Task, None]:
-    """ Find a task with a specific task identifier, return None if not found """
+    """Find a task with a specific task identifier, return None if not found"""
     # Clean the task list
     clean(tasks)
     for task in tasks:

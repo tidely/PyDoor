@@ -1,4 +1,5 @@
-""" Base Class for the Client, handles handshake, encryption and messages """
+"""Base Class for the Client, handles handshake, encryption and messages"""
+
 import ssl
 import time
 import socket
@@ -24,12 +25,12 @@ class Client:
     address: Optional[tuple] = None
 
     def __init__(self, context: ssl.SSLContext):
-        """ Define a trusted certificate """
+        """Define a trusted certificate"""
         self.context = context
 
     @run_till_true
     def connect(self, address: tuple, retry_in_seconds: int = 5) -> bool:
-        """ Connect to peer """
+        """Connect to peer"""
 
         self.sock = socket.socket()
 
@@ -44,7 +45,9 @@ class Client:
             return False
 
         try:
-            self.ssl_sock = self.context.wrap_socket(self.sock, server_hostname=address[0])
+            self.ssl_sock = self.context.wrap_socket(
+                self.sock, server_hostname=address[0]
+            )
         except ssl.SSLError as error:
             logging.error("Error during ssl wrapping: %s", str(error))
             return False
@@ -52,29 +55,28 @@ class Client:
         self.address = address
         return True
 
-
     def _read(self, amount: int) -> bytes:
-        """ Receive raw data from peer """
-        data = b''
+        """Receive raw data from peer"""
+        data = b""
         while len(data) < amount:
             buffer = self.ssl_sock.recv(amount)
             if not buffer:
                 # Assume connection was closed
-                logging.error('Assuming connection was closed: %s', str(self.address))
+                logging.error("Assuming connection was closed: %s", str(self.address))
                 raise ConnectionResetError
             data += buffer
 
         return data
 
     def read(self) -> bytes:
-        """ Read messages from client """
+        """Read messages from client"""
         header = self._read(self.header_length)
-        message_length = int.from_bytes(header, 'big')
+        message_length = int.from_bytes(header, "big")
         return self._read(message_length)
 
     def write(self, data: bytes):
-        """ Write message data to peer """
+        """Write message data to peer"""
         # Create header for data
-        header = len(data).to_bytes(self.header_length, byteorder='big')
+        header = len(data).to_bytes(self.header_length, byteorder="big")
         message = header + data
         self.ssl_sock.sendall(message)

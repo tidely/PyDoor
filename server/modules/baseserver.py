@@ -1,4 +1,5 @@
-""" Base Server """
+"""Base Server"""
+
 import logging
 import ssl
 import queue
@@ -15,19 +16,20 @@ from modules.clients import Client
 
 
 class Server:
-    """ Base Server class """
+    """Base Server class"""
 
     # List of connected clients
     _clients: list[Client] = []
     # Event to stop listening for new connections
     _stop = threading.Event()
 
-    def __init__(self,
+    def __init__(
+        self,
         address: tuple[str, int],
         context: Optional[ssl.SSLContext] = None,
-        queue_new_connections: bool = True
+        queue_new_connections: bool = True,
     ):
-        """ Create and wrap socket with SSL """
+        """Create and wrap socket with SSL"""
         # Create SSLSocket from context
         self.socket = socket.socket()
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -38,17 +40,19 @@ class Server:
             logging.warning("No SSL Context provided! Running without SSL.")
 
         self.address = address
-        self.new_connections: queue.Queue[Client] = queue.Queue() if queue_new_connections else None
+        self.new_connections: queue.Queue[Client] = (
+            queue.Queue() if queue_new_connections else None
+        )
 
     def start(self):
-        """ Start the server """
+        """Start the server"""
         self.socket.bind(self.address)
         self.socket.listen()
         self._stop.clear()
         threading.Thread(target=self.listen).start()
 
     def listen(self):
-        """ Listen for incoming connections, and accept them using a threadpool """
+        """Listen for incoming connections, and accept them using a threadpool"""
 
         with futures.ThreadPoolExecutor() as executor, selectors.DefaultSelector() as selector:
             # Register socket to wait for incoming connections
@@ -59,7 +63,7 @@ class Server:
                     executor.submit(self.accept)
 
     def accept(self):
-        """ Accept incoming connection, gets called from self.accept """
+        """Accept incoming connection, gets called from self.accept"""
         try:
             connection, address = self.socket.accept()
         except (BlockingIOError, TimeoutError):
@@ -72,7 +76,7 @@ class Server:
             self.new_connections.put(client)
 
     def clients(self) -> list[Client]:
-        """ List connected clients """
+        """List connected clients"""
         if len(self._clients) == 0:
             return self._clients
 
@@ -97,12 +101,14 @@ class Server:
                     # Peer has disconnected
                     self.disconnect(client)
                 else:
-                    logging.debug('Data in buffer (%s) during list: %s', client.port, data)
+                    logging.debug(
+                        "Data in buffer (%s) during list: %s", client.port, data
+                    )
 
         return self._clients
 
     def disconnect(self, client: Client):
-        """ Disconnect a specific client """
+        """Disconnect a specific client"""
         logging.debug("Disconnecting client (%s)", client.port)
         with suppress(OSError):
             client.conn.shutdown(socket.SHUT_RDWR)
@@ -111,8 +117,8 @@ class Server:
             self._clients.remove(client)
 
     def shutdown(self):
-        """ Shutdown server """
-        logging.debug('Shutting down server')
+        """Shutdown server"""
+        logging.debug("Shutting down server")
         # Stop accepting new clients
         self._stop.set()
 
