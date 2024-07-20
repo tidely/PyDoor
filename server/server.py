@@ -26,7 +26,7 @@ from utils.timeout_handler import timeoutsetter
 with suppress(ImportError):
     import readline
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.CRITICAL)
 socket.setdefaulttimeout(10)
 
 DEFAULT_PROMPT = "> "
