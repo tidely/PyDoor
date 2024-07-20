@@ -2,9 +2,9 @@
 
 Encrypted Backdoor/Reverse Shell/RAT written in Python.
 
-## Reposity is archived!
+## Repository is archived!
 
-This repository was archived because no real development has been happening for a long time. PyDoor was a great experience for learning python. It's quite outdated now and there are infinite ways I would improve on the project if I made it today, but everybody starts somewhere right.
+This repository was archived because no real development has been happening for a long time. PyDoor was a great experience for learning python. It's quite outdated now and there are countless ways I would improve on the project if I made it today, but everybody starts somewhere right.
 
 ## Cross-Platform Features
 
