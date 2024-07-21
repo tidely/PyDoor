@@ -3,6 +3,6 @@ pyscreeze==0.1.30
 pyperclip==1.9.0
 psutil==6.0.0
 pynput==1.7.7
-requests==2.31.0
+requests==2.32.2
 opencv-python==4.10.0.84
 colorama==0.4.6
